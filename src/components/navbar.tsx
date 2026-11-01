@@ -31,6 +31,11 @@ export default function Navbar() {
     { name: "Marketplace", href: "/marketplace" },
   ];
 
+  // Dashboards operate with their own dedicated full-width workspace headers
+  if (pathname?.startsWith("/dashboard")) {
+    return null;
+  }
+
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-[#E5E6E8] shadow-xs">
       {/* Main Navigation Bar */}
