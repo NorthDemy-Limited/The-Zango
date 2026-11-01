@@ -16,6 +16,7 @@ import {
   BookOpen
 } from "lucide-react";
 import { ARTICLES } from "@/data/mock-articles";
+import { createSubmission } from "@/lib/firebase/db";
 
 export default function AuthorStudioPage() {
   const [title, setTitle] = useState("");
@@ -48,10 +49,26 @@ export default function AuthorStudioPage() {
     setTimeout(() => setStatusMessage(null), 4000);
   };
 
-  const handleSubmitReview = (e: React.FormEvent) => {
+  const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !content) return;
+    if (!title.trim() || !content.trim()) return;
+
+    await createSubmission({
+      title: title.trim(),
+      category,
+      coverImage,
+      excerpt: excerpt.trim() || content.slice(0, 160) + "...",
+      content: content.trim(),
+      authorName: "Abdul Rahman",
+      authorEmail: "abdul@thezango.ng",
+      wordCount,
+      readTime: estimatedReadTime,
+    });
+
     setStatusMessage("Story submitted for Chief Editor review! You will receive notification upon approval.");
+    setTitle("");
+    setExcerpt("");
+    setContent("");
     setTimeout(() => setStatusMessage(null), 5000);
   };
 

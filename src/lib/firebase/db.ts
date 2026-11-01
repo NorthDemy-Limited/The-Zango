@@ -99,15 +99,145 @@ export async function addSubscriber(email: string): Promise<Subscriber> {
   return newSubscriber;
 }
 
+export async function updateArticle(id: string, updates: Partial<Article>): Promise<Article | null> {
+  const index = localArticlesStore.findIndex((a) => a.id === id);
+  if (index === -1) return null;
+
+  const updated: Article = { ...localArticlesStore[index], ...updates };
+
+  if (isFirebaseConfigured && db) {
+    try {
+      await updateDoc(doc(db, "articles", id), updates as any);
+    } catch (err) {
+      console.warn("Could not update article in Firestore:", err);
+    }
+  }
+
+  localArticlesStore[index] = updated;
+  return updated;
+}
+
+export async function toggleArticleFlag(
+  id: string,
+  flag: "isFeatured" | "isTrending" | "isEditorsPick" | "isLatest"
+): Promise<Article | null> {
+  const article = localArticlesStore.find((a) => a.id === id);
+  if (!article) return null;
+
+  const currentValue = !!article[flag];
+  return updateArticle(id, { [flag]: !currentValue });
+}
+
+let localSubmissionsStore: import("@/types").Submission[] = [
+  {
+    id: "sub-1",
+    title: "Kano Solar Irrigation Co-Op Triples Dry-Season Yields for 400 Smallholders",
+    excerpt: "Field report from Danbatta agricultural cluster detailing how solar-powered drip irrigation is insulating smallholder farmers from diesel price spikes.",
+    content: "Full investigative manuscript examining cooperative solar pump financing...",
+    category: "Technology",
+    authorName: "Amina Dahiru",
+    authorEmail: "amina@thezango.ng",
+    submittedAt: "2 hours ago",
+    wordCount: 840,
+    readTime: "4 min read",
+    coverImage: "/assets/trending-hero.jpg",
+    status: "pending",
+  },
+  {
+    id: "sub-2",
+    title: "Fintech Cross-Border Remittances: Navigating CFA-Naira Liquidity Corridors",
+    excerpt: "Analysis of cross-border merchant trade settlements between Maradi, Niger and Kano, Nigeria using mobile money wallets.",
+    content: "Detailed market study analyzing foreign exchange clearing houses...",
+    category: "Business",
+    authorName: "Ibrahim Bello",
+    authorEmail: "ibrahim@thezango.ng",
+    submittedAt: "5 hours ago",
+    wordCount: 1120,
+    readTime: "6 min read",
+    coverImage: "/assets/hero-featured.jpg",
+    status: "pending",
+  },
+  {
+    id: "sub-3",
+    title: "Preserving Sahelian Architecture: Low-Carbon Compressed Earth Bricks in Modern Public Housing",
+    excerpt: "Architects and urban planners in Niamey and Kaduna are reviving passive-cooling earth architecture to reduce air conditioning energy loads by 45%.",
+    content: "Exploration of sustainable building materials suited for Sahelian climatic extremes...",
+    category: "Features",
+    authorName: "Zainab Usman",
+    authorEmail: "zainab@thezango.ng",
+    submittedAt: "Yesterday",
+    wordCount: 960,
+    readTime: "5 min read",
+    coverImage: "/assets/news-hausa-digital.png",
+    status: "pending",
+  },
+];
+
+export async function getSubmissions(): Promise<import("@/types").Submission[]> {
+  return localSubmissionsStore;
+}
+
+export async function createSubmission(
+  subData: Omit<import("@/types").Submission, "id" | "submittedAt" | "status">
+): Promise<import("@/types").Submission> {
+  const newSubmission: import("@/types").Submission = {
+    ...subData,
+    id: `sub-${Date.now()}`,
+    submittedAt: "Just now",
+    status: "pending",
+  };
+  localSubmissionsStore = [newSubmission, ...localSubmissionsStore];
+  return newSubmission;
+}
+
+export async function approveSubmission(id: string): Promise<Article | null> {
+  const submission = localSubmissionsStore.find((s) => s.id === id);
+  if (!submission) return null;
+
+  submission.status = "approved";
+
+  const slug = submission.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
+  const newArticle = await createArticle({
+    title: submission.title,
+    slug,
+    category: submission.category,
+    coverImage: submission.coverImage || "/assets/hero-featured.jpg",
+    excerpt: submission.excerpt,
+    content: submission.content,
+    publishedAt: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    readTime: submission.readTime,
+    isLatest: true,
+    views: 0,
+    author: {
+      id: "author-contributor",
+      name: submission.authorName,
+      slug: submission.authorName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      role: "Contributing Correspondent",
+    },
+  });
+
+  return newArticle;
+}
+
+export async function rejectSubmission(id: string): Promise<boolean> {
+  const submission = localSubmissionsStore.find((s) => s.id === id);
+  if (!submission) return false;
+  submission.status = "rejected";
+  return true;
+}
+
 export async function getPlatformMetrics() {
   const articles = await getArticles();
   const subscribers = await getSubscribers();
+  const submissions = await getSubmissions();
+  const pendingSubmissions = submissions.filter((s) => s.status === "pending").length;
   const totalViews = articles.reduce((acc, a) => acc + (a.views || 1200), 0);
 
   return {
     totalArticles: articles.length,
     publishedCount: articles.length,
-    draftCount: 3,
+    draftCount: pendingSubmissions,
     totalViews,
     totalSubscribers: subscribers.length,
   };

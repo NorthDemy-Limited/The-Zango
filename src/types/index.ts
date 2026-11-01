@@ -57,3 +57,18 @@ export interface Subscriber {
   email: string;
   subscribedAt: string;
 }
+
+export interface Submission {
+  id: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  category: string;
+  authorName: string;
+  authorEmail?: string;
+  submittedAt: string;
+  wordCount: number;
+  readTime: string;
+  coverImage?: string;
+  status: "pending" | "approved" | "rejected";
+}
