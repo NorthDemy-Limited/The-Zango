@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
-import { CATEGORIES, ARTICLES } from "@/data/mock-articles";
+import { CATEGORIES } from "@/data/mock-articles";
+import { getArticles } from "@/lib/firebase/db";
 import { 
   ArrowRight, 
   ArrowLeft,
@@ -14,10 +15,13 @@ import {
   Landmark, 
   Film, 
   HeartPulse, 
-  GraduationCap 
+  GraduationCap,
+  Radio
 } from "lucide-react";
 
-export default function CategoriesDirectoryPage() {
+export default async function CategoriesDirectoryPage() {
+  const articles = await getArticles();
+
   const iconMap: Record<string, React.ElementType> = {
     news: Newspaper,
     business: Briefcase,
@@ -36,8 +40,8 @@ export default function CategoriesDirectoryPage() {
     <div className="py-10 lg:py-16 bg-white min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Navigation Breadcrumb */}
-        <div className="mb-8">
+        {/* Navigation Breadcrumb & Real-time Status */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
           <Link
             href="/"
             className="inline-flex items-center space-x-2 text-xs font-bold text-[#535252] hover:text-[#C61D1F] uppercase tracking-wider transition-colors"
@@ -45,6 +49,15 @@ export default function CategoriesDirectoryPage() {
             <ArrowLeft className="w-4 h-4" />
             <span>Return to Front Page</span>
           </Link>
+
+          <div className="inline-flex items-center space-x-2 bg-[#FDF2F2] border border-red-200/80 px-3 py-1 rounded-full text-xs font-bold text-[#C61D1F]">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#C61D1F]"></span>
+            </span>
+            <span className="uppercase tracking-wider">All 11 Desks Live</span>
+            <span className="text-gray-400 font-normal hidden sm:inline">• Real-time Status</span>
+          </div>
         </div>
 
         {/* Header */}
@@ -56,7 +69,7 @@ export default function CategoriesDirectoryPage() {
             Browse All News Desks & Categories
           </h1>
           <p className="text-base sm:text-lg text-[#535252] leading-relaxed">
-            Explore comprehensive reporting organized across enterprise sectors, cultural beats, regional public policy, and technology ecosystems.
+            Explore comprehensive reporting organized across enterprise sectors, cultural beats, regional public policy, and technology ecosystems with real-time editorial feeds.
           </p>
         </div>
 
@@ -64,9 +77,12 @@ export default function CategoriesDirectoryPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {CATEGORIES.map((cat) => {
             const Icon = iconMap[cat.slug] || Newspaper;
-            const latestArticle = ARTICLES.find(
+            const catArticles = articles.filter(
               (a) => a.category.toLowerCase() === cat.slug || (cat.slug === "news" && a.isLatest)
             );
+            const actualCount = catArticles.length > 0 ? catArticles.length : cat.count;
+            const latestArticle = catArticles[0];
+            const isLive = cat.isLive || cat.status === "breaking" || cat.status === "live";
 
             return (
               <div
@@ -78,9 +94,18 @@ export default function CategoriesDirectoryPage() {
                     <div className="w-12 h-12 rounded-2xl bg-[#FDF2F2] text-[#C61D1F] flex items-center justify-center">
                       <Icon className="w-6 h-6" />
                     </div>
-                    <span className="bg-gray-100 text-[#535252] text-xs font-bold px-3 py-1 rounded-full">
-                      {cat.count} Stories
-                    </span>
+
+                    <div className="flex items-center space-x-2">
+                      {isLive && (
+                        <span className="inline-flex items-center space-x-1 bg-[#FDF2F2] text-[#C61D1F] text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#C61D1F] animate-pulse" />
+                          <span>Live</span>
+                        </span>
+                      )}
+                      <span className="bg-gray-100 text-[#535252] text-xs font-bold px-3 py-1 rounded-full">
+                        {actualCount} {actualCount === 1 ? "Story" : "Stories"}
+                      </span>
+                    </div>
                   </div>
 
                   <h2 className="text-xl font-bold text-[#000000] group-hover:text-[#C61D1F] transition-colors mb-2">

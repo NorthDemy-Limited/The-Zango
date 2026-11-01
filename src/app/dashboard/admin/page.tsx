@@ -457,6 +457,10 @@ export default function AdminDashboardPage() {
                     <option value="Opinion">Opinion</option>
                     <option value="Lifestyle">Lifestyle</option>
                     <option value="Sports">Sports</option>
+                    <option value="Politics">Politics</option>
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Health">Health</option>
+                    <option value="Education">Education</option>
                   </select>
                 </div>
 

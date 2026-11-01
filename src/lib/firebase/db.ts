@@ -24,6 +24,14 @@ export async function getArticles(): Promise<Article[]> {
       console.warn("Could not fetch articles from Firestore, using local store:", err);
     }
   }
+
+  // Ensure any newly added mock articles are synchronized into the local store
+  const existingIds = new Set(localArticlesStore.map((a) => a.id));
+  const missingArticles = ARTICLES.filter((a) => !existingIds.has(a.id));
+  if (missingArticles.length > 0) {
+    localArticlesStore = [...localArticlesStore, ...missingArticles];
+  }
+
   return localArticlesStore;
 }
 

@@ -76,17 +76,17 @@ export const AUTHORS: Author[] = [
 ];
 
 export const CATEGORIES: Category[] = [
-  { id: "news", name: "News", slug: "news", description: "Breaking news, political updates and current affairs from across Northern Nigeria and beyond.", count: 24 },
-  { id: "business", name: "Business", slug: "business", description: "Economic insights, market dynamics, venture funding and startup growth.", count: 18 },
-  { id: "technology", name: "Technology", slug: "technology", description: "Digital innovation, software engineering, climate tech, and tech ecosystems.", count: 32 },
-  { id: "opinion", name: "Opinion", slug: "opinion", description: "Critical analysis, thoughtful commentary, and perspective essays from leading voices.", count: 14 },
-  { id: "lifestyle", name: "Lifestyle", slug: "lifestyle", description: "Culture, arts, health, culinary traditions, and youth trends.", count: 11 },
-  { id: "sports", name: "Sports", slug: "sports", description: "National and regional athletics, football leagues, and sporting achievements.", count: 9 },
-  { id: "features", name: "Features", slug: "features", description: "Long-form journalism, human interest stories, and investigative reports.", count: 15 },
-  { id: "politics", name: "Politics", slug: "politics", description: "Governance, policy analysis, legislative developments, and civic accountability.", count: 12 },
-  { id: "entertainment", name: "Entertainment", slug: "entertainment", description: "Cinema, Kannywood culture, contemporary music, and performing arts.", count: 8 },
-  { id: "health", name: "Health", slug: "health", description: "Public health initiatives, maternal care innovations, and medical technology.", count: 7 },
-  { id: "education", name: "Education", slug: "education", description: "STEM curricula, university research breakthroughs, and vocational literacy.", count: 10 },
+  { id: "news", name: "News", slug: "news", description: "Breaking news, political updates and current affairs from across Northern Nigeria and beyond.", count: 24, status: "breaking", lastUpdated: "Just now", isLive: true },
+  { id: "business", name: "Business", slug: "business", description: "Economic insights, market dynamics, venture funding and startup growth.", count: 18, status: "live", lastUpdated: "12m ago", isLive: true },
+  { id: "technology", name: "Technology", slug: "technology", description: "Digital innovation, software engineering, climate tech, and tech ecosystems.", count: 32, status: "live", lastUpdated: "25m ago", isLive: true },
+  { id: "opinion", name: "Opinion", slug: "opinion", description: "Critical analysis, thoughtful commentary, and perspective essays from leading voices.", count: 14, status: "updated", lastUpdated: "1h ago", isLive: false },
+  { id: "lifestyle", name: "Lifestyle", slug: "lifestyle", description: "Culture, arts, health, culinary traditions, and youth trends.", count: 11, status: "active", lastUpdated: "2h ago", isLive: false },
+  { id: "sports", name: "Sports", slug: "sports", description: "National and regional athletics, football leagues, and sporting achievements.", count: 9, status: "active", lastUpdated: "3h ago", isLive: false },
+  { id: "features", name: "Features", slug: "features", description: "Long-form journalism, human interest stories, and investigative reports.", count: 15, status: "live", lastUpdated: "40m ago", isLive: true },
+  { id: "politics", name: "Politics", slug: "politics", description: "Governance, policy analysis, legislative developments, and civic accountability.", count: 12, status: "breaking", lastUpdated: "5m ago", isLive: true },
+  { id: "entertainment", name: "Entertainment", slug: "entertainment", description: "Cinema, Kannywood culture, contemporary music, and performing arts.", count: 8, status: "active", lastUpdated: "4h ago", isLive: false },
+  { id: "health", name: "Health", slug: "health", description: "Public health initiatives, maternal care innovations, and medical technology.", count: 7, status: "live", lastUpdated: "18m ago", isLive: true },
+  { id: "education", name: "Education", slug: "education", description: "STEM curricula, university research breakthroughs, and vocational literacy.", count: 10, status: "active", lastUpdated: "2h ago", isLive: false },
 ];
 
 export const INITIAL_COMMENTS: Comment[] = [
@@ -341,6 +341,157 @@ The initiative provides structured market-entry support, international certifica
     readTime: "3 min read",
     isEditorsPick: true,
     views: 1640,
+    commentsCount: 0,
+  },
+  {
+    id: "art-11",
+    slug: "sahelian-paradigm-africas-digital-sovereignty",
+    title: "The Sahelian Paradigm: Why Africa’s Digital Sovereignty Must Begin at the Grassroots",
+    excerpt: "From decentralized mesh networks to vernacular AI models, genuine technological autonomy requires designing systems that thrive under intermittent power and bandwidth constraints.",
+    content: `
+For decades, African technological policy has been evaluated through imported metropolitan frameworks. Yet the true frontier of resilience is unfolding across the arid plains of the Sahel, where engineers, agronomists, and civic hackers are developing decentralized infrastructure out of sheer operational necessity.
+
+### Building for the Edge
+When power grids fluctuate and fiber backbones suffer maritime cuts, metropolitan tech stacks grind to a halt. In Kano and Niamey, however, a quiet revolution in edge computing is taking root. Local developers are prioritizing lightweight SQLite architectures, local-first synchronization protocols, and solar-backed micro-data centers that continue serving community transactions entirely offline.
+
+### The Imperative of Vernacular AI
+Digital sovereignty is not merely a question of server locations; it is a question of linguistic and cultural representation. When language models cannot parse Hausa dialects or pastoralist trade nomenclatures, millions of commercial actors remain structurally disenfranchised. 
+
+True independence will not be purchased through multinational cloud contracts. It will be coded, line by line, by Sahelian engineers building systems that reflect their own physical and economic realities.
+    `,
+    coverImage: "/assets/trending-hero.jpg",
+    category: "Opinion",
+    tags: ["Digital Sovereignty", "Policy", "Open Source", "Infrastructure"],
+    author: AUTHORS[0],
+    publishedAt: "July 15, 2026",
+    readTime: "5 min read",
+    views: 2350,
+    commentsCount: 0,
+  },
+  {
+    id: "art-12",
+    slug: "renaissance-arewa-contemporary-culinary-heritage",
+    title: "The Renaissance of Arewa Contemporary Culinary Heritage & Craft",
+    excerpt: "Modern chefs and artisanal food entrepreneurs across Kano and Kaduna are reimagining ancestral northern grains like Fonio, Sorghum, and Masa for contemporary global gastronomy.",
+    content: `
+At the heart of the ancient city of Kano, a quiet culinary renaissance is underway. A new generation of culinary artists is reviving ancient grains—Fonio (Acha), Sorghum, and pearl millet—infusing centuries-old fermentation techniques with contemporary presentation.
+
+"Our culinary heritage is an untapped bio-diverse library," explains Chef Halima Danbatta. "For centuries, northern food systems mastered climate resilience, soil preservation, and deep nutritional density. What we are doing today is bringing that sophistication to international dining tables."
+
+From artisanal Danwake crafted with high-protein indigenous legumes to sparkling hibiscus infusions aged in clay vessels, northern culinary heritage is emerging as a dynamic driver of creative exports and gastro-tourism.
+    `,
+    coverImage: "/assets/news-hausa-digital.png",
+    category: "Lifestyle",
+    tags: ["Culinary", "Heritage", "Artisan", "Lifestyle"],
+    author: AUTHORS[4],
+    publishedAt: "July 15, 2026",
+    readTime: "4 min read",
+    views: 1920,
+    commentsCount: 0,
+  },
+  {
+    id: "art-13",
+    slug: "northern-athletics-syndicate-grassroots-scouting",
+    title: "Northern Athletics Syndicate: How Grassroots Scouting Is Fueling Track & Football Talent",
+    excerpt: "Community academies across Plateau, Kaduna, and Bauchi are deploying biometric data analytics and sports science to scout and nurture world-class athletes from rural hinterlands.",
+    content: `
+The high-altitude plateaus of Jos and the sprawling sporting grounds of Kaduna have long been known as natural incubators for world-class distance runners and agile footballers. Today, that raw natural advantage is being supercharged with precision biometric tracking and data-driven scouting.
+
+The Northern Athletics Syndicate, an initiative backed by regional sporting philanthropists, has partnered with international sports science institutes to deploy wearable GPS vests and recovery monitoring across 24 grassroots academies.
+
+"Talent is evenly distributed, but scientific coaching and nutritional programming historically were not," remarks academy director Coach Sani Garba. With three academy alumni recently signing professional contracts with European top-flight clubs, the northern talent pipeline is proving that disciplined sports science creates generational opportunities.
+    `,
+    coverImage: "/assets/news-oxford-skoll.jpg",
+    category: "Sports",
+    tags: ["Athletics", "Youth Development", "Football", "Talent"],
+    author: AUTHORS[5],
+    publishedAt: "July 15, 2026",
+    readTime: "4 min read",
+    views: 2150,
+    commentsCount: 0,
+  },
+  {
+    id: "art-14",
+    slug: "decentralized-governance-fiscal-federalism-state-resources",
+    title: "Decentralized Governance & Fiscal Federalism in State Resource Mobilization",
+    excerpt: "An inside look at how subnational governments are adopting digital treasury single accounts and automated revenue collection systems to expand non-oil state revenues.",
+    content: `
+As fiscal pressures test the limits of statutory federal allocations, state governments across Northern Nigeria are fundamentally restructuring their domestic revenue machinery.
+
+By transitioning from manual cash collection to interoperable digital treasury single accounts (TSAs) and geographic information system (GIS)-backed land title registries, states like Kaduna, Jigawa, and Kano have multiplied internally generated revenue (IGR) by over 300% without raising baseline tax burdens on low-income citizens.
+
+"Fiscal sovereignty requires transparency," notes public finance analyst Aliyu Mahmud. "When taxpayers see their automated tax payments immediately reflected in public health clinic renovations and solar street lighting, compliance transforms from coercion to civic pride."
+    `,
+    coverImage: "/assets/hero-featured.jpg",
+    category: "Politics",
+    tags: ["Governance", "Public Finance", "Policy", "Fiscal Federalism"],
+    author: AUTHORS[1],
+    publishedAt: "July 16, 2026",
+    readTime: "6 min read",
+    views: 3410,
+    commentsCount: 0,
+  },
+  {
+    id: "art-15",
+    slug: "beyond-kannywood-northern-animators-game-developers",
+    title: "Beyond Kannywood: How Northern Animators & Game Developers Are Reaching Global Audiences",
+    excerpt: "A burgeoning digital animation and game development scene in Jos and Kano is turning rich Sahelian folklore into international streaming animations and interactive video games.",
+    content: `
+Northern Nigeria's cultural storytelling has entered a transformative digital chapter. While the traditional Kannywood cinema industry built an audience of over 80 million Hausa speakers across West Africa, a younger wave of digital illustrators, 3D animators, and game developers is taking that heritage onto global interactive screens.
+
+Studios based in Jos and Kano are producing animated series inspired by pre-colonial epic poems, desert navigation legends, and mythical trade caravans. Several titles have recently been licensed by global video-on-demand networks and mobile gaming publishers.
+
+"Our stories have universal appeal," says lead animator Zainab Kabir. "Audiences worldwide are yearning for authentic mythologies that have never been seen in mainstream cinema. We are using Unreal Engine and Blender to give our ancestors' voices modern cinematic power."
+    `,
+    coverImage: "/assets/news-startup-kano.png",
+    category: "Entertainment",
+    tags: ["Animation", "Gaming", "Creative Economy", "Entertainment"],
+    author: AUTHORS[4],
+    publishedAt: "July 16, 2026",
+    readTime: "5 min read",
+    views: 2780,
+    commentsCount: 0,
+  },
+  {
+    id: "art-16",
+    slug: "solar-powered-cold-chain-maternal-health-northern-states",
+    title: "Solar-Powered Cold Chain Logistics Revolutionizing Rural Maternal Healthcare Across 7 Northern States",
+    excerpt: "Last-mile vaccine refrigerators and telehealth clinics powered by solar mini-grids are eliminating maternal care blind spots in remote agrarian settlements.",
+    content: `
+In rural primary healthcare centers where grid electricity was once an infrequent luxury, rooftop solar installations and DC-powered vaccine refrigerators are quietly saving thousands of lives.
+
+A joint consortium of maternal health NGOs and local clean-tech engineers has deployed 450 solar medical units across rural clinics in Sokoto, Kebbi, Zamfara, and Katsina states. The units preserve temperature-sensitive oxytocin, childhood vaccines, and blood testing reagents 24 hours a day, 365 days a year.
+
+"Before the solar cold units arrived, our community had to transport expectant mothers over 40 kilometers of unpaved road for routine obstetric care," says head midwife Maryam Al-Hassan. "Today, our clinic delivers safe, refrigerated interventions on demand."
+    `,
+    coverImage: "/assets/news-climate-startup.jpg",
+    category: "Health",
+    tags: ["Public Health", "Maternal Care", "Solar Tech", "Rural Healthcare"],
+    author: AUTHORS[2],
+    publishedAt: "July 16, 2026",
+    readTime: "5 min read",
+    views: 2490,
+    commentsCount: 0,
+  },
+  {
+    id: "art-17",
+    slug: "code-arewa-fellowship-training-next-gen-engineers",
+    title: "The Code Arewa Fellowship: Training 20,000 Next-Generation Software Engineers Across the North",
+    excerpt: "With deep-tech training in systems programming, cloud architecture, and embedded IoT, the Code Arewa Initiative is cementing Northern Nigeria's place on the global engineering map.",
+    content: `
+The narrative of African technology is rapidly decentralizing beyond Lagos and Nairobi. Across innovation hubs in Kano, Kaduna, Zaria, and Maiduguri, the Code Arewa Fellowship is delivering rigorous, project-based computer science apprenticeships to thousands of young university graduates and self-taught developers.
+
+Unlike shallow bootcamp models, the curriculum emphasizes low-level systems programming in Rust and Go, cloud microservices, distributed systems, and embedded microcontrollers for agricultural IoT.
+
+"We are preparing engineers who can build enduring infrastructure, not just frontend mockups," emphasizes program director Ibrahim Bello. Over 65% of last year's cohort have already secured remote engineering contracts with European and North American technology enterprises, injecting millions of dollars into regional household economies.
+    `,
+    coverImage: "/assets/news-hausa-barrier.jpg",
+    category: "Education",
+    tags: ["Software Engineering", "Education", "Tech Talents", "STEM"],
+    author: AUTHORS[3],
+    publishedAt: "July 16, 2026",
+    readTime: "4 min read",
+    views: 3100,
     commentsCount: 0,
   }
 ];

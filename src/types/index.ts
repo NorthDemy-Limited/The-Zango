@@ -48,6 +48,9 @@ export interface Category {
   slug: string;
   description: string;
   count: number;
+  status?: "live" | "active" | "updated" | "breaking";
+  lastUpdated?: string;
+  isLive?: boolean;
 }
 
 export interface Subscriber {
