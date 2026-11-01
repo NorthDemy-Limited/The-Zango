@@ -36,6 +36,7 @@ export interface Article {
   isLatest?: boolean;
   isTrending?: boolean;
   isPopular?: boolean;
+  isEditorsPick?: boolean;
   popularRank?: number;
   views?: number;
   commentsCount?: number;

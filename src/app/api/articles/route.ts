@@ -7,8 +7,27 @@ export async function GET(request: Request) {
     const category = searchParams.get("category");
     const author = searchParams.get("author");
     const query = searchParams.get("query");
+    const feed = searchParams.get("feed") || searchParams.get("section") || searchParams.get("filter");
+    const limitParam = searchParams.get("limit");
 
     let articles = await getArticles();
+
+    if (feed) {
+      const f = feed.toLowerCase();
+      if (f === "latest") {
+        articles = articles.filter((a) => a.isLatest);
+      } else if (f === "editors-picks" || f === "editors_picks" || f === "editors") {
+        articles = articles.filter((a) => a.isEditorsPick);
+      } else if (f === "featured") {
+        articles = articles.filter((a) => a.isFeatured);
+      } else if (f === "trending") {
+        articles = articles.filter((a) => a.isTrending);
+      } else if (f === "popular") {
+        articles = articles
+          .filter((a) => a.isPopular)
+          .sort((a, b) => (a.popularRank || 99) - (b.popularRank || 99));
+      }
+    }
 
     if (category) {
       articles = articles.filter(
@@ -30,6 +49,13 @@ export async function GET(request: Request) {
           a.excerpt.toLowerCase().includes(q) ||
           a.category.toLowerCase().includes(q)
       );
+    }
+
+    if (limitParam) {
+      const limit = parseInt(limitParam, 10);
+      if (!isNaN(limit) && limit > 0) {
+        articles = articles.slice(0, limit);
+      }
     }
 
     return NextResponse.json({ success: true, count: articles.length, articles });
