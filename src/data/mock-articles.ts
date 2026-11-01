@@ -1,4 +1,79 @@
-import { Article, Category } from "@/types";
+import { Article, Category, Author, Comment } from "@/types";
+
+export const AUTHORS: Author[] = [
+  {
+    id: "author-1",
+    name: "Abdul Rahman",
+    slug: "abdul-rahman",
+    role: "Senior Business Analyst",
+    avatar: "/assets/social-image-1.png",
+    location: "Kano & Abuja, Nigeria",
+    twitter: "@abdul_zango",
+    linkedin: "abdul-rahman-zango",
+    bio: "Abdul Rahman has over 9 years of journalism experience dissecting venture capital flows, sovereign wealth allocations, and frontier enterprise ecosystems across Northern Nigeria and the Sahel corridor.",
+  },
+  {
+    id: "author-2",
+    name: "The Zango Bureau",
+    slug: "the-zango-bureau",
+    role: "Editorial Desk & Fact-Checking Unit",
+    avatar: "/assets/social-image-2.png",
+    location: "Abuja, Nigeria",
+    bio: "The Zango Bureau is our multi-city investigations desk, synthesizing official market records, trade statistics, and field reporting from 19 northern states.",
+  },
+  {
+    id: "author-3",
+    name: "Fatima Aliyu",
+    slug: "fatima-aliyu",
+    role: "Climate & Science Correspondent",
+    avatar: "/assets/social-image-3.png",
+    location: "Kaduna, Nigeria",
+    twitter: "@fatima_climate",
+    linkedin: "fatima-aliyu-sci",
+    bio: "Reporting on climate-smart agriculture, Sahelian desertification mitigation, solar mini-grids, and rural resilience transitions.",
+  },
+  {
+    id: "author-4",
+    name: "Ibrahim Bello",
+    slug: "ibrahim-bello",
+    role: "Technology Editor",
+    avatar: "/assets/social-image-4.png",
+    location: "Abuja, Nigeria",
+    twitter: "@ibrahim_bello_tech",
+    linkedin: "ibrahim-bello-editor",
+    bio: "Leading coverage of AI localization, telecommunications policy, venture capital syndicates, and software engineering talent across West Africa.",
+  },
+  {
+    id: "author-5",
+    name: "Zainab Usman",
+    slug: "zainab-usman",
+    role: "Culture & Linguistics Contributor",
+    avatar: "/assets/social-image-1.png",
+    location: "Kano, Nigeria",
+    twitter: "@zainab_lingua",
+    bio: "Focusing on indigenous language technology, digital preservation of Hausa literature, and creative economy entrepreneurship.",
+  },
+  {
+    id: "author-7",
+    name: "Usman Kabir",
+    slug: "usman-kabir",
+    role: "Ecosystem Reporter",
+    avatar: "/assets/social-image-3.png",
+    location: "Kano, Nigeria",
+    twitter: "@usman_ecosystem",
+    bio: "Chronicling incubation centers, maker labs, and angel syndicates powering Northern Nigeria's tech revolution.",
+  },
+  {
+    id: "author-8",
+    name: "Amina Dahiru",
+    slug: "amina-dahiru",
+    role: "Digital Inclusion Fellow",
+    avatar: "/assets/social-image-4.png",
+    location: "Jos, Plateau State",
+    twitter: "@amina_dahiru",
+    bio: "Advocating for rural connectivity, digital literacy for women, and multilingual technology access.",
+  },
+];
 
 export const CATEGORIES: Category[] = [
   { id: "news", name: "News", slug: "news", description: "Breaking news, political updates and current affairs from across Northern Nigeria and beyond.", count: 24 },
@@ -7,6 +82,38 @@ export const CATEGORIES: Category[] = [
   { id: "opinion", name: "Opinion", slug: "opinion", description: "Critical analysis, thoughtful commentary, and perspective essays from leading voices.", count: 14 },
   { id: "lifestyle", name: "Lifestyle", slug: "lifestyle", description: "Culture, arts, health, culinary traditions, and youth trends.", count: 11 },
   { id: "sports", name: "Sports", slug: "sports", description: "National and regional athletics, football leagues, and sporting achievements.", count: 9 },
+  { id: "features", name: "Features", slug: "features", description: "Long-form journalism, human interest stories, and investigative reports.", count: 15 },
+  { id: "politics", name: "Politics", slug: "politics", description: "Governance, policy analysis, legislative developments, and civic accountability.", count: 12 },
+  { id: "entertainment", name: "Entertainment", slug: "entertainment", description: "Cinema, Kannywood culture, contemporary music, and performing arts.", count: 8 },
+  { id: "health", name: "Health", slug: "health", description: "Public health initiatives, maternal care innovations, and medical technology.", count: 7 },
+  { id: "education", name: "Education", slug: "education", description: "STEM curricula, university research breakthroughs, and vocational literacy.", count: 10 },
+];
+
+export const INITIAL_COMMENTS: Comment[] = [
+  {
+    id: "comm-1",
+    articleSlug: "capital-has-many-faces-deal-has-a-price",
+    authorName: "Garba Sani",
+    content: "Spot on analysis. Many founders in Kano make the mistake of raising expensive debt before establishing repeatable customer demand. Local syndicates are definitely the missing link.",
+    createdAt: "2 hours ago",
+    likes: 14,
+  },
+  {
+    id: "comm-2",
+    articleSlug: "capital-has-many-faces-deal-has-a-price",
+    authorName: "Hadiza Al-Hassan",
+    content: "The breakdown of governance friction during Series A was eye-opening. We need more case studies like this documenting northern startup journeys.",
+    createdAt: "5 hours ago",
+    likes: 9,
+  },
+  {
+    id: "comm-3",
+    articleSlug: "tomato-jos-agriarche-top-funded-startups-h1-2026",
+    authorName: "Dr. Aliyu Mahmud",
+    content: "Tomato Jos proves that backward integration in agriculture is commercially viable in Northern Nigeria when backed by patient, catalytic capital.",
+    createdAt: "Yesterday",
+    likes: 21,
+  },
 ];
 
 export const ARTICLES: Article[] = [
@@ -38,17 +145,12 @@ As the northern tech corridor continues to expand, founders who master the nuanc
     coverImage: "/assets/hero-featured.jpg",
     category: "Business",
     tags: ["Venture Capital", "Northern Startups", "Founders", "Funding"],
-    author: {
-      id: "author-1",
-      name: "Abdul Rahman",
-      role: "Senior Business Analyst",
-      avatar: "/assets/social-image-1.png",
-      bio: "Covering capital flows, emerging technology hubs, and corporate governance across West Africa."
-    },
+    author: AUTHORS[0],
     publishedAt: "May 19, 2026",
     readTime: "6 min read",
     isFeatured: true,
     views: 4520,
+    commentsCount: 2,
   },
   {
     id: "art-2",
@@ -65,19 +167,14 @@ Simultaneously, agricultural fintech platform Agriarche secured $3.5 million in 
     coverImage: "/assets/news-tomato-jos.jpg",
     category: "Business",
     tags: ["Agriculture", "Investment", "Food Security", "Kaduna"],
-    author: {
-      id: "author-2",
-      name: "The Zango Bureau",
-      role: "Staff Reporter",
-      avatar: "/assets/social-image-2.png",
-      bio: "Reporting on market developments, logistics, and policy."
-    },
+    author: AUTHORS[1],
     publishedAt: "July 14, 2026",
     readTime: "4 min read",
     isLatest: true,
     isPopular: true,
     popularRank: 1,
     views: 3890,
+    commentsCount: 1,
   },
   {
     id: "art-3",
@@ -92,13 +189,7 @@ Yet, amidst these ecological hurdles, a new generation of climate-tech startups 
     coverImage: "/assets/trending-hero.jpg",
     category: "Technology",
     tags: ["Climate Tech", "Sustainability", "Agritech", "Green Energy"],
-    author: {
-      id: "author-3",
-      name: "Fatima Aliyu",
-      role: "Climate & Science Correspondent",
-      avatar: "/assets/social-image-3.png",
-      bio: "Specializing in climate adaptation, rural resilience, and renewable energy transitions."
-    },
+    author: AUTHORS[2],
     publishedAt: "July 13, 2024",
     readTime: "5 min read",
     isLatest: true,
@@ -106,6 +197,7 @@ Yet, amidst these ecological hurdles, a new generation of climate-tech startups 
     isPopular: true,
     popularRank: 2,
     views: 3120,
+    commentsCount: 0,
   },
   {
     id: "art-4",
@@ -120,19 +212,14 @@ With the federal government’s drive toward digital exports and AI adoption, th
     coverImage: "/assets/news-gitex.jpg",
     category: "Technology",
     tags: ["Conferences", "Global Tech", "GITEX", "Abuja"],
-    author: {
-      id: "author-4",
-      name: "Ibrahim Bello",
-      role: "Technology Editor",
-      avatar: "/assets/social-image-4.png",
-      bio: "Chronicling enterprise tech, digital policy, and the African startup narrative."
-    },
+    author: AUTHORS[3],
     publishedAt: "June 22, 2024",
     readTime: "3 min read",
     isLatest: true,
     isPopular: true,
     popularRank: 3,
     views: 2840,
+    commentsCount: 0,
   },
   {
     id: "art-5",
@@ -147,19 +234,14 @@ YARE is transforming this paradigm by deploying high-accuracy neural translation
     coverImage: "/assets/news-hausa-digital.png",
     category: "Features",
     tags: ["Indigenous Tech", "Localization", "Hausa", "AI"],
-    author: {
-      id: "author-5",
-      name: "Zainab Usman",
-      role: "Culture & Tech Contributor",
-      avatar: "/assets/social-image-1.png",
-      bio: "Writing at the intersection of cultural linguistics and digital transformation."
-    },
+    author: AUTHORS[4],
     publishedAt: "June 18, 2024",
     readTime: "5 min read",
     isLatest: true,
     isPopular: true,
     popularRank: 4,
     views: 2470,
+    commentsCount: 0,
   },
   {
     id: "art-6",
@@ -174,17 +256,12 @@ Her initiative, which has equipped over 45,000 adolescent girls with foundationa
     coverImage: "/assets/news-oxford-skoll.jpg",
     category: "News",
     tags: ["Education", "Scholarships", "Social Enterprise", "Global Recognition"],
-    author: {
-      id: "author-6",
-      name: "Editorial Desk",
-      role: "The Zango Editorial Team",
-      avatar: "/assets/social-image-2.png",
-      bio: "Editorial dispatches and breaking announcements."
-    },
+    author: AUTHORS[1],
     publishedAt: "June 14, 2024",
     readTime: "4 min read",
     isLatest: true,
     views: 2190,
+    commentsCount: 0,
   },
   {
     id: "art-7",
@@ -199,16 +276,11 @@ The initiative aims to nurture early-stage climate innovators with seed micro-gr
     coverImage: "/assets/news-startup-kano.png",
     category: "Technology",
     tags: ["Startup Kano", "Incubation", "Ecosystem", "Kano"],
-    author: {
-      id: "author-7",
-      name: "Usman Kabir",
-      role: "Ecosystem Reporter",
-      avatar: "/assets/social-image-3.png",
-      bio: "Tracking innovation hubs, tech clusters, and ecosystem infrastructure."
-    },
+    author: AUTHORS[5],
     publishedAt: "July 14, 2026",
     readTime: "5 min read",
     views: 1850,
+    commentsCount: 0,
   },
   {
     id: "art-8",
@@ -223,16 +295,11 @@ Over 120,000 learners have already graduated through their micro-credential boot
     coverImage: "/assets/news-hausa-barrier.jpg",
     category: "Features",
     tags: ["Inclusion", "Hausa Language", "Education", "Digital Economy"],
-    author: {
-      id: "author-8",
-      name: "Amina Dahiru",
-      role: "Digital Inclusion Fellow",
-      avatar: "/assets/social-image-4.png",
-      bio: "Advocating for digital human rights and multilingual technological access."
-    },
+    author: AUTHORS[6],
     publishedAt: "July 14, 2026",
     readTime: "4 min read",
     views: 1980,
+    commentsCount: 0,
   },
   {
     id: "art-9",
@@ -247,16 +314,11 @@ By backing Tomato Jos's state-of-the-art cold chain and processing hub, Sabou Ca
     coverImage: "/assets/news-sabou-capital.jpg",
     category: "Business",
     tags: ["Agribusiness", "Industrialization", "Private Equity", "Kaduna"],
-    author: {
-      id: "author-2",
-      name: "The Zango Bureau",
-      role: "Staff Reporter",
-      avatar: "/assets/social-image-2.png",
-      bio: "Reporting on market developments, logistics, and policy."
-    },
+    author: AUTHORS[1],
     publishedAt: "July 14, 2026",
     readTime: "4 min read",
     views: 2210,
+    commentsCount: 0,
   },
   {
     id: "art-10",
@@ -271,15 +333,10 @@ The initiative provides structured market-entry support, international certifica
     coverImage: "/assets/news-nitda-export.jpg",
     category: "News",
     tags: ["Policy", "NITDA", "Digital Export", "Government"],
-    author: {
-      id: "author-4",
-      name: "Ibrahim Bello",
-      role: "Technology Editor",
-      avatar: "/assets/social-image-4.png",
-      bio: "Chronicling enterprise tech, digital policy, and the African startup narrative."
-    },
+    author: AUTHORS[3],
     publishedAt: "July 14, 2026",
     readTime: "3 min read",
     views: 1640,
+    commentsCount: 0,
   }
 ];

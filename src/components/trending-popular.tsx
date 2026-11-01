@@ -16,9 +16,8 @@ export default function TrendingPopular({ trendingArticle, popularArticles }: Tr
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* Trending Now Spotlight (Left - 7 cols) */}
+          {/* Trending Spotlight (Left - 7 cols) */}
           <div className="lg:col-span-7">
-            {/* Header */}
             <div className="flex items-center justify-between pb-3.5 mb-6 border-b border-[#E5E6E8]">
               <div className="flex items-center space-x-2">
                 <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
@@ -28,7 +27,7 @@ export default function TrendingPopular({ trendingArticle, popularArticles }: Tr
                 </h2>
               </div>
               <Link
-                href="/category/technology"
+                href="/trending"
                 className="text-xs font-bold text-[#000000] hover:text-[#C61D1F] uppercase tracking-wider transition-colors inline-flex items-center space-x-1"
               >
                 <span>View All</span>
@@ -36,7 +35,6 @@ export default function TrendingPopular({ trendingArticle, popularArticles }: Tr
               </Link>
             </div>
 
-            {/* Large Spotlight Card */}
             <article className="group bg-white rounded-2xl overflow-hidden border border-[#E5E6E8] shadow-xs hover:shadow-lg transition-all duration-300">
               <Link href={`/article/${trendingArticle.slug}`} className="block relative w-full h-[280px] sm:h-[340px] overflow-hidden bg-gray-100">
                 <Image
@@ -68,9 +66,12 @@ export default function TrendingPopular({ trendingArticle, popularArticles }: Tr
                 </p>
 
                 <div className="flex items-center justify-between pt-3 border-t border-[#E5E6E8]">
-                  <span className="text-xs font-semibold text-[#707070]">
+                  <Link
+                    href={`/author/${trendingArticle.author.slug || "fatima-aliyu"}`}
+                    className="text-xs font-semibold text-[#707070] hover:text-[#C61D1F] transition-colors"
+                  >
                     By {trendingArticle.author.name} • {trendingArticle.readTime}
-                  </span>
+                  </Link>
                   <Link
                     href={`/article/${trendingArticle.slug}`}
                     className="inline-flex items-center space-x-1.5 text-xs font-bold text-[#C61D1F] hover:text-[#A51719] uppercase tracking-wider"
@@ -83,9 +84,8 @@ export default function TrendingPopular({ trendingArticle, popularArticles }: Tr
             </article>
           </div>
 
-          {/* Popular On The Zango (Right - 5 cols) */}
+          {/* Popular List (Right - 5 cols) */}
           <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E6E8] p-5 sm:p-6 shadow-xs">
-            {/* Header */}
             <div className="flex items-center justify-between pb-3.5 mb-5 border-b border-[#E5E6E8]">
               <div className="flex items-center space-x-2">
                 <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
@@ -96,16 +96,13 @@ export default function TrendingPopular({ trendingArticle, popularArticles }: Tr
               </div>
             </div>
 
-            {/* Numbered Ranked List */}
             <div className="divide-y divide-[#E5E6E8]">
               {popularArticles.slice(0, 4).map((article, idx) => (
                 <div key={article.id} className="py-4 first:pt-0 last:pb-0 flex items-start space-x-4 group">
-                  {/* Number Badge */}
                   <div className="w-8 h-8 rounded-full bg-[#000000] text-white flex items-center justify-center font-extrabold text-sm shrink-0 group-hover:bg-[#C61D1F] transition-colors shadow-2xs">
                     {idx + 1}
                   </div>
 
-                  {/* Title and Date */}
                   <div className="flex-1 min-w-0">
                     <span className="text-[11px] font-medium text-[#9C9C9C] block mb-1">
                       {article.publishedAt}
@@ -121,7 +118,6 @@ export default function TrendingPopular({ trendingArticle, popularArticles }: Tr
               ))}
             </div>
 
-            {/* Newsletter Mini-Hook */}
             <div className="mt-6 pt-5 border-t border-[#E5E6E8] bg-[#FDF2F2] rounded-xl p-4 text-center">
               <p className="text-xs font-bold text-[#C61D1F] uppercase tracking-wider mb-1">
                 Never Miss a Story

@@ -26,7 +26,7 @@ export default function CategoryGrid() {
             </h2>
           </div>
           <Link
-            href="/category/news"
+            href="/categories"
             className="text-xs font-bold text-[#000000] hover:text-[#C61D1F] uppercase tracking-wider transition-colors inline-flex items-center space-x-1"
           >
             <span>View All</span>
@@ -34,9 +34,9 @@ export default function CategoryGrid() {
           </Link>
         </div>
 
-        {/* Categories Grid (6 Columns) */}
+        {/* Categories Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
-          {CATEGORIES.map((cat) => {
+          {CATEGORIES.slice(0, 6).map((cat) => {
             const Icon = iconMap[cat.slug] || Newspaper;
             return (
               <Link
@@ -44,12 +44,10 @@ export default function CategoryGrid() {
                 href={`/category/${cat.slug}`}
                 className="group relative bg-white border border-[#E5E6E8] hover:border-[#C61D1F] rounded-2xl p-5 sm:p-6 text-center shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col items-center justify-between"
               >
-                {/* Category Icon */}
                 <div className="w-12 h-12 rounded-xl bg-[#F8F9FA] group-hover:bg-[#FDF2F2] flex items-center justify-center text-[#535252] group-hover:text-[#C61D1F] transition-colors mb-3">
                   <Icon className="w-6 h-6 transition-transform group-hover:scale-110" />
                 </div>
 
-                {/* Name */}
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-[#000000] group-hover:text-[#C61D1F] transition-colors mb-1">
                     {cat.name}
@@ -59,7 +57,6 @@ export default function CategoryGrid() {
                   </span>
                 </div>
 
-                {/* Red Indicator Bar on Hover / Bottom */}
                 <div className="w-8 h-1 bg-[#C61D1F] rounded-full mt-3 opacity-0 group-hover:opacity-100 transition-opacity" />
               </Link>
             );

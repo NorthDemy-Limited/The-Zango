@@ -101,6 +101,7 @@ export default function AdminDashboardPage() {
       author: {
         id: "author-admin",
         name: formData.authorName,
+        slug: formData.authorName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
         role: "Editorial Desk",
       },
     });

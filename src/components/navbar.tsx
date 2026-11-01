@@ -25,6 +25,8 @@ export default function Navbar() {
     { name: "Home", href: "/" },
     { name: "News", href: "/category/news" },
     { name: "Features", href: "/category/features" },
+    { name: "Trending", href: "/trending" },
+    { name: "Categories", href: "/categories" },
     { name: "Zango Scope", href: "/scope" },
     { name: "Marketplace", href: "/marketplace" },
   ];

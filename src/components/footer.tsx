@@ -9,12 +9,28 @@ import { FacebookIcon, TwitterIcon, InstagramIcon, YoutubeIcon } from "@/compone
 export default function Footer() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.trim() && email.includes("@")) {
-      setSubmitted(true);
-      setEmail("");
+    if (!email.trim() || !email.includes("@")) return;
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSubmitted(true);
+        setEmail("");
+      }
+    } catch (err) {
+      console.warn("Newsletter subscription error:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -25,18 +41,22 @@ export default function Footer() {
     { name: "Lifestyle", href: "/category/lifestyle" },
     { name: "Sports", href: "/category/sports" },
     { name: "Opinion", href: "/category/opinion" },
-    { name: "Politics", href: "/category/news" },
-    { name: "Entertainment", href: "/category/lifestyle" },
-    { name: "Health", href: "/category/features" },
-    { name: "Education", href: "/category/news" },
+    { name: "Politics", href: "/category/politics" },
+    { name: "Entertainment", href: "/category/entertainment" },
+    { name: "Health", href: "/category/health" },
+    { name: "Education", href: "/category/education" },
   ];
 
   const quickLinks = [
     { name: "About Us", href: "/about" },
+    { name: "All Categories", href: "/categories" },
+    { name: "Trending Now", href: "/trending" },
     { name: "Advertise With Us", href: "/advertise" },
     { name: "Contact Us", href: "/contact" },
     { name: "Privacy Policy", href: "/privacy" },
-    { name: "Terms of Use", href: "/privacy" },
+    { name: "Terms of Use", href: "/terms" },
+    { name: "Editor CMS", href: "/dashboard/admin" },
+    { name: "Writer Studio", href: "/dashboard/author" },
   ];
 
   return (
@@ -181,7 +201,8 @@ export default function Footer() {
                   />
                   <button
                     type="submit"
-                    className="bg-[#C61D1F] hover:bg-[#A51719] text-white px-3.5 py-2 text-xs font-bold uppercase transition-colors shrink-0 cursor-pointer"
+                    disabled={loading}
+                    className="bg-[#C61D1F] hover:bg-[#A51719] text-white px-3.5 py-2 text-xs font-bold uppercase transition-colors shrink-0 cursor-pointer disabled:opacity-50"
                   >
                     <Send className="w-3.5 h-3.5" />
                   </button>
@@ -208,6 +229,9 @@ export default function Footer() {
             </Link>
             <Link href="/privacy" className="hover:text-[#C61D1F] transition-colors">
               Privacy Policy
+            </Link>
+            <Link href="/terms" className="hover:text-[#C61D1F] transition-colors">
+              Terms of Use
             </Link>
           </div>
         </div>

@@ -3,8 +3,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ARTICLES } from "@/data/mock-articles";
-import { Calendar, Clock, Share2, ArrowLeft } from "lucide-react";
+import { Calendar, Clock, Share2, ArrowLeft, Tag, Bookmark } from "lucide-react";
 import { TwitterIcon, FacebookIcon, LinkedinIcon } from "@/components/social-icons";
+import ArticleComments from "@/components/article-comments";
 
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
@@ -64,8 +65,11 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
         {/* Author & Publication Metadata */}
         <div className="flex flex-wrap items-center justify-between gap-4 py-4 border-y border-[#E5E6E8] mb-8">
-          <div className="flex items-center space-x-3.5">
-            <div className="relative w-11 h-11 rounded-full overflow-hidden bg-gray-100 border border-[#DFDFDF]">
+          <Link
+            href={`/author/${article.author.slug || "the-zango-bureau"}`}
+            className="flex items-center space-x-3.5 group cursor-pointer"
+          >
+            <div className="relative w-11 h-11 rounded-full overflow-hidden bg-gray-100 border border-[#DFDFDF] group-hover:border-[#C61D1F] transition-colors">
               {article.author.avatar ? (
                 <Image
                   src={article.author.avatar}
@@ -81,14 +85,14 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               )}
             </div>
             <div>
-              <span className="text-sm font-bold text-[#000000] block">
+              <span className="text-sm font-bold text-[#000000] group-hover:text-[#C61D1F] transition-colors block">
                 {article.author.name}
               </span>
               <span className="text-xs text-[#707070]">
                 {article.author.role}
               </span>
             </div>
-          </div>
+          </Link>
 
           <div className="flex items-center space-x-4 text-xs text-[#707070]">
             <span className="flex items-center space-x-1">
@@ -142,8 +146,27 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           })}
         </div>
 
+        {/* Tags Row */}
+        {article.tags && article.tags.length > 0 && (
+          <div className="mt-8 pt-6 border-t border-[#E5E6E8] flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-[#707070] uppercase flex items-center space-x-1 mr-1">
+              <Tag className="w-3 h-3 text-[#C61D1F]" />
+              <span>Topic Tags:</span>
+            </span>
+            {article.tags.map((tag) => (
+              <Link
+                key={tag}
+                href={`/search?q=${encodeURIComponent(tag)}`}
+                className="text-xs bg-gray-100 hover:bg-[#FDF2F2] hover:text-[#C61D1F] text-[#535252] px-3 py-1 rounded-full font-medium transition-colors"
+              >
+                #{tag}
+              </Link>
+            ))}
+          </div>
+        )}
+
         {/* Social Share Bar */}
-        <div className="mt-12 pt-6 border-t border-[#E5E6E8] flex flex-wrap items-center justify-between gap-4">
+        <div className="mt-8 pt-6 border-t border-[#E5E6E8] flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center space-x-2">
             <Share2 className="w-4 h-4 text-[#C61D1F]" />
             <span className="text-xs font-bold text-[#000000] uppercase tracking-wider">
@@ -182,9 +205,12 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           </div>
         </div>
 
-        {/* Author Bio Box */}
+        {/* Author Bio Box with Link to Author Page */}
         <div className="mt-10 p-6 rounded-2xl bg-[#FAFAFA] border border-[#E5E6E8] flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-5 text-center sm:text-left">
-          <div className="relative w-16 h-16 rounded-full overflow-hidden shrink-0 border border-[#DFDFDF]">
+          <Link
+            href={`/author/${article.author.slug || "the-zango-bureau"}`}
+            className="relative w-16 h-16 rounded-full overflow-hidden shrink-0 border border-[#DFDFDF] hover:border-[#C61D1F] transition-colors"
+          >
             {article.author.avatar ? (
               <Image
                 src={article.author.avatar}
@@ -198,19 +224,31 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 {article.author.name.charAt(0)}
               </div>
             )}
-          </div>
-          <div>
+          </Link>
+          <div className="flex-1">
             <span className="text-xs font-bold text-[#C61D1F] uppercase tracking-wider block mb-1">
               About the Author
             </span>
-            <h4 className="text-base font-bold text-[#000000] mb-1">
+            <Link
+              href={`/author/${article.author.slug || "the-zango-bureau"}`}
+              className="text-base font-bold text-[#000000] hover:text-[#C61D1F] transition-colors mb-1 inline-block"
+            >
               {article.author.name}
-            </h4>
-            <p className="text-xs sm:text-sm text-[#707070] leading-relaxed">
+            </Link>
+            <p className="text-xs sm:text-sm text-[#707070] leading-relaxed mb-3">
               {article.author.bio || "Staff writer covering Northern Nigeria technology, economy, and society for The Zango."}
             </p>
+            <Link
+              href={`/author/${article.author.slug || "the-zango-bureau"}`}
+              className="text-xs font-bold text-[#C61D1F] hover:underline"
+            >
+              View all articles by {article.author.name} →
+            </Link>
           </div>
         </div>
+
+        {/* Interactive Reader Comments Section */}
+        <ArticleComments articleSlug={article.slug} />
 
         {/* Related Stories */}
         <div className="mt-16 pt-10 border-t border-[#E5E6E8]">
