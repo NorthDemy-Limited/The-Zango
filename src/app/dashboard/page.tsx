@@ -19,19 +19,43 @@ export default async function DashboardPortalPage() {
   const metrics = await getPlatformMetrics();
 
   return (
-    <div className="py-12 lg:py-20 bg-[#F8F9FA] min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Navigation Breadcrumb */}
-        <div className="mb-8">
-          <Link
-            href="/"
-            className="inline-flex items-center space-x-2 text-xs font-bold text-[#535252] hover:text-[#C61D1F] uppercase tracking-wider transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Return to Front Page</span>
-          </Link>
+    <div className="bg-[#F8F9FA] min-h-screen pb-16">
+      
+      {/* Top Header Bar */}
+      <header className="bg-white border-b border-[#E5E6E8] sticky top-0 z-30 shadow-2xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+          <div className="flex items-center space-x-4">
+            <Link href="/" className="flex items-center space-x-2 text-[#535252] hover:text-[#C61D1F] text-xs font-bold uppercase transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+              <span>Front Page</span>
+            </Link>
+            <div className="h-4 w-px bg-gray-200" />
+            <div className="flex items-center space-x-2.5">
+              <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
+              <h1 className="text-base font-extrabold text-[#000000] tracking-wide uppercase">
+                Newsroom Portals
+              </h1>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-3 text-xs">
+            <Link
+              href="/dashboard/admin"
+              className="px-3.5 py-1.5 rounded-xl border border-[#DFDFDF] hover:border-[#C61D1F] font-bold text-[#535252] hover:text-[#C61D1F] transition-colors bg-white"
+            >
+              Chief Editor CMS →
+            </Link>
+            <Link
+              href="/dashboard/author"
+              className="px-3.5 py-1.5 rounded-xl bg-[#000000] hover:bg-[#C61D1F] font-bold text-white transition-colors"
+            >
+              Writer Studio →
+            </Link>
+          </div>
         </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
 
         {/* Portal Header */}
         <div className="max-w-3xl mb-12">
