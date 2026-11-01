@@ -10,6 +10,8 @@ interface ArticlePageProps {
   params: Promise<{ slug: string }>;
 }
 
+export const instant = false;
+
 export async function generateStaticParams() {
   return ARTICLES.map((article) => ({
     slug: article.slug,
