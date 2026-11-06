@@ -14,7 +14,7 @@ export default function Footer() {
   const [loading, setLoading] = useState(false);
 
   // Dashboards operate as full-screen dedicated workspaces without public website footer
-  if (pathname?.startsWith("/dashboard")) {
+  if (pathname?.startsWith("/dashboard") || pathname === "/login") {
     return null;
   }
 

@@ -22,10 +22,21 @@ import {
 import { TwitterIcon } from "@/components/social-icons";
 import { ARTICLES } from "@/data/mock-articles";
 import { createSubmission } from "@/lib/firebase/db";
+import { useAuth, UserRole } from "@/context/auth-context";
+import { useRouter } from "next/navigation";
+import { LogOut, Bell, ShieldCheck } from "lucide-react";
 import ImageUploader from "@/components/image-uploader";
 import RichEditor from "@/components/rich-editor";
 
 function AuthorStudioContent() {
+  const router = useRouter();
+  const { user, role, logout, switchRole, isAuthenticated, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push("/login?redirect=/dashboard/author");
+    }
+  }, [isAuthenticated, isLoading, router]);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("Business");
   const [coverImage, setCoverImage] = useState("/assets/hero-featured.jpg");
@@ -187,30 +198,89 @@ function AuthorStudioContent() {
     <div className="min-h-screen bg-[#F8F9FA] pb-16">
       
       {/* Top Header */}
-      <header className="bg-white border-b border-[#E5E6E8] sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
-          <div className="flex items-center space-x-4">
-            <Link href="/" className="flex items-center space-x-2 text-[#535252] hover:text-[#C61D1F] text-xs font-bold uppercase transition-colors">
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to Site</span>
+      <header className="bg-white border-b border-[#E5E6E8] sticky top-0 z-40 shadow-2xs h-18">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
+          
+          {/* Left: Brand Logo & Title */}
+          <div className="flex items-center space-x-6">
+            <Link href="/" className="flex items-center space-x-2.5">
+              <div className="relative w-36 h-9">
+                <Image
+                  src="/assets/logo.png"
+                  alt="The Zango"
+                  fill
+                  sizes="150px"
+                  className="object-contain"
+                  priority
+                />
+              </div>
             </Link>
-            <div className="h-4 w-px bg-gray-300" />
-            <div className="flex items-center space-x-2">
-              <PenTool className="w-4 h-4 text-[#C61D1F]" />
-              <h1 className="text-base font-extrabold text-[#000000]">
-                Writer & Contributor Studio
-              </h1>
+
+            <div className="hidden sm:flex items-center space-x-2 text-xs font-extrabold text-[#111111] uppercase tracking-wider pl-4 border-l border-gray-200">
+              <span className="w-2 h-4 bg-[#C61D1F] rounded-xs" />
+              <span>Writer & Contributor Studio</span>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
-            <Link
-              href="/dashboard/admin"
-              className="px-3.5 py-1.5 rounded-lg border border-[#DFDFDF] hover:border-[#C61D1F] text-xs font-bold text-[#535252] hover:text-[#C61D1F] transition-colors"
+          {/* Right: Controls & Profile */}
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            
+            {/* Dynamic Role Switcher Pill */}
+            <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-xl border border-gray-200 bg-white text-xs font-semibold shadow-2xs">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#C61D1F]" />
+              <span className="text-gray-500 text-[11px]">Role:</span>
+              <select
+                value={role || "writer"}
+                onChange={(e) => switchRole(e.target.value as UserRole)}
+                className="font-extrabold text-xs text-gray-900 bg-transparent focus:outline-hidden cursor-pointer"
+              >
+                <option value="writer">Staff Writer</option>
+                <option value="editor">Desk Editor</option>
+                <option value="admin">Chief Admin</option>
+              </select>
+            </div>
+
+            {/* Admin Switch link if privileged */}
+            {(role === "admin" || role === "editor") && (
+              <Link
+                href="/dashboard/admin"
+                className="hidden md:inline-flex items-center px-3 py-1.5 rounded-xl border border-[#DFDFDF] hover:border-[#C61D1F] text-xs font-bold text-[#535252] hover:text-[#C61D1F] transition-colors bg-white shadow-2xs"
+              >
+                ← Switch to Chief CMS
+              </Link>
+            )}
+
+            {/* User Profile Info */}
+            <div className="flex items-center space-x-2.5 pl-2 border-l border-gray-200">
+              <div className="relative w-9 h-9 rounded-full overflow-hidden border-2 border-[#C61D1F] shrink-0">
+                <Image
+                  src={user?.avatar || "/assets/social-image-4.png"}
+                  alt={user?.name || "Fatima Sanusi"}
+                  fill
+                  sizes="36px"
+                  className="object-cover"
+                />
+              </div>
+              <div className="hidden lg:block text-left">
+                <div className="font-extrabold text-xs text-[#111111] leading-tight">
+                  {user?.name || "Fatima Sanusi"}
+                </div>
+                <div className="text-[10px] font-bold uppercase text-emerald-600 tracking-wider">
+                  {user?.badge || "STAFF WRITER"}
+                </div>
+              </div>
+            </div>
+
+            {/* Logout Button */}
+            <button
+              onClick={logout}
+              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+              title="Sign Out"
             >
-              ← Switch to Admin CMS
-            </Link>
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
+
         </div>
       </header>
 
@@ -227,9 +297,9 @@ function AuthorStudioContent() {
               <span className="text-[11px] font-bold text-[#C61D1F] uppercase tracking-wider block mb-1">
                 Verified Contributor
               </span>
-              <h2 className="text-xl font-extrabold text-[#000000]">Abdul Rahman</h2>
+              <h2 className="text-xl font-extrabold text-[#000000]">{user?.name || "Fatima Sanusi"}</h2>
               <p className="text-xs text-[#707070] max-w-md">
-                Senior Business Analyst covering capital markets, investment banking, and fintech across Northern Nigeria.
+                {user?.bio || "Correspondent covering capital markets, investment, digital technology, and culture across Northern Nigeria."}
               </p>
             </div>
           </div>

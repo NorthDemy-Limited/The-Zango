@@ -32,7 +32,7 @@ export default function Navbar() {
   ];
 
   // Dashboards operate with their own dedicated full-width workspace headers
-  if (pathname?.startsWith("/dashboard")) {
+  if (pathname?.startsWith("/dashboard") || pathname === "/login") {
     return null;
   }
 

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { 
   BarChart3, 
   FileText, 
@@ -15,38 +16,53 @@ import {
   CheckCircle2, 
   Download, 
   ExternalLink,
-  ShieldCheck,
-  Search,
-  Sparkles,
-  ArrowLeft,
-  Flame,
-  Clock,
-  Layers,
-  Inbox,
-  Check,
-  X,
-  Eye,
-  Filter,
-  RefreshCw, Video, Quote, Heading, UserCheck, UserPlus, ShieldAlert, KeyRound
+  ShieldCheck, 
+  Search, 
+  Sparkles, 
+  ArrowLeft, 
+  Flame, 
+  Clock, 
+  Layers, 
+  Inbox, 
+  Check, 
+  X, 
+  Eye, 
+  Filter, 
+  RefreshCw, 
+  UserCheck, 
+  UserPlus, 
+  ShieldAlert, 
+  KeyRound,
+  LayoutDashboard,
+  Bell,
+  Moon,
+  LogOut,
+  ChevronRight,
+  BookOpen,
+  ArrowRight,
+  Send,
+  Lock,
+  Tag,
+  Mail
 } from "lucide-react";
-import { TwitterIcon } from "@/components/social-icons";
+import { useAuth, UserRole } from "@/context/auth-context";
 import { Article, Subscriber, Submission, NewsroomMember, NewsroomRole } from "@/types";
 import { 
   getArticles, 
   createArticle, 
-  updateArticle,
-  toggleArticleFlag,
+  updateArticle, 
+  toggleArticleFlag, 
   deleteArticle, 
   getSubscribers, 
-  getTeamMembers,
-  createTeamMember,
-  updateTeamMemberRole,
-  updateTeamMemberStatus,
-  deleteTeamMember,
-  getPlatformMetrics,
-  getSubmissions,
-  approveSubmission,
-  rejectSubmission
+  getTeamMembers, 
+  createTeamMember, 
+  updateTeamMemberRole, 
+  updateTeamMemberStatus, 
+  deleteTeamMember, 
+  getPlatformMetrics, 
+  getSubmissions, 
+  approveSubmission, 
+  rejectSubmission 
 } from "@/lib/firebase/db";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { CATEGORIES } from "@/data/mock-articles";
@@ -54,6 +70,9 @@ import ImageUploader from "@/components/image-uploader";
 import RichEditor from "@/components/rich-editor";
 
 function AdminDashboardContent() {
+  const router = useRouter();
+  const { user, role, logout, switchRole, isAuthenticated, isLoading } = useAuth();
+
   const [articles, setArticles] = useState<Article[]>([]);
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -66,7 +85,7 @@ function AdminDashboardContent() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [activeTab, setActiveTab] = useState<"dispatches" | "reviewQueue" | "subscribers" | "desks" | "team">("dispatches");
+  const [activeTab, setActiveTab] = useState<"overview" | "dispatches" | "reviewQueue" | "team" | "desks" | "subscribers">("overview");
   const [teamMembers, setTeamMembers] = useState<NewsroomMember[]>([]);
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [newMemberForm, setNewMemberForm] = useState({
@@ -97,6 +116,13 @@ function AdminDashboardContent() {
     isEditorsPick: false,
     isLatest: false,
   });
+
+  // Gatekeeping redirect if not logged in
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push("/login?redirect=/dashboard/admin");
+    }
+  }, [isAuthenticated, isLoading, router]);
 
   const loadData = async () => {
     const arts = await getArticles();
@@ -142,7 +168,6 @@ function AdminDashboardContent() {
     }
   };
 
-
   const handleAddTeamMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMemberForm.name.trim() || !newMemberForm.email.trim()) return;
@@ -161,10 +186,10 @@ function AdminDashboardContent() {
     triggerToast("Staff member added to newsroom roster!");
   };
 
-  const handleUpdateRole = async (id: string, role: NewsroomRole, name: string) => {
-    await updateTeamMemberRole(id, role);
+  const handleUpdateRole = async (id: string, targetRole: NewsroomRole, name: string) => {
+    await updateTeamMemberRole(id, targetRole);
     await loadData();
-    triggerToast("Updated role for " + name + " to " + role.toUpperCase());
+    triggerToast("Updated role for " + name + " to " + targetRole.toUpperCase());
   };
 
   const handleToggleMemberStatus = async (id: string, currentStatus: "active" | "inactive", name: string) => {
@@ -203,9 +228,14 @@ function AdminDashboardContent() {
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.content) return;
+    if (!formData.title.trim()) return;
 
-    const slug = formData.slug.trim() || formData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    const slug =
+      formData.slug.trim() ||
+      formData.title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
 
     if (editingArticle) {
       await updateArticle(editingArticle.id, {
@@ -213,115 +243,82 @@ function AdminDashboardContent() {
         slug,
         category: formData.category,
         coverImage: formData.coverImage,
-        excerpt: formData.excerpt || formData.content.slice(0, 160) + "...",
+        excerpt: formData.excerpt,
         content: formData.content,
-        readTime: formData.readTime,
-        isFeatured: formData.isFeatured,
-        isTrending: formData.isTrending,
-        isEditorsPick: formData.isEditorsPick,
-        isLatest: formData.isLatest,
         author: {
           ...editingArticle.author,
           name: formData.authorName,
           slug: formData.authorName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
         },
+        readTime: formData.readTime,
+        isFeatured: formData.isFeatured,
+        isTrending: formData.isTrending,
+        isEditorsPick: formData.isEditorsPick,
+        isLatest: formData.isLatest,
       });
-      triggerToast("Story updated successfully!");
+      triggerToast(`Updated dispatch: "${formData.title.slice(0, 30)}..."`);
     } else {
       await createArticle({
         title: formData.title,
         slug,
         category: formData.category,
-        coverImage: formData.coverImage,
-        excerpt: formData.excerpt || formData.content.slice(0, 160) + "...",
-        content: formData.content,
+        coverImage: formData.coverImage || "/assets/hero-featured.jpg",
+        excerpt: formData.excerpt || "Editorial dispatch from The Zango Bureau...",
+        content: formData.content || formData.title,
         publishedAt: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-        readTime: formData.readTime,
+        readTime: formData.readTime || "4 min read",
         isFeatured: formData.isFeatured,
         isTrending: formData.isTrending,
         isEditorsPick: formData.isEditorsPick,
         isLatest: formData.isLatest,
         views: 0,
         author: {
-          id: "author-admin",
+          id: "author-bureau",
           name: formData.authorName,
           slug: formData.authorName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-          role: "Editorial Desk",
+          role: "Verified Bureau Correspondent",
+          avatar: "/assets/social-image-1.png",
         },
       });
-      triggerToast("New story published to front page!");
+      triggerToast(`Published new dispatch: "${formData.title.slice(0, 30)}..."`);
     }
 
     await loadData();
     setShowCreateModal(false);
     setEditingArticle(null);
-    setFormData({
-      title: "",
-      slug: "",
-      category: "Business",
-      coverImage: "/assets/hero-featured.jpg",
-      excerpt: "",
-      content: "",
-      authorName: "The Zango Bureau",
-      readTime: "4 min read",
-      isFeatured: false,
-      isTrending: false,
-      isEditorsPick: false,
-      isLatest: false,
-    });
   };
 
   const handleApproveSubmission = async (id: string, title: string) => {
     const published = await approveSubmission(id);
     if (published) {
       await loadData();
-      triggerToast(`Manuscript "${title.slice(0, 25)}..." approved and published live!`);
+      triggerToast(`Approved and published: "${title.slice(0, 30)}..."`);
     }
   };
 
   const handleRejectSubmission = async (id: string, title: string) => {
-    await rejectSubmission(id);
-    await loadData();
-    triggerToast(`Manuscript "${title.slice(0, 25)}..." returned for revision.`);
+    if (confirm(`Reject submission "${title}"?`)) {
+      await rejectSubmission(id);
+      await loadData();
+      triggerToast(`Rejected submission: "${title.slice(0, 30)}..."`);
+    }
   };
 
   const exportSubscribersCSV = () => {
-    const csvContent = "data:text/csv;charset=utf-8," + ["Email,Subscribed At", ...subscribers.map((s) => `${s.email},${s.subscribedAt}`)].join("\n");
-    const encodedUri = encodeURI(csvContent);
+    if (subscribers.length === 0) {
+      alert("No subscribers found to export.");
+      return;
+    }
+    const headers = "Email,SubscribedAt\n";
+    const rows = subscribers.map((s) => `"${s.email}","${s.subscribedAt}"`).join("\n");
+    const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `the-zango-subscribers-${new Date().toISOString().split("T")[0]}.csv`);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `thezango-subscribers-${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    triggerToast("Subscribers list exported as CSV.");
-  };
-
-  const insertSnippet = (snippet: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      content: prev.content ? `${prev.content}\n\n${snippet}` : snippet,
-    }));
-  };
-
-  const insertTwitterEmbed = () => {
-    const url = prompt(
-      "Paste the X (Twitter) post URL:",
-      "https://x.com/thezango_media/status/1785234567890"
-    );
-    if (url) {
-      insertSnippet(url.trim());
-    }
-  };
-
-  const insertYoutubeEmbed = () => {
-    const url = prompt(
-      "Paste the YouTube video URL:",
-      "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-    );
-    if (url) {
-      insertSnippet(url.trim());
-    }
   };
 
   const filteredArticles = articles.filter((a) => {
@@ -335,761 +332,1018 @@ function AdminDashboardContent() {
   });
 
   const pendingSubmissions = submissions.filter((s) => s.status === "pending");
+  const leadFeaturedArticle = articles.find((a) => a.isFeatured) || articles[0];
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] pb-16">
+    <div className="min-h-screen bg-[#F8F9FA] flex flex-col font-sans">
       
-      {/* Top Header Bar */}
-      <header className="bg-white border-b border-[#E5E6E8] sticky top-0 z-30 shadow-2xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+      {/* 1. TOP NAVBAR (Matching the template) */}
+      <header className="bg-white border-b border-[#E5E6E8] sticky top-0 z-40 shadow-2xs h-18">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
           
-          {/* Left: Brand & Return */}
-          <div className="flex items-center space-x-4">
-            <Link href="/" className="flex items-center space-x-2 text-[#535252] hover:text-[#C61D1F] text-xs font-bold uppercase transition-colors">
-              <ArrowLeft className="w-4 h-4" />
-              <span>Front Page</span>
+          {/* Left: Brand Logo & Jump to... Search */}
+          <div className="flex items-center space-x-6">
+            <Link href="/" className="flex items-center space-x-2.5 group">
+              <div className="relative w-36 h-9">
+                <Image
+                  src="/assets/logo.png"
+                  alt="The Zango"
+                  fill
+                  sizes="150px"
+                  className="object-contain"
+                  priority
+                />
+              </div>
             </Link>
-            <div className="h-4 w-px bg-gray-200" />
-            <div className="flex items-center space-x-2.5">
-              <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
-              <h1 className="text-base font-extrabold text-[#000000] tracking-wide uppercase">
-                Chief Editor CMS
-              </h1>
+
+            {/* Jump to... Global Search Bar */}
+            <div className="hidden md:flex items-center relative w-72 lg:w-84">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Jump to..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-12 py-2 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden bg-[#FAFAFA] focus:bg-white transition-all"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400 bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded-sm">
+                Ctrl K
+              </span>
             </div>
           </div>
 
-          {/* Right: Actions */}
-          <div className="flex items-center space-x-3">
-            <Link
-              href="/dashboard/author"
-              className="px-3.5 py-1.5 rounded-xl border border-[#DFDFDF] hover:border-[#C61D1F] text-xs font-bold text-[#535252] hover:text-[#C61D1F] transition-colors bg-white"
-            >
-              Author Studio →
-            </Link>
+          {/* Right: Controls & Profile */}
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            
+            {/* Status Pill */}
+            <span className="hidden sm:inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Verify Credential</span>
+            </span>
 
-            <button
-              onClick={() => {
-                setEditingArticle(null);
-                setFormData({
-                  title: "",
-                  slug: "",
-                  category: "Business",
-                  coverImage: "/assets/hero-featured.jpg",
-                  excerpt: "",
-                  content: "",
-                  authorName: "The Zango Bureau",
-                  readTime: "4 min read",
-                  isFeatured: false,
-                  isTrending: false,
-                  isEditorsPick: false,
-                  isLatest: false,
-                });
-                setShowCreateModal(true);
-              }}
-              className="px-4 py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors flex items-center space-x-1.5 shadow-md cursor-pointer"
+            {/* Dynamic Role Switcher Pill */}
+            <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-xl border border-gray-200 bg-white text-xs font-semibold shadow-2xs">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#C61D1F]" />
+              <span className="text-gray-500 text-[11px]">Role:</span>
+              <select
+                value={role || "admin"}
+                onChange={(e) => switchRole(e.target.value as UserRole)}
+                className="font-extrabold text-xs text-gray-900 bg-transparent focus:outline-hidden cursor-pointer"
+              >
+                <option value="admin">Chief Admin</option>
+                <option value="editor">Desk Editor</option>
+                <option value="writer">Staff Writer</option>
+              </select>
+            </div>
+
+            {/* Notification Bell */}
+            <button 
+              onClick={() => setActiveTab("reviewQueue")}
+              className="relative p-2 text-gray-500 hover:text-black hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+              title="Review queue notifications"
             >
-              <Plus className="w-4 h-4" />
-              <span>Publish Story</span>
+              <Bell className="w-4 h-4" />
+              {pendingSubmissions.length > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#C61D1F]" />
+              )}
+            </button>
+
+            {/* User Profile Info */}
+            <div className="flex items-center space-x-2.5 pl-2 border-l border-gray-200">
+              <div className="relative w-9 h-9 rounded-full overflow-hidden border-2 border-[#C61D1F] shrink-0">
+                <Image
+                  src={user?.avatar || "/assets/social-image-1.png"}
+                  alt={user?.name || "Usman Bello"}
+                  fill
+                  sizes="36px"
+                  className="object-cover"
+                />
+              </div>
+              <div className="hidden lg:block text-left">
+                <div className="font-extrabold text-xs text-[#111111] leading-tight">
+                  {user?.name || "Usman Bello"}
+                </div>
+                <div className="text-[10px] font-bold uppercase text-[#C61D1F] tracking-wider">
+                  {user?.badge || "CHIEF ADMIN"}
+                </div>
+              </div>
+            </div>
+
+            {/* Logout Button */}
+            <button
+              onClick={logout}
+              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+              title="Sign Out"
+            >
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
 
         </div>
       </header>
 
-      {/* Main Workspace Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+      {/* 2. MAIN DASHBOARD BODY (Sidebar + Workspace Canvas) */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1 flex flex-col md:flex-row items-start gap-6">
         
-        {/* Toast Alert */}
-        {notification && (
-          <div className="mb-6 p-4 rounded-2xl bg-[#FDF2F2] border border-red-200 text-[#C61D1F] flex items-center justify-between shadow-sm animate-in slide-in-from-top-2">
-            <div className="flex items-center space-x-2.5">
-              <CheckCircle2 className="w-5 h-5 text-[#C61D1F] shrink-0" />
-              <span className="text-xs sm:text-sm font-bold">{notification}</span>
-            </div>
-            <button onClick={() => setNotification(null)} className="text-xs text-red-700 hover:underline cursor-pointer">
-              Dismiss
-            </button>
-          </div>
-        )}
-
-        {/* Executive KPI Metrics Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        {/* LEFT ROUNDED SIDEBAR (Matching the template) */}
+        <aside className="w-full md:w-60 lg:w-64 shrink-0 bg-white rounded-3xl p-3 border border-[#E5E6E8] shadow-2xs space-y-1">
           
-          {/* KPI 1 */}
-          <div className="bg-white p-6 rounded-3xl border border-[#E5E6E8] shadow-2xs hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between text-[#707070] mb-2">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-[#000000]">Published Dispatches</span>
-              <FileText className="w-4 h-4 text-[#C61D1F]" />
-            </div>
-            <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-extrabold text-[#000000]">{metrics.totalArticles}</span>
-              <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                11 Desks Live
-              </span>
-            </div>
-            <span className="text-[11px] text-[#9C9C9C] mt-2 block">
-              Across all regional beats
-            </span>
-          </div>
-
-          {/* KPI 2 */}
-          <div className="bg-white p-6 rounded-3xl border border-[#E5E6E8] shadow-2xs hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between text-[#707070] mb-2">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-[#000000]">Total Impressions</span>
-              <BarChart3 className="w-4 h-4 text-[#000000]" />
-            </div>
-            <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-extrabold text-[#000000]">{metrics.totalViews.toLocaleString()}</span>
-              <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                +18.4%
-              </span>
-            </div>
-            <span className="text-[11px] text-[#9C9C9C] mt-2 block">
-              Cumulative readers this month
-            </span>
-          </div>
-
-          {/* KPI 3 */}
-          <div className="bg-white p-6 rounded-3xl border border-[#E5E6E8] shadow-2xs hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between text-[#707070] mb-2">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-[#000000]">Newsletter Community</span>
-              <Users className="w-4 h-4 text-[#C61D1F]" />
-            </div>
-            <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-extrabold text-[#000000]">{metrics.totalSubscribers}</span>
-              <button
-                onClick={exportSubscribersCSV}
-                className="text-[11px] font-bold text-[#C61D1F] hover:underline flex items-center space-x-1 cursor-pointer"
-              >
-                <Download className="w-3 h-3" />
-                <span>CSV</span>
-              </button>
-            </div>
-            <span className="text-[11px] text-[#9C9C9C] mt-2 block">
-              Verified daily brief readers
-            </span>
-          </div>
-
-          {/* KPI 4 */}
-          <div className="bg-white p-6 rounded-3xl border border-[#E5E6E8] shadow-2xs hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between text-[#707070] mb-2">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-[#000000]">Review Queue</span>
-              <Inbox className="w-4 h-4 text-amber-500" />
-            </div>
-            <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-extrabold text-[#000000]">{pendingSubmissions.length}</span>
-              <span className="text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
-                Awaiting Review
-              </span>
-            </div>
-            <div className="flex items-center space-x-1.5 mt-2">
-              <span className={`w-2 h-2 rounded-full ${isFirebaseConfigured ? "bg-emerald-500" : "bg-amber-400"}`} />
-              <span className="text-[11px] font-medium text-[#707070]">
-                {isFirebaseConfigured ? "Firebase Cloud Live" : "Local Mock Engine"}
-              </span>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Tab Navigation with Zango Signature Red Underline */}
-        <div className="flex items-center space-x-2 border-b border-[#E5E6E8] mb-6 overflow-x-auto">
+          {/* Sidebar Item 1: Overview */}
           <button
-            onClick={() => setActiveTab("dispatches")}
-            className={`pb-3.5 px-4 font-bold text-xs sm:text-sm uppercase tracking-wider transition-colors relative cursor-pointer whitespace-nowrap ${
-              activeTab === "dispatches" ? "text-[#C61D1F]" : "text-[#707070] hover:text-[#000000]"
+            onClick={() => setActiveTab("overview")}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+              activeTab === "overview"
+                ? "bg-[#C61D1F] text-white shadow-md shadow-red-500/20"
+                : "text-[#535252] hover:bg-gray-100 hover:text-black"
             }`}
           >
-            <span>Published Dispatches ({articles.length})</span>
-            {activeTab === "dispatches" && (
-              <span className="absolute bottom-0 left-0 right-0 h-1 bg-[#C61D1F] rounded-t-sm" />
-            )}
+            <div className="flex items-center space-x-3">
+              <LayoutDashboard className="w-4 h-4 shrink-0" />
+              <span>Dashboard</span>
+            </div>
           </button>
 
+          {/* Sidebar Item 2: Dispatches */}
           <button
-            onClick={() => setActiveTab("reviewQueue")}
-            className={`pb-3.5 px-4 font-bold text-xs sm:text-sm uppercase tracking-wider transition-colors relative cursor-pointer whitespace-nowrap ${
-              activeTab === "reviewQueue" ? "text-[#C61D1F]" : "text-[#707070] hover:text-[#000000]"
+            onClick={() => setActiveTab("dispatches")}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+              activeTab === "dispatches"
+                ? "bg-[#C61D1F] text-white shadow-md shadow-red-500/20"
+                : "text-[#535252] hover:bg-gray-100 hover:text-black"
             }`}
           >
-            <span>Writer Submissions ({pendingSubmissions.length})</span>
+            <div className="flex items-center space-x-3">
+              <FileText className="w-4 h-4 shrink-0" />
+              <span>{role === "editor" ? "Desk Dispatches" : "All Dispatches"}</span>
+            </div>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+              activeTab === "dispatches" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
+            }`}>
+              {articles.length}
+            </span>
+          </button>
+
+          {/* Sidebar Item 3: Review Queue */}
+          <button
+            onClick={() => setActiveTab("reviewQueue")}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+              activeTab === "reviewQueue"
+                ? "bg-[#C61D1F] text-white shadow-md shadow-red-500/20"
+                : "text-[#535252] hover:bg-gray-100 hover:text-black"
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <Inbox className="w-4 h-4 shrink-0" />
+              <span>Review Queue</span>
+            </div>
             {pendingSubmissions.length > 0 && (
-              <span className="ml-1.5 bg-[#C61D1F] text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === "reviewQueue" ? "bg-white text-[#C61D1F]" : "bg-amber-100 text-amber-800"
+              }`}>
                 {pendingSubmissions.length}
               </span>
             )}
-            {activeTab === "reviewQueue" && (
-              <span className="absolute bottom-0 left-0 right-0 h-1 bg-[#C61D1F] rounded-t-sm" />
-            )}
           </button>
 
+          {/* Sidebar Item 4: Newsroom Team (Admin Only!) */}
+          {role === "admin" && (
+            <button
+              onClick={() => setActiveTab("team")}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === "team"
+                  ? "bg-[#C61D1F] text-white shadow-md shadow-red-500/20"
+                  : "text-[#535252] hover:bg-gray-100 hover:text-black"
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <Users className="w-4 h-4 shrink-0" />
+                <span>Newsroom Staff</span>
+              </div>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === "team" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
+              }`}>
+                {teamMembers.length}
+              </span>
+            </button>
+          )}
+
+          {/* Sidebar Item 5: Desk Taxonomy */}
           <button
             onClick={() => setActiveTab("desks")}
-            className={`pb-3.5 px-4 font-bold text-xs sm:text-sm uppercase tracking-wider transition-colors relative cursor-pointer whitespace-nowrap ${
-              activeTab === "desks" ? "text-[#C61D1F]" : "text-[#707070] hover:text-[#000000]"
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+              activeTab === "desks"
+                ? "bg-[#C61D1F] text-white shadow-md shadow-red-500/20"
+                : "text-[#535252] hover:bg-gray-100 hover:text-black"
             }`}
           >
-            <span>Desk Taxonomy (11)</span>
-            {activeTab === "desks" && (
-              <span className="absolute bottom-0 left-0 right-0 h-1 bg-[#C61D1F] rounded-t-sm" />
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveTab("subscribers")}
-            className={`pb-3.5 px-4 font-bold text-xs sm:text-sm uppercase tracking-wider transition-colors relative cursor-pointer whitespace-nowrap ${
-              activeTab === "subscribers" ? "text-[#C61D1F]" : "text-[#707070] hover:text-[#000000]"
-            }`}
-          >
-            <span>Newsletter Roster ({subscribers.length})</span>
-            {activeTab === "subscribers" && (
-              <span className="absolute bottom-0 left-0 right-0 h-1 bg-[#C61D1F] rounded-t-sm" />
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab("team")}
-            className={`pb-3.5 px-4 font-bold text-xs sm:text-sm uppercase tracking-wider transition-colors relative cursor-pointer whitespace-nowrap ${
-              activeTab === "team" ? "text-[#C61D1F]" : "text-[#707070] hover:text-[#000000]"
-            }`}
-          >
-            <span>Newsroom Team & Roles ({teamMembers.length})</span>
-            {activeTab === "team" && (
-              <span className="absolute bottom-0 left-0 right-0 h-1 bg-[#C61D1F] rounded-t-sm" />
-            )}
-          </button>
-
-        </div>
-
-        {/* TAB 1: Dispatches Management */}
-        {activeTab === "dispatches" && (
-          <div className="space-y-4">
-            
-            {/* Filter Bar */}
-            <div className="bg-white p-4 rounded-2xl border border-[#E5E6E8] flex flex-col sm:flex-row items-center justify-between gap-4">
-              
-              {/* Search */}
-              <div className="relative w-full sm:w-80">
-                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Filter stories by headline, author..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 text-xs border border-[#DFDFDF] rounded-xl focus:border-[#C61D1F] focus:outline-hidden"
-                />
-              </div>
-
-              {/* Category Filter */}
-              <div className="flex items-center space-x-2 w-full sm:w-auto">
-                <Filter className="w-4 h-4 text-gray-400" />
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="text-xs border border-[#DFDFDF] rounded-xl px-3 py-2 bg-white focus:border-[#C61D1F] focus:outline-hidden"
-                >
-                  <option value="all">All Desks (11)</option>
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat.id} value={cat.slug}>
-                      {cat.name} Desk
-                    </option>
-                  ))}
-                </select>
-
-                <span className="text-xs text-[#9C9C9C] whitespace-nowrap">
-                  Showing {filteredArticles.length} of {articles.length}
-                </span>
-              </div>
+            <div className="flex items-center space-x-3">
+              <Layers className="w-4 h-4 shrink-0" />
+              <span>Desk Taxonomy</span>
             </div>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+              activeTab === "desks" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
+            }`}>
+              11
+            </span>
+          </button>
 
-            {/* Articles Table */}
-            <div className="bg-white rounded-3xl border border-[#E5E6E8] overflow-hidden shadow-2xs">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-[#E5E6E8] bg-[#FAFAFA] text-[11px] font-extrabold uppercase text-[#707070] tracking-wider">
-                      <th className="py-4 px-6">Headline & Beat</th>
-                      <th className="py-4 px-4">Author Byline</th>
-                      <th className="py-4 px-4">Published</th>
-                      <th className="py-4 px-4 text-center">Flags</th>
-                      <th className="py-4 px-6 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#E5E6E8] text-xs">
-                    {filteredArticles.map((article) => (
-                      <tr key={article.id} className="hover:bg-gray-50/70 transition-colors">
-                        
-                        {/* Title & Category */}
-                        <td className="py-4 px-6 max-w-md">
-                          <div className="flex items-start space-x-3">
-                            <div className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-gray-100 border border-gray-200">
-                              <Image
-                                src={article.coverImage}
-                                alt={article.title}
-                                fill
-                                sizes="48px"
-                                className="object-cover"
-                              />
-                            </div>
-                            <div>
-                              <Link
-                                href={`/article/${article.slug}`}
-                                className="font-bold text-[#000000] hover:text-[#C61D1F] line-clamp-2 transition-colors"
-                              >
-                                {article.title}
-                              </Link>
-                              <div className="flex items-center space-x-2 mt-1">
-                                <span className="bg-[#FDF2F2] text-[#C61D1F] text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-sm">
-                                  {article.category}
-                                </span>
-                                <span className="text-[11px] text-[#9C9C9C]">{article.readTime}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Author */}
-                        <td className="py-4 px-4 text-[#535252]">
-                          <Link href={`/author/${article.author.slug}`} className="font-semibold hover:text-[#C61D1F]">
-                            {article.author.name}
-                          </Link>
-                        </td>
-
-                        {/* Date */}
-                        <td className="py-4 px-4 text-[#707070] whitespace-nowrap">
-                          {article.publishedAt}
-                        </td>
-
-                        {/* Interactive Flags */}
-                        <td className="py-4 px-4">
-                          <div className="flex items-center justify-center space-x-1.5">
-                            
-                            {/* Featured Toggle */}
-                            <button
-                              onClick={() => handleToggleFlag(article.id, "isFeatured")}
-                              title="Toggle Hero Featured"
-                              className={`p-1.5 rounded-md border text-[10px] font-bold uppercase transition-colors cursor-pointer ${
-                                article.isFeatured
-                                  ? "bg-red-50 text-[#C61D1F] border-red-200"
-                                  : "text-gray-300 border-gray-200 hover:text-gray-600"
-                              }`}
-                            >
-                              <Star className={`w-3.5 h-3.5 ${article.isFeatured ? "fill-current" : ""}`} />
-                            </button>
-
-                            {/* Trending Toggle */}
-                            <button
-                              onClick={() => handleToggleFlag(article.id, "isTrending")}
-                              title="Toggle Trending Spotlight"
-                              className={`p-1.5 rounded-md border text-[10px] font-bold uppercase transition-colors cursor-pointer ${
-                                article.isTrending
-                                  ? "bg-amber-50 text-amber-600 border-amber-200"
-                                  : "text-gray-300 border-gray-200 hover:text-gray-600"
-                              }`}
-                            >
-                              <Flame className="w-3.5 h-3.5" />
-                            </button>
-
-                            {/* Editor's Pick Toggle */}
-                            <button
-                              onClick={() => handleToggleFlag(article.id, "isEditorsPick")}
-                              title="Toggle Editor's Pick"
-                              className={`p-1.5 rounded-md border text-[10px] font-bold uppercase transition-colors cursor-pointer ${
-                                article.isEditorsPick
-                                  ? "bg-blue-50 text-blue-600 border-blue-200"
-                                  : "text-gray-300 border-gray-200 hover:text-gray-600"
-                              }`}
-                            >
-                              <Sparkles className="w-3.5 h-3.5" />
-                            </button>
-
-                            {/* Latest/Breaking Toggle */}
-                            <button
-                              onClick={() => handleToggleFlag(article.id, "isLatest")}
-                              title="Toggle Latest/Breaking News Sidebar"
-                              className={`p-1.5 rounded-md border text-[10px] font-bold uppercase transition-colors cursor-pointer ${
-                                article.isLatest
-                                  ? "bg-emerald-50 text-emerald-600 border-emerald-200"
-                                  : "text-gray-300 border-gray-200 hover:text-gray-600"
-                              }`}
-                            >
-                              <Clock className="w-3.5 h-3.5" />
-                            </button>
-
-                          </div>
-                        </td>
-
-                        {/* Actions */}
-                        <td className="py-4 px-6 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end space-x-2">
-                            <Link
-                              href={`/article/${article.slug}`}
-                              target="_blank"
-                              title="Preview on live reader"
-                              className="p-2 text-gray-500 hover:text-[#C61D1F] hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Link>
-
-                            <button
-                              onClick={() => handleOpenEdit(article)}
-                              title="Edit story"
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                            >
-                              <Edit3 className="w-4 h-4" />
-                            </button>
-
-                            <button
-                              onClick={() => handleDelete(article.id, article.title)}
-                              title="Delete dispatch"
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          {/* Sidebar Item 6: Newsletter Subscribers (Admin Only!) */}
+          {role === "admin" && (
+            <button
+              onClick={() => setActiveTab("subscribers")}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === "subscribers"
+                  ? "bg-[#C61D1F] text-white shadow-md shadow-red-500/20"
+                  : "text-[#535252] hover:bg-gray-100 hover:text-black"
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <Mail className="w-4 h-4 shrink-0" />
+                <span>Newsletter Roster</span>
               </div>
-            </div>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === "subscribers" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
+              }`}>
+                {subscribers.length}
+              </span>
+            </button>
+          )}
 
+          {/* Writer Link */}
+          <div className="pt-4 border-t border-gray-100">
+            <Link
+              href="/dashboard/author"
+              className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl text-xs font-bold text-gray-500 hover:text-[#C61D1F] hover:bg-red-50/50 transition-colors"
+            >
+              <div className="flex items-center space-x-2.5">
+                <BookOpen className="w-4 h-4" />
+                <span>Writer Studio</span>
+              </div>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
-        )}
 
-        {/* TAB 2: Review Queue (Writer Submissions from Studio) */}
-        {activeTab === "reviewQueue" && (
-          <div className="space-y-4">
-            <div className="bg-white p-6 rounded-3xl border border-[#E5E6E8] shadow-2xs">
-              <div className="flex items-center justify-between mb-4">
+        </aside>
+
+        {/* RIGHT WORKSPACE CANVAS */}
+        <main className="flex-1 w-full space-y-6">
+
+          {/* Toast Notification */}
+          {notification && (
+            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-xs animate-in fade-in">
+              <div className="flex items-center space-x-2.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>{notification}</span>
+              </div>
+              <button onClick={() => setNotification(null)} className="text-emerald-700 hover:text-emerald-900">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* ROLE ADVISORY FOR WRITERS */}
+          {role === "writer" && (
+            <div className="p-5 rounded-3xl bg-amber-50 border border-amber-200 text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
+              <div className="flex items-start space-x-3">
+                <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <div>
-                  <h3 className="text-lg font-bold text-[#000000]">
-                    Writer & Contributor Manuscript Submissions
-                  </h3>
-                  <p className="text-xs text-[#707070]">
-                    Review drafts submitted by correspondents from the Writer Studio before publishing them live.
+                  <h4 className="font-extrabold text-xs uppercase tracking-wider text-amber-900">Staff Writer Contributor Session</h4>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    You are logged in as {user?.name || "Staff Writer"}. Administrative settings and roster modifications are reserved for Chief Admins.
                   </p>
                 </div>
-                <span className="bg-[#FDF2F2] text-[#C61D1F] font-bold text-xs px-3 py-1 rounded-full">
-                  {pendingSubmissions.length} Pending
-                </span>
+              </div>
+              <Link
+                href="/dashboard/author"
+                className="px-4 py-2 bg-[#C61D1F] text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm hover:bg-[#A51719] transition-colors shrink-0 text-center"
+              >
+                Go to Writer Studio →
+              </Link>
+            </div>
+          )}
+
+          {/* TAB 1: OVERVIEW (Matching the template's Hero Banner + Micro Cards + Continue Card) */}
+          {activeTab === "overview" && (
+            <div className="space-y-6">
+              
+              {/* Executive Welcome Card (Matching Template) */}
+              <div className="rounded-3xl bg-gradient-to-r from-[#0B1528] via-[#0F1E36] to-[#14294C] p-6 sm:p-8 text-white relative overflow-hidden shadow-xl border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                
+                {/* Background ambient lighting */}
+                <div className="absolute -right-10 -bottom-10 w-72 h-72 bg-[#C61D1F]/20 rounded-full blur-3xl pointer-events-none" />
+
+                <div className="space-y-3 z-10 max-w-xl">
+                  <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-white/10 text-white/90 text-xs font-semibold backdrop-blur-sm border border-white/10">
+                    <span>Good morning</span> <span>☀️</span>
+                  </span>
+                  
+                  <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                    Welcome back, {user?.name ? user.name.split(" ")[0] : "Usman"}
+                  </h2>
+                  
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    You're 78% through the weekly editorial publishing review across Northern Nigeria desks. Keep it up!
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-3 pt-2">
+                    <button
+                      onClick={() => {
+                        setEditingArticle(null);
+                        setFormData({
+                          title: "",
+                          slug: "",
+                          category: "Business",
+                          coverImage: "/assets/hero-featured.jpg",
+                          excerpt: "",
+                          content: "",
+                          authorName: user?.name || "The Zango Bureau",
+                          readTime: "4 min read",
+                          isFeatured: false,
+                          isTrending: false,
+                          isEditorsPick: false,
+                          isLatest: false,
+                        });
+                        setShowCreateModal(true);
+                      }}
+                      className="px-5 py-2.5 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-extrabold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center space-x-2 cursor-pointer"
+                    >
+                      <span>▶ Publish Story</span>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTab("reviewQueue")}
+                      className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all border border-white/15 cursor-pointer"
+                    >
+                      <span>Explore Review Queue →</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Right Circular Progress Ring (Matching the 50% circle in template) */}
+                <div className="flex items-center space-x-6 shrink-0 z-10">
+                  <div className="relative w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center">
+                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        stroke="currentColor"
+                        strokeWidth="8"
+                        className="text-white/10"
+                        fill="transparent"
+                      />
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        stroke="currentColor"
+                        strokeWidth="8"
+                        className="text-[#C61D1F]"
+                        fill="transparent"
+                        strokeDasharray={2 * Math.PI * 40}
+                        strokeDashoffset={2 * Math.PI * 40 * (1 - 0.78)}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <div className="absolute flex flex-col items-center justify-center text-center">
+                      <span className="text-xl sm:text-2xl font-extrabold text-white">78%</span>
+                      <span className="text-[9px] font-bold uppercase text-slate-300">Throughput</span>
+                    </div>
+                  </div>
+                </div>
+
               </div>
 
-              {pendingSubmissions.length > 0 ? (
-                <div className="space-y-4 divide-y divide-[#E5E6E8]">
-                  {pendingSubmissions.map((sub) => (
-                    <div key={sub.id} className="pt-4 first:pt-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="space-y-1.5 max-w-2xl">
-                        <div className="flex items-center space-x-2">
-                          <span className="bg-gray-100 text-[#111111] text-[10px] font-bold uppercase px-2 py-0.5 rounded-sm">
-                            {sub.category}
-                          </span>
-                          <span className="text-[11px] text-[#9C9C9C]">
-                            By {sub.authorName} • {sub.submittedAt}
-                          </span>
-                          <span className="text-[11px] font-semibold text-emerald-600">
-                            {sub.wordCount} words ({sub.readTime})
-                          </span>
-                        </div>
-                        <h4 className="text-base font-bold text-[#000000]">
-                          {sub.title}
-                        </h4>
-                        <p className="text-xs text-[#707070] line-clamp-2 leading-relaxed">
-                          {sub.excerpt}
-                        </p>
+              {/* Row of 4 Micro-Metric Cards (Matching template) */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5E6E8] shadow-2xs flex items-center space-x-4">
+                  <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase text-[#707070] tracking-wider block">
+                      Active Stories
+                    </span>
+                    <span className="text-lg font-extrabold text-[#111111]">{articles.length} Published</span>
+                  </div>
+                </div>
+
+                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5E6E8] shadow-2xs flex items-center space-x-4">
+                  <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                    <Flame className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase text-[#707070] tracking-wider block">
+                      Review Queue
+                    </span>
+                    <span className="text-lg font-extrabold text-[#111111]">{pendingSubmissions.length} Pending</span>
+                  </div>
+                </div>
+
+                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5E6E8] shadow-2xs flex items-center space-x-4">
+                  <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase text-[#707070] tracking-wider block">
+                      Verified Readers
+                    </span>
+                    <span className="text-lg font-extrabold text-[#111111]">{metrics.totalSubscribers} Readers</span>
+                  </div>
+                </div>
+
+                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5E6E8] shadow-2xs flex items-center space-x-4">
+                  <div className="w-11 h-11 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                    <Layers className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase text-[#707070] tracking-wider block">
+                      Regional Desks
+                    </span>
+                    <span className="text-lg font-extrabold text-[#111111]">11 Operational</span>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Section: CONTINUE EDITORIAL WORK (Matching "Continue Learning" from template) */}
+              {leadFeaturedArticle && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-[#707070]">
+                      Continue Editorial Work
+                    </span>
+                    <span className="text-xs text-gray-400">Last updated: Today</span>
+                  </div>
+
+                  <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E5E6E8] shadow-2xs flex flex-col md:flex-row items-center gap-6">
+                    <div className="relative w-full md:w-64 h-40 rounded-2xl overflow-hidden shrink-0 border border-gray-100">
+                      <Image
+                        src={leadFeaturedArticle.coverImage}
+                        alt={leadFeaturedArticle.title}
+                        fill
+                        sizes="260px"
+                        className="object-cover"
+                      />
+                      <span className="absolute top-2.5 left-2.5 bg-[#C61D1F] text-white text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md shadow-xs">
+                        {leadFeaturedArticle.category}
+                      </span>
+                    </div>
+
+                    <div className="flex-1 space-y-2 text-left">
+                      <div className="text-[11px] font-semibold text-gray-400">
+                        Apex Desk • {leadFeaturedArticle.publishedAt} • {leadFeaturedArticle.readTime}
                       </div>
+                      <h3 className="text-lg sm:text-xl font-extrabold text-[#111111] hover:text-[#C61D1F] transition-colors line-clamp-2">
+                        {leadFeaturedArticle.title}
+                      </h3>
+                      <p className="text-xs text-[#707070] line-clamp-2">
+                        {leadFeaturedArticle.excerpt}
+                      </p>
 
-                      <div className="flex items-center space-x-3 shrink-0">
-                        <button
-                          onClick={() => handleRejectSubmission(sub.id, sub.title)}
-                          className="px-3 py-2 border border-gray-300 hover:border-gray-500 text-gray-700 rounded-xl text-xs font-bold uppercase transition-colors flex items-center space-x-1 cursor-pointer"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                          <span>Request Edits</span>
-                        </button>
+                      <div className="pt-3 flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold">
+                            C
+                          </span>
+                          <span className="text-xs font-bold text-gray-800">{leadFeaturedArticle.author.name}</span>
+                        </div>
 
                         <button
-                          onClick={() => handleApproveSubmission(sub.id, sub.title)}
-                          className="px-4 py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors flex items-center space-x-1.5 shadow-md cursor-pointer"
+                          onClick={() => handleOpenEdit(leadFeaturedArticle)}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors shadow-xs flex items-center space-x-2 cursor-pointer"
                         >
-                          <Check className="w-3.5 h-3.5" />
-                          <span>Approve & Publish</span>
+                          <span>▶ Edit Dispatch</span>
                         </button>
                       </div>
                     </div>
-                  ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Fast Jump Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                <div 
+                  onClick={() => setActiveTab("dispatches")}
+                  className="bg-white p-5 rounded-2xl border border-[#E5E6E8] shadow-2xs hover:border-[#C61D1F] transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-[#111111] group-hover:text-[#C61D1F]">
+                      Manage All Dispatches ({articles.length})
+                    </span>
+                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#C61D1F] group-hover:translate-x-1 transition-all" />
+                  </div>
+                  <p className="text-xs text-[#707070]">
+                    Review and modify headlines, hero display tags, and category beats across 11 Northern Nigeria desks.
+                  </p>
+                </div>
+
+                <div 
+                  onClick={() => setActiveTab("reviewQueue")}
+                  className="bg-white p-5 rounded-2xl border border-[#E5E6E8] shadow-2xs hover:border-[#C61D1F] transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-[#111111] group-hover:text-[#C61D1F]">
+                      Writer Review Queue ({pendingSubmissions.length})
+                    </span>
+                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#C61D1F] group-hover:translate-x-1 transition-all" />
+                  </div>
+                  <p className="text-xs text-[#707070]">
+                    Read writer drafts submitted through author studio, verify sources, and publish straight to the front page.
+                  </p>
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* TAB 2: DISPATCHES (Story Management Table) */}
+          {activeTab === "dispatches" && (
+            <div className="space-y-4">
+              
+              {/* Filter Bar */}
+              <div className="bg-white p-4 rounded-2xl border border-[#E5E6E8] flex flex-col sm:flex-row items-center justify-between gap-4">
+                
+                {/* Search */}
+                <div className="relative w-full sm:w-80">
+                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Filter stories by headline, author..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 text-xs border border-[#DFDFDF] rounded-xl focus:border-[#C61D1F] focus:outline-hidden"
+                  />
+                </div>
+
+                {/* Desk Selector */}
+                <div className="flex items-center space-x-2 w-full sm:w-auto">
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-full sm:w-48 px-3 py-2 text-xs border border-[#DFDFDF] rounded-xl focus:border-[#C61D1F] focus:outline-hidden bg-white cursor-pointer"
+                  >
+                    <option value="all">All Desks (11)</option>
+                    {CATEGORIES.map((cat) => (
+                      <option key={cat.id} value={cat.name}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    onClick={() => {
+                      setEditingArticle(null);
+                      setFormData({
+                        title: "",
+                        slug: "",
+                        category: "Business",
+                        coverImage: "/assets/hero-featured.jpg",
+                        excerpt: "",
+                        content: "",
+                        authorName: user?.name || "The Zango Bureau",
+                        readTime: "4 min read",
+                        isFeatured: false,
+                        isTrending: false,
+                        isEditorsPick: false,
+                        isLatest: false,
+                      });
+                      setShowCreateModal(true);
+                    }}
+                    className="px-4 py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center space-x-1.5 cursor-pointer shrink-0"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>+ Publish</span>
+                  </button>
+                </div>
+
+              </div>
+
+              {/* Table */}
+              <div className="bg-white rounded-3xl border border-[#E5E6E8] overflow-hidden shadow-2xs">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-[#E5E6E8] bg-[#FAFAFA] text-[11px] font-extrabold uppercase text-[#707070] tracking-wider">
+                        <th className="py-4 px-6">Story Dispatch</th>
+                        <th className="py-4 px-6">Desk / Category</th>
+                        <th className="py-4 px-6">Author Byline</th>
+                        <th className="py-4 px-6">Placements & Badges</th>
+                        <th className="py-4 px-6 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E5E6E8] text-xs">
+                      {filteredArticles.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="py-12 text-center text-[#707070]">
+                            No published dispatches match your filter query.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredArticles.map((article) => (
+                          <tr key={article.id} className="hover:bg-gray-50/70 transition-colors">
+                            <td className="py-4 px-6">
+                              <div className="flex items-center space-x-3.5">
+                                <div className="relative w-14 h-11 rounded-lg overflow-hidden shrink-0 border border-gray-100">
+                                  <Image
+                                    src={article.coverImage}
+                                    alt={article.title}
+                                    fill
+                                    sizes="56px"
+                                    className="object-cover"
+                                  />
+                                </div>
+                                <div className="max-w-md">
+                                  <Link
+                                    href={`/article/${article.slug}`}
+                                    className="font-bold text-[#111111] hover:text-[#C61D1F] transition-colors line-clamp-1 block text-sm"
+                                  >
+                                    {article.title}
+                                  </Link>
+                                  <span className="text-[11px] text-[#707070] line-clamp-1 mt-0.5">
+                                    {article.excerpt}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="py-4 px-6">
+                              <span className="inline-block bg-[#FDF2F2] text-[#C61D1F] font-bold text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-sm">
+                                {article.category}
+                              </span>
+                            </td>
+
+                            <td className="py-4 px-6 font-semibold text-[#111111]">
+                              {article.author.name}
+                            </td>
+
+                            <td className="py-4 px-6">
+                              <div className="flex items-center space-x-1.5">
+                                <button
+                                  onClick={() => handleToggleFlag(article.id, "isFeatured")}
+                                  title="Toggle Hero Headline"
+                                  className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                                    article.isFeatured
+                                      ? "bg-red-100 text-[#C61D1F]"
+                                      : "bg-gray-100 text-gray-400 hover:text-black"
+                                  }`}
+                                >
+                                  <Star className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleToggleFlag(article.id, "isTrending")}
+                                  title="Toggle Trending Velocity"
+                                  className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                                    article.isTrending
+                                      ? "bg-amber-100 text-amber-700"
+                                      : "bg-gray-100 text-gray-400 hover:text-black"
+                                  }`}
+                                >
+                                  <Flame className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleToggleFlag(article.id, "isEditorsPick")}
+                                  title="Toggle Editor's Pick"
+                                  className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                                    article.isEditorsPick
+                                      ? "bg-purple-100 text-purple-700"
+                                      : "bg-gray-100 text-gray-400 hover:text-black"
+                                  }`}
+                                >
+                                  <Sparkles className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+
+                            <td className="py-4 px-6 text-right">
+                              <div className="flex items-center justify-end space-x-2">
+                                <button
+                                  onClick={() => handleOpenEdit(article)}
+                                  className="p-1.5 text-gray-500 hover:text-black hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                                  title="Edit Story"
+                                >
+                                  <Edit3 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(article.id, article.title)}
+                                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                  title="Delete Story"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* TAB 3: REVIEW QUEUE */}
+          {activeTab === "reviewQueue" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-[#E5E6E8]">
+                <div>
+                  <h3 className="text-base font-extrabold text-[#111111] uppercase tracking-wide">
+                    Author Submissions & Review Queue ({pendingSubmissions.length})
+                  </h3>
+                  <p className="text-xs text-[#707070]">
+                    Verify manuscripts submitted by regional correspondents before publishing live.
+                  </p>
+                </div>
+              </div>
+
+              {pendingSubmissions.length === 0 ? (
+                <div className="bg-white rounded-3xl p-12 text-center border border-[#E5E6E8] shadow-2xs">
+                  <Inbox className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                  <h4 className="font-extrabold text-[#111111] text-sm">Review Queue Clear</h4>
+                  <p className="text-xs text-[#707070] mt-1 max-w-sm mx-auto">
+                    All contributing manuscripts have been cleared or published.
+                  </p>
                 </div>
               ) : (
-                <div className="text-center py-12 text-[#9C9C9C]">
-                  <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-500 mb-2" />
-                  <p className="text-sm font-bold text-[#535252]">Review queue is clear!</p>
-                  <p className="text-xs">No pending writer manuscripts waiting for approval.</p>
+                <div className="grid grid-cols-1 gap-4">
+                  {pendingSubmissions.map((sub) => (
+                    <div
+                      key={sub.id}
+                      className="bg-white p-6 rounded-3xl border border-[#E5E6E8] shadow-2xs space-y-4"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span className="bg-[#FDF2F2] text-[#C61D1F] text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-sm">
+                            {sub.category}
+                          </span>
+                          <span className="text-gray-300">•</span>
+                          <span className="text-xs text-[#707070]">{sub.submittedAt}</span>
+                          <span className="text-gray-300">•</span>
+                          <span className="text-xs text-[#707070]">{sub.wordCount} words</span>
+                        </div>
+
+                        <span className="bg-amber-50 text-amber-700 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border border-amber-200">
+                          Pending Clearance
+                        </span>
+                      </div>
+
+                      <div>
+                        <h4 className="text-base font-extrabold text-[#111111]">{sub.title}</h4>
+                        <p className="text-xs text-[#535252] mt-1.5 leading-relaxed">{sub.excerpt}</p>
+                      </div>
+
+                      <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 text-xs text-gray-700 max-h-40 overflow-y-auto">
+                        <div className="font-bold text-gray-900 mb-1">Manuscript Preview:</div>
+                        <div className="line-clamp-4">{sub.content.replace(/<[^>]*>/g, " ")}</div>
+                      </div>
+
+                      <div className="pt-2 border-t border-[#E5E6E8] flex items-center justify-between">
+                        <div className="text-xs">
+                          <span className="font-bold text-[#111111]">{sub.authorName}</span>
+                          {sub.authorEmail && <span className="text-[#707070] ml-1.5">({sub.authorEmail})</span>}
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleRejectSubmission(sub.id, sub.title)}
+                            className="px-3.5 py-1.5 border border-[#DFDFDF] hover:border-red-600 hover:text-red-600 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                          >
+                            Reject
+                          </button>
+                          <button
+                            onClick={() => handleApproveSubmission(sub.id, sub.title)}
+                            className="px-4 py-1.5 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
+                          >
+                            Approve & Publish Live
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* TAB 3: Newsroom Desk Health & Taxonomy */}
-        {activeTab === "desks" && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {CATEGORIES.map((cat) => {
-              const catArticles = articles.filter(
-                (a) => a.category.toLowerCase() === cat.slug || (cat.slug === "news" && a.isLatest)
-              );
-              return (
-                <div key={cat.id} className="bg-white p-6 rounded-3xl border border-[#E5E6E8] shadow-2xs hover:border-[#C61D1F] transition-all flex flex-col justify-between">
+          {/* TAB 4: NEWSROOM TEAM (Admin only) */}
+          {activeTab === "team" && role === "admin" && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-3xl border border-[#E5E6E8] p-6 shadow-2xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#E5E6E8]">
                   <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-bold uppercase tracking-wider text-[#C61D1F]">
-                        {cat.name} Desk
-                      </span>
-                      <span className="bg-gray-100 text-[#535252] text-xs font-bold px-2.5 py-0.5 rounded-full">
-                        {catArticles.length} Stories
-                      </span>
-                    </div>
-                    <p className="text-xs text-[#707070] leading-relaxed mb-4">
-                      {cat.description}
+                    <h3 className="text-base font-extrabold text-[#111111] uppercase tracking-wide">
+                      Newsroom Editorial Team & Role Clearances
+                    </h3>
+                    <p className="text-xs text-[#707070] mt-1">
+                      Manage journalist bylines, clearance levels, and desk assignments across the bureau.
                     </p>
                   </div>
 
-                  <div className="pt-4 border-t border-[#E5E6E8] flex items-center justify-between">
-                    <span className="text-[11px] text-[#9C9C9C]">
-                      Status: Active
-                    </span>
-                    <Link
-                      href={`/category/${cat.slug}`}
-                      className="text-xs font-bold text-[#C61D1F] hover:underline flex items-center space-x-1"
-                    >
-                      <span>View Live Desk</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </Link>
-                  </div>
+                  <button
+                    onClick={() => setShowTeamModal(true)}
+                    className="px-5 py-2.5 bg-[#C61D1F] hover:bg-[#A51719] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center space-x-2 cursor-pointer shrink-0"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    <span>+ Add Team Member</span>
+                  </button>
                 </div>
-              );
-            })}
-          </div>
-        )}
 
-        {/* TAB 4: Newsletter Subscribers */}
-        {activeTab === "subscribers" && (
-          <div className="bg-white rounded-3xl border border-[#E5E6E8] overflow-hidden shadow-2xs">
-            <div className="p-6 border-b border-[#E5E6E8] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-bold text-[#000000]">
-                  The Zango Brief Subscribers ({subscribers.length})
-                </h3>
-                <p className="text-xs text-[#707070]">
-                  Readers registered to receive morning and weekend dispatches.
-                </p>
+                {/* Team Roster Table */}
+                <div className="overflow-x-auto border border-[#E5E6E8] rounded-2xl mt-6">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-[#E5E6E8] bg-[#FAFAFA] text-[11px] font-extrabold uppercase text-[#707070] tracking-wider">
+                        <th className="py-4 px-6">Journalist & Byline</th>
+                        <th className="py-4 px-6">Assigned Desk</th>
+                        <th className="py-4 px-6">Role Clearance</th>
+                        <th className="py-4 px-6">Status</th>
+                        <th className="py-4 px-6 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E5E6E8] text-xs">
+                      {teamMembers.map((member) => (
+                        <tr key={member.id} className="hover:bg-gray-50/70 transition-colors">
+                          <td className="py-4 px-6">
+                            <div className="flex items-center space-x-3">
+                              <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-200 shrink-0">
+                                <Image
+                                  src={member.avatar || "/assets/social-image-1.png"}
+                                  alt={member.name}
+                                  fill
+                                  sizes="40px"
+                                  className="object-cover"
+                                />
+                              </div>
+                              <div>
+                                <div className="font-bold text-[#111111] text-sm">{member.name}</div>
+                                <div className="text-[11px] text-[#707070]">{member.email}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-6">
+                            <span className="font-semibold text-gray-800 bg-gray-100 px-2.5 py-1 rounded-md text-[11px]">
+                              {member.desk}
+                            </span>
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="flex items-center space-x-2">
+                              {member.role === "admin" && (
+                                <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-md font-bold text-[10px] uppercase">
+                                  Chief Admin
+                                </span>
+                              )}
+                              {member.role === "editor" && (
+                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-md font-bold text-[10px] uppercase">
+                                  Desk Editor
+                                </span>
+                              )}
+                              {member.role === "writer" && (
+                                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-md font-bold text-[10px] uppercase">
+                                  Staff Writer
+                                </span>
+                              )}
+                              <select
+                                value={member.role}
+                                onChange={(e) => handleUpdateRole(member.id, e.target.value as NewsroomRole, member.name)}
+                                className="bg-white border border-[#DFDFDF] hover:border-black text-[11px] font-semibold rounded-lg px-2 py-1 focus:outline-hidden cursor-pointer"
+                              >
+                                <option value="admin">Admin</option>
+                                <option value="editor">Editor</option>
+                                <option value="writer">Writer</option>
+                              </select>
+                            </div>
+                          </td>
+                          <td className="py-4 px-6">
+                            <button
+                              onClick={() => handleToggleMemberStatus(member.id, member.status, member.name)}
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-colors ${
+                                member.status === "active"
+                                  ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                              }`}
+                            >
+                              ● {member.status}
+                            </button>
+                          </td>
+                          <td className="py-4 px-6 text-right">
+                            <button
+                              onClick={() => handleDeleteMember(member.id, member.name)}
+                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                              title="Remove staff member"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: DESK TAXONOMY */}
+          {activeTab === "desks" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-[#E5E6E8]">
+                <div>
+                  <h3 className="text-base font-extrabold text-[#111111] uppercase tracking-wide">
+                    Editorial Desks & Beats ({CATEGORIES.length})
+                  </h3>
+                  <p className="text-xs text-[#707070]">
+                    The 11 core newsroom divisions covering Northern Nigeria and the Sahel corridor.
+                  </p>
+                </div>
               </div>
 
-              <button
-                onClick={exportSubscribersCSV}
-                className="px-4 py-2 bg-[#000000] hover:bg-[#C61D1F] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors flex items-center space-x-2 cursor-pointer shadow-sm"
-              >
-                <Download className="w-4 h-4" />
-                <span>Export CSV Roster</span>
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-[#E5E6E8] bg-[#FAFAFA] text-[11px] font-extrabold uppercase text-[#707070] tracking-wider">
-                    <th className="py-4 px-6">Subscriber Email</th>
-                    <th className="py-4 px-6">Joined Date</th>
-                    <th className="py-4 px-6 text-right">Channel</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#E5E6E8] text-xs">
-                  {subscribers.map((sub, i) => (
-                    <tr key={i} className="hover:bg-gray-50/70">
-                      <td className="py-3.5 px-6 font-semibold text-[#111111]">
-                        {sub.email}
-                      </td>
-                      <td className="py-3.5 px-6 text-[#707070]">
-                        {sub.subscribedAt}
-                      </td>
-                      <td className="py-3.5 px-6 text-right">
-                        <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase px-2 py-0.5 rounded-sm">
-                          Verified Reader
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-      </main>
-
-      
-        {/* TAB 5: Newsroom Staff & Roles */}
-        {activeTab === "team" && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-3xl border border-[#E5E6E8] p-6 shadow-2xs">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#E5E6E8]">
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
-                    <h3 className="text-lg font-bold text-[#000000] uppercase tracking-wide">
-                      Newsroom Editorial Team & Access Roles
-                    </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {CATEGORIES.map((desk) => (
+                  <div
+                    key={desk.id}
+                    className="bg-white p-5 rounded-3xl border border-[#E5E6E8] shadow-2xs space-y-2 hover:border-[#C61D1F] transition-all"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-sm text-[#111111]">{desk.name}</span>
+                      <span className="bg-[#FDF2F2] text-[#C61D1F] text-[10px] font-extrabold px-2 py-0.5 rounded-sm uppercase">
+                        {desk.count} stories
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#707070] line-clamp-2">{desk.description}</p>
+                    <div className="pt-2 flex items-center justify-between text-[11px] text-gray-400">
+                      <span>Status: {desk.status || "Active"}</span>
+                      <Link
+                        href={`/category/${desk.slug}`}
+                        className="text-[#C61D1F] font-bold hover:underline"
+                      >
+                        View Desk →
+                      </Link>
+                    </div>
                   </div>
-                  <p className="text-xs text-[#707070] mt-1">
-                    Manage journalist bylines, clearance levels, desk assignments, and publishing privileges across Northern Nigeria bureau.
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 6: NEWSLETTER ROSTER (Admin only) */}
+          {activeTab === "subscribers" && role === "admin" && (
+            <div className="bg-white rounded-3xl border border-[#E5E6E8] overflow-hidden shadow-2xs">
+              <div className="p-6 border-b border-[#E5E6E8] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-base font-extrabold text-[#111111]">
+                    The Zango Brief Subscribers ({subscribers.length})
+                  </h3>
+                  <p className="text-xs text-[#707070]">
+                    Verified readers subscribed to morning dispatches.
                   </p>
                 </div>
 
                 <button
-                  onClick={() => setShowTeamModal(true)}
-                  className="px-5 py-2.5 bg-[#C61D1F] hover:bg-[#A51719] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center space-x-2 cursor-pointer shrink-0"
+                  onClick={exportSubscribersCSV}
+                  className="px-4 py-2 bg-[#111111] hover:bg-[#C61D1F] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors flex items-center space-x-2 cursor-pointer shadow-sm"
                 >
-                  <UserPlus className="w-4 h-4" />
-                  <span>+ Add Team Member</span>
+                  <Download className="w-4 h-4" />
+                  <span>Export CSV</span>
                 </button>
               </div>
 
-              {/* Roles Breakdown */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 my-6">
-                <div className="p-4 rounded-2xl bg-red-50/60 border border-red-100">
-                  <div className="flex items-center space-x-2 text-red-700 mb-1">
-                    <ShieldCheck className="w-4 h-4" />
-                    <span className="text-xs font-bold uppercase tracking-wide">Admin Role ({teamMembers.filter(m => m.role === "admin").length})</span>
-                  </div>
-                  <p className="text-[11px] text-[#707070]">
-                    Chief executive clearance: publish dispatches, manage taxonomy, oversee review queue, and modify newsroom personnel.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-100">
-                  <div className="flex items-center space-x-2 text-blue-700 mb-1">
-                    <Edit3 className="w-4 h-4" />
-                    <span className="text-xs font-bold uppercase tracking-wide">Editor Role ({teamMembers.filter(m => m.role === "editor").length})</span>
-                  </div>
-                  <p className="text-[11px] text-[#707070]">
-                    Desk clearance: review writer submissions, approve dispatches, set editorial display tags, and publish stories.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-100">
-                  <div className="flex items-center space-x-2 text-emerald-700 mb-1">
-                    <FileText className="w-4 h-4" />
-                    <span className="text-xs font-bold uppercase tracking-wide">Writer Role ({teamMembers.filter(m => m.role === "writer").length})</span>
-                  </div>
-                  <p className="text-[11px] text-[#707070]">
-                    Contributor clearance: compose stories in author studio, save auto-drafts, and submit manuscripts to the review queue.
-                  </p>
-                </div>
-              </div>
-
-              {/* Team Roster Table */}
-              <div className="overflow-x-auto border border-[#E5E6E8] rounded-2xl">
+              <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-[#E5E6E8] bg-[#FAFAFA] text-[11px] font-extrabold uppercase text-[#707070] tracking-wider">
-                      <th className="py-4 px-6">Journalist & Byline</th>
-                      <th className="py-4 px-6">Assigned Desk</th>
-                      <th className="py-4 px-6">Current Role</th>
-                      <th className="py-4 px-6">Status</th>
-                      <th className="py-4 px-6 text-right">Actions</th>
+                      <th className="py-4 px-6">Subscriber Email</th>
+                      <th className="py-4 px-6">Subscribed Date</th>
+                      <th className="py-4 px-6 text-right">Verification</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#E5E6E8] text-xs">
-                    {teamMembers.map((member) => (
-                      <tr key={member.id} className="hover:bg-gray-50/70 transition-colors">
-                        <td className="py-4 px-6">
-                          <div className="flex items-center space-x-3">
-                            <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-200 shrink-0">
-                              <Image
-                                src={member.avatar || "/assets/social-image-1.png"}
-                                alt={member.name}
-                                fill
-                                sizes="40px"
-                                className="object-cover"
-                              />
-                            </div>
-                            <div>
-                              <div className="font-bold text-[#111111] text-sm">{member.name}</div>
-                              <div className="text-[11px] text-[#707070]">{member.email}</div>
-                              {member.bio && (
-                                <p className="text-[11px] text-gray-500 line-clamp-1 max-w-xs mt-0.5">{member.bio}</p>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <span className="font-semibold text-gray-800 bg-gray-100 px-2.5 py-1 rounded-md text-[11px]">
-                            {member.desk}
+                    {subscribers.map((sub, i) => (
+                      <tr key={i} className="hover:bg-gray-50/70">
+                        <td className="py-3.5 px-6 font-semibold text-[#111111]">{sub.email}</td>
+                        <td className="py-3.5 px-6 text-[#707070]">{sub.subscribedAt}</td>
+                        <td className="py-3.5 px-6 text-right">
+                          <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase px-2 py-0.5 rounded-sm">
+                            Verified
                           </span>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="flex items-center space-x-2">
-                            {member.role === "admin" && (
-                              <span className="px-2.5 py-1 bg-red-100 text-red-700 rounded-md font-bold text-[10px] uppercase tracking-wider flex items-center space-x-1">
-                                <ShieldCheck className="w-3 h-3" />
-                                <span>Admin</span>
-                              </span>
-                            )}
-                            {member.role === "editor" && (
-                              <span className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-md font-bold text-[10px] uppercase tracking-wider flex items-center space-x-1">
-                                <Edit3 className="w-3 h-3" />
-                                <span>Editor</span>
-                              </span>
-                            )}
-                            {member.role === "writer" && (
-                              <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-md font-bold text-[10px] uppercase tracking-wider flex items-center space-x-1">
-                                <FileText className="w-3 h-3" />
-                                <span>Writer</span>
-                              </span>
-                            )}
-                            <select
-                              value={member.role}
-                              onChange={(e) => handleUpdateRole(member.id, e.target.value as NewsroomRole, member.name)}
-                              className="bg-white border border-[#DFDFDF] hover:border-black text-[11px] font-semibold rounded-lg px-2 py-1 focus:outline-hidden cursor-pointer"
-                            >
-                              <option value="admin">Admin</option>
-                              <option value="editor">Editor</option>
-                              <option value="writer">Writer</option>
-                            </select>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <button
-                            onClick={() => handleToggleMemberStatus(member.id, member.status, member.name)}
-                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-colors ${
-                              member.status === "active"
-                                ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                                : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                            }`}
-                          >
-                            ● {member.status}
-                          </button>
-                        </td>
-                        <td className="py-4 px-6 text-right">
-                          <button
-                            onClick={() => handleDeleteMember(member.id, member.name)}
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                            title="Remove staff member"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-
             </div>
-          </div>
-        )}
+          )}
 
-            {/* Story Publishing / Edit Modal */}
+        </main>
+      </div>
+
+      {/* 3. MODALS (Retaining full smooth scroll UX with pinned header & footer) */}
+      
+      {/* Story Publishing / Edit Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-gray-200 overflow-hidden">
@@ -1131,7 +1385,7 @@ function AdminDashboardContent() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block font-bold text-[#000000] uppercase mb-1.5">Beat / Category (All 11 Desks)</label>
+                  <label className="block font-bold text-[#000000] uppercase mb-1.5">Beat / Desk (All 11 Desks)</label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -1277,7 +1531,6 @@ function AdminDashboardContent() {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl max-w-xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-gray-200 overflow-hidden">
             
-            {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#E5E6E8] shrink-0 bg-white">
               <div className="flex items-center space-x-2.5">
                 <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
@@ -1294,7 +1547,6 @@ function AdminDashboardContent() {
               </button>
             </div>
 
-            {/* Scrollable Form Body */}
             <form id="team-member-form" onSubmit={handleAddTeamMember} className="overflow-y-auto flex-1 p-6 space-y-4 text-xs overscroll-contain">
               <div>
                 <label className="block font-bold text-[#000000] uppercase mb-1.5">Full Name *</label>
@@ -1372,7 +1624,6 @@ function AdminDashboardContent() {
               </div>
             </form>
 
-            {/* Pinned Sticky Footer */}
             <div className="px-6 py-4 border-t border-[#E5E6E8] shrink-0 bg-[#F8F9FA] flex items-center justify-between">
               <span className="text-[11px] text-[#707070]">Newsroom Staff Clearance</span>
               <div className="flex items-center space-x-3">
@@ -1396,7 +1647,6 @@ function AdminDashboardContent() {
           </div>
         </div>
       )}
-
 
     </div>
   );
