@@ -1,21 +1,40 @@
 "use client";
 
-import React, { useState, useMemo, Suspense } from "react";
+import React, { useState, useMemo, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Search, ArrowRight, Calendar, User, Tag } from "lucide-react";
 import { ARTICLES } from "@/data/mock-articles";
+import { Article } from "@/types";
 
 function SearchContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
   const [query, setQuery] = useState(initialQuery);
+  const [allArticles, setAllArticles] = useState<Article[]>(ARTICLES);
+
+  useEffect(() => {
+    async function loadLiveArticles() {
+      try {
+        const res = await fetch("/api/articles");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.articles) {
+            setAllArticles(data.articles);
+          }
+        }
+      } catch (err) {
+        // Fallback to initial mock articles
+      }
+    }
+    loadLiveArticles();
+  }, []);
 
   const filteredArticles = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return ARTICLES;
-    return ARTICLES.filter(
+    if (!q) return allArticles;
+    return allArticles.filter(
       (a) =>
         a.title.toLowerCase().includes(q) ||
         a.excerpt.toLowerCase().includes(q) ||
@@ -23,7 +42,7 @@ function SearchContent() {
         a.author.name.toLowerCase().includes(q) ||
         a.tags?.some((t) => t.toLowerCase().includes(q))
     );
-  }, [query]);
+  }, [query, allArticles]);
 
   return (
     <div className="py-8 lg:py-12 bg-white">
@@ -70,7 +89,7 @@ function SearchContent() {
                 className="group bg-white border border-[#E5E6E8] hover:border-[#C61D1F] rounded-2xl overflow-hidden shadow-2xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
               >
                 <div>
-                  <Link href={`/article/${article.slug}`} className="block relative w-full h-48 overflow-hidden bg-gray-100">
+                  <div className="relative w-full h-48 overflow-hidden bg-gray-100">
                     <Image
                       src={article.coverImage}
                       alt={article.title}
@@ -78,10 +97,12 @@ function SearchContent() {
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       className="object-cover group-hover:scale-104 transition-transform duration-500 ease-out"
                     />
-                    <span className="absolute top-3 left-3 bg-white/90 text-[#111111] text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-sm shadow-xs">
-                      {article.category}
-                    </span>
-                  </Link>
+                    <div className="absolute top-3 left-3">
+                      <span className="bg-white/95 text-[#111111] text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-sm shadow-xs">
+                        {article.category}
+                      </span>
+                    </div>
+                  </div>
 
                   <div className="p-5">
                     <div className="flex items-center space-x-2 text-[11px] text-[#9C9C9C] mb-2 font-medium">
@@ -96,44 +117,61 @@ function SearchContent() {
                       </Link>
                     </h2>
 
-                    <p className="text-xs sm:text-sm text-[#707070] line-clamp-3 leading-relaxed">
+                    <p className="text-xs sm:text-sm text-[#707070] line-clamp-3 leading-relaxed mb-4">
                       {article.excerpt}
                     </p>
+
+                    {article.tags && article.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {article.tags.slice(0, 3).map((tag) => (
+                          <span
+                            key={tag}
+                            className="text-[10px] bg-gray-100 text-[#535252] px-2 py-0.5 rounded-sm"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 <div className="p-5 pt-0">
                   <div className="pt-3 border-t border-[#E5E6E8] flex items-center justify-between text-xs">
-                    <span className="font-semibold text-[#535252]">
-                      By {article.author.name}
-                    </span>
+                    <Link
+                      href={`/author/${article.author.slug || "editorial-desk"}`}
+                      className="font-semibold text-[#535252] hover:text-[#C61D1F] transition-colors flex items-center space-x-1"
+                    >
+                      <User className="w-3.5 h-3.5 text-[#9C9C9C]" />
+                      <span>{article.author.name}</span>
+                    </Link>
+
                     <Link
                       href={`/article/${article.slug}`}
                       className="inline-flex items-center space-x-1 text-[#C61D1F] font-bold uppercase tracking-wider hover:underline"
                     >
-                      <span>Read</span>
+                      <span>Read Story</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>
                 </div>
-
               </article>
             ))}
           </div>
         ) : (
-          <div className="text-center py-16 bg-[#FAFAFA] rounded-2xl border border-[#E5E6E8]">
-            <Search className="w-12 h-12 text-[#9C9C9C] mx-auto mb-3" />
-            <h3 className="text-lg font-bold text-[#000000] mb-1">
-              No matching stories found
+          <div className="text-center py-16 bg-[#FAFAFA] rounded-3xl border border-[#E5E6E8] p-8">
+            <Search className="w-12 h-12 text-[#9C9C9C] mx-auto mb-4 opacity-50" />
+            <h3 className="text-xl font-bold text-[#000000] mb-2">
+              No matching dispatches found
             </h3>
-            <p className="text-xs sm:text-sm text-[#707070] max-w-sm mx-auto mb-6">
-              Try adjusting your query or searching for broader keywords like &ldquo;climate&rdquo;, &ldquo;funding&rdquo;, or &ldquo;Kano&rdquo;.
+            <p className="text-sm text-[#707070] max-w-md mx-auto mb-6">
+              We couldn&apos;t find any stories matching your query. Try searching for broader terms like &ldquo;tech&rdquo;, &ldquo;climate&rdquo;, or &ldquo;Kano&rdquo;.
             </p>
             <button
               onClick={() => setQuery("")}
-              className="px-5 py-2.5 bg-[#C61D1F] text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-[#A51719] transition-colors cursor-pointer"
+              className="px-5 py-2.5 bg-[#C61D1F] text-white text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#A51719] transition-colors cursor-pointer"
             >
-              Reset Search
+              Clear Search
             </button>
           </div>
         )}
@@ -145,7 +183,13 @@ function SearchContent() {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div className="py-20 text-center text-sm text-gray-500">Loading search...</div>}>
+    <Suspense
+      fallback={
+        <div className="py-20 text-center text-sm text-[#707070]">
+          Loading search results...
+        </div>
+      }
+    >
       <SearchContent />
     </Suspense>
   );

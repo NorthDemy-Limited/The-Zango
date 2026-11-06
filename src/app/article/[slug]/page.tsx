@@ -1,10 +1,13 @@
 import React from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ARTICLES } from "@/data/mock-articles";
-import { Calendar, Clock, Share2, ArrowLeft, Tag, Bookmark } from "lucide-react";
-import { TwitterIcon, FacebookIcon, LinkedinIcon } from "@/components/social-icons";
+import { getArticleBySlug, getArticles } from "@/lib/firebase/db";
+import { Calendar, Clock, ArrowLeft, Tag } from "lucide-react";
+import ArticleContent from "@/components/article-content";
+import ArticleReaderToolbar from "@/components/article-reader-toolbar";
 import ArticleComments from "@/components/article-comments";
 
 interface ArticlePageProps {
@@ -13,23 +16,71 @@ interface ArticlePageProps {
 
 export const instant = false;
 
+
+export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const article = await getArticleBySlug(slug);
+
+  if (!article) {
+    return {
+      title: "Dispatch Not Found | The Zango",
+      description: "The requested editorial dispatch could not be found.",
+    };
+  }
+
+  const imageUrl = article.coverImage.startsWith("http")
+    ? article.coverImage
+    : "https://thezango.org" + article.coverImage;
+
+  return {
+    title: article.title + " | The Zango",
+    description: article.excerpt,
+    authors: [{ name: article.author.name }],
+    openGraph: {
+      title: article.title,
+      description: article.excerpt,
+      type: "article",
+      publishedTime: article.publishedAt,
+      authors: [article.author.name],
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: article.title,
+        },
+      ],
+      siteName: "The Zango",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.title,
+      description: article.excerpt,
+      images: [imageUrl],
+      creator: article.author.twitter || "@thezango_media",
+    },
+  };
+}
+
 export async function generateStaticParams() {
-  return ARTICLES.map((article) => ({
+  const articles = await getArticles();
+  return articles.map((article) => ({
     slug: article.slug,
   }));
 }
 
 export default async function ArticlePage({ params }: ArticlePageProps) {
   const { slug } = await params;
-  const article = ARTICLES.find((a) => a.slug === slug);
+  const article = await getArticleBySlug(slug);
 
   if (!article) {
     notFound();
   }
 
-  const relatedArticles = ARTICLES.filter(
-    (a) => a.id !== article.id && (a.category === article.category || a.isLatest)
-  ).slice(0, 3);
+  const allArticles = await getArticles();
+  const relatedArticles = allArticles
+    .filter((a) => a.id !== article.id && (a.category.toLowerCase() === article.category.toLowerCase() || a.isLatest))
+    .slice(0, 3);
 
   return (
     <article className="py-8 lg:py-12 bg-white">
@@ -119,32 +170,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           />
         </div>
 
-        {/* Article Body Content */}
-        <div className="prose prose-lg max-w-none text-[#111111] leading-relaxed space-y-6">
-          {article.content.split("\n\n").map((para, index) => {
-            const trimmed = para.trim();
-            if (!trimmed) return null;
-            if (trimmed.startsWith("### ")) {
-              return (
-                <h3 key={index} className="text-xl sm:text-2xl font-bold text-[#000000] pt-4 pb-2 border-b border-[#E5E6E8]/70">
-                  {trimmed.replace("### ", "")}
-                </h3>
-              );
-            }
-            if (trimmed.startsWith("1. ") || trimmed.startsWith("- ")) {
-              return (
-                <div key={index} className="bg-gray-50 border-l-4 border-[#C61D1F] p-4 rounded-r-lg my-4 text-sm sm:text-base text-[#535252]">
-                  {trimmed}
-                </div>
-              );
-            }
-            return (
-              <p key={index} className="text-base sm:text-lg text-[#333333] leading-relaxed">
-                {trimmed}
-              </p>
-            );
-          })}
-        </div>
+        {/* Rich Article Body Content (Supports Tweets, YouTube Videos, Headings, Images) */}
+        <ArticleContent content={article.content} />
 
         {/* Tags Row */}
         {article.tags && article.tags.length > 0 && (
@@ -165,44 +192,9 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           </div>
         )}
 
-        {/* Social Share Bar */}
-        <div className="mt-8 pt-6 border-t border-[#E5E6E8] flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center space-x-2">
-            <Share2 className="w-4 h-4 text-[#C61D1F]" />
-            <span className="text-xs font-bold text-[#000000] uppercase tracking-wider">
-              Share This Story:
-            </span>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <a
-              href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3.5 py-1.5 rounded-md bg-[#F5F5F5] hover:bg-[#C61D1F] hover:text-white text-xs font-semibold text-[#535252] flex items-center space-x-1.5 transition-colors"
-            >
-              <TwitterIcon className="w-3.5 h-3.5" />
-              <span>Twitter</span>
-            </a>
-            <a
-              href={`https://www.facebook.com/sharer/sharer.php`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3.5 py-1.5 rounded-md bg-[#F5F5F5] hover:bg-[#C61D1F] hover:text-white text-xs font-semibold text-[#535252] flex items-center space-x-1.5 transition-colors"
-            >
-              <FacebookIcon className="w-3.5 h-3.5" />
-              <span>Facebook</span>
-            </a>
-            <a
-              href={`https://www.linkedin.com/shareArticle`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3.5 py-1.5 rounded-md bg-[#F5F5F5] hover:bg-[#C61D1F] hover:text-white text-xs font-semibold text-[#535252] flex items-center space-x-1.5 transition-colors"
-            >
-              <LinkedinIcon className="w-3.5 h-3.5" />
-              <span>LinkedIn</span>
-            </a>
-          </div>
+        {/* Interactive Social Share & Reading Progress Bar */}
+        <div className="mt-8">
+          <ArticleReaderToolbar title={article.title} slug={article.slug} />
         </div>
 
         {/* Author Bio Box with Link to Author Page */}

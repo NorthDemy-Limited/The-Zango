@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { 
@@ -13,29 +13,81 @@ import {
   FileText, 
   ArrowLeft,
   Sparkles,
-  BookOpen
+  BookOpen,
+  Video,
+  Quote,
+  Heading,
+  Trash2
 } from "lucide-react";
+import { TwitterIcon } from "@/components/social-icons";
 import { ARTICLES } from "@/data/mock-articles";
 import { createSubmission } from "@/lib/firebase/db";
+import ImageUploader from "@/components/image-uploader";
+import RichEditor from "@/components/rich-editor";
 
-export default function AuthorStudioPage() {
+function AuthorStudioContent() {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("Business");
   const [coverImage, setCoverImage] = useState("/assets/hero-featured.jpg");
   const [excerpt, setExcerpt] = useState("");
   const [content, setContent] = useState("");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [lastAutoSaved, setLastAutoSaved] = useState<string | null>(null);
+
+  // Restore draft from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("thezango_writer_draft");
+      if (saved) {
+        const draft = JSON.parse(saved);
+        if (draft.title) setTitle(draft.title);
+        if (draft.category) setCategory(draft.category);
+        if (draft.coverImage) setCoverImage(draft.coverImage);
+        if (draft.excerpt) setExcerpt(draft.excerpt);
+        if (draft.content) setContent(draft.content);
+        setLastAutoSaved(draft.savedAt || "Previous session");
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  // Auto-save draft changes to localStorage
+  useEffect(() => {
+    if (!title && !content) return;
+    const timeout = setTimeout(() => {
+      try {
+        const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        localStorage.setItem(
+          "thezango_writer_draft",
+          JSON.stringify({
+            title,
+            category,
+            coverImage,
+            excerpt,
+            content,
+            savedAt: now,
+          })
+        );
+        setLastAutoSaved(now);
+      } catch (e) {
+        // ignore
+      }
+    }, 1500);
+
+    return () => clearTimeout(timeout);
+  }, [title, category, coverImage, excerpt, content]);
 
   // Author stories
   const myStories = useMemo(() => {
     return ARTICLES.filter((a) => a.author.name === "Abdul Rahman" || a.isFeatured);
   }, []);
 
-  // Word count & read time computation
+  // Word count & read time computation (strips HTML for accuracy)
   const wordCount = useMemo(() => {
-    const trimmed = content.trim();
-    if (!trimmed) return 0;
-    return trimmed.split(/\s+/).length;
+    const textOnly = content.replace(/<[^>]*>/g, " ").trim();
+    if (!textOnly) return 0;
+    return textOnly.split(/\s+/).length;
   }, [content]);
 
   const estimatedReadTime = useMemo(() => {
@@ -43,15 +95,72 @@ export default function AuthorStudioPage() {
     return `${minutes || 1} min read`;
   }, [wordCount]);
 
+  const handleClearDraft = () => {
+    if (confirm("Are you sure you want to discard your draft? This cannot be undone.")) {
+      localStorage.removeItem("thezango_writer_draft");
+      setTitle("");
+      setExcerpt("");
+      setContent("");
+      setLastAutoSaved(null);
+      setStatusMessage("Draft discarded.");
+      setTimeout(() => setStatusMessage(null), 3000);
+    }
+  };
+
   const handleSaveDraft = (e: React.FormEvent) => {
     e.preventDefault();
-    setStatusMessage("Story saved to local drafts successfully!");
-    setTimeout(() => setStatusMessage(null), 4000);
+    try {
+      const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      localStorage.setItem(
+        "thezango_writer_draft",
+        JSON.stringify({
+          title,
+          category,
+          coverImage,
+          excerpt,
+          content,
+          savedAt: now,
+        })
+      );
+      setLastAutoSaved(now);
+      setStatusMessage("Story saved to browser storage!");
+      setTimeout(() => setStatusMessage(null), 4000);
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  // Helper insertions
+  const insertSnippet = (snippet: string) => {
+    setContent((prev) => (prev ? `${prev}\n\n${snippet}` : snippet));
+  };
+
+  const insertTwitterEmbed = () => {
+    const url = prompt(
+      "Paste the X (Twitter) post URL:",
+      "https://x.com/thezango_media/status/1785234567890"
+    );
+    if (url) {
+      insertSnippet(url.trim());
+    }
+  };
+
+  const insertYoutubeEmbed = () => {
+    const url = prompt(
+      "Paste the YouTube video URL:",
+      "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+    );
+    if (url) {
+      insertSnippet(url.trim());
+    }
   };
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim()) return;
+    if (!title.trim() || !content.trim()) {
+      alert("Please enter both a title and story body.");
+      return;
+    }
 
     await createSubmission({
       title: title.trim(),
@@ -66,9 +175,11 @@ export default function AuthorStudioPage() {
     });
 
     setStatusMessage("Story submitted for Chief Editor review! You will receive notification upon approval.");
+    localStorage.removeItem("thezango_writer_draft");
     setTitle("");
     setExcerpt("");
     setContent("");
+    setLastAutoSaved(null);
     setTimeout(() => setStatusMessage(null), 5000);
   };
 
@@ -149,7 +260,7 @@ export default function AuthorStudioPage() {
           
           {/* Editor Workspace (Left - 8 cols) */}
           <div className="lg:col-span-8 bg-white rounded-3xl border border-[#E5E6E8] p-6 sm:p-8 shadow-2xs">
-            <div className="flex items-center justify-between pb-4 mb-6 border-b border-[#E5E6E8]">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-6 border-b border-[#E5E6E8] gap-2">
               <div className="flex items-center space-x-2">
                 <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
                 <h3 className="text-lg font-bold text-[#000000] uppercase tracking-wide">
@@ -157,6 +268,11 @@ export default function AuthorStudioPage() {
                 </h3>
               </div>
               <div className="flex items-center space-x-4 text-xs font-semibold text-[#707070]">
+                {lastAutoSaved && (
+                  <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md font-medium">
+                    Auto-saved {lastAutoSaved}
+                  </span>
+                )}
                 <span>{wordCount} words</span>
                 <span>•</span>
                 <span className="flex items-center space-x-1">
@@ -166,7 +282,7 @@ export default function AuthorStudioPage() {
               </div>
             </div>
 
-            <form className="space-y-5">
+            <form className="space-y-6">
               <div>
                 <label className="block text-xs font-bold text-[#000000] uppercase mb-1.5">
                   Working Headline *
@@ -180,46 +296,35 @@ export default function AuthorStudioPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-[#000000] uppercase mb-1.5">
-                    Beat / Topic
-                  </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden bg-white"
-                  >
-                    <option value="Business">Business</option>
-                    <option value="Technology">Technology</option>
-                    <option value="News">News</option>
-                    <option value="Features">Features</option>
-                    <option value="Opinion">Opinion</option>
-                    <option value="Lifestyle">Lifestyle</option>
-                    <option value="Sports">Sports</option>
-                    <option value="Politics">Politics</option>
-                    <option value="Entertainment">Entertainment</option>
-                    <option value="Health">Health</option>
-                    <option value="Education">Education</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#000000] uppercase mb-1.5">
-                    Suggested Image
-                  </label>
-                  <select
-                    value={coverImage}
-                    onChange={(e) => setCoverImage(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden bg-white"
-                  >
-                    <option value="/assets/hero-featured.jpg">Hero Cover Deal</option>
-                    <option value="/assets/trending-hero.jpg">Climate Innovation Field</option>
-                    <option value="/assets/news-tomato-jos.jpg">Agro Logistics Kaduna</option>
-                    <option value="/assets/news-gitex.jpg">GITEX Gathering</option>
-                  </select>
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-[#000000] uppercase mb-1.5">
+                  Beat / Topic Desk
+                </label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden bg-white"
+                >
+                  <option value="Business">Business</option>
+                  <option value="Technology">Technology</option>
+                  <option value="News">News</option>
+                  <option value="Features">Features</option>
+                  <option value="Opinion">Opinion</option>
+                  <option value="Lifestyle">Lifestyle</option>
+                  <option value="Sports">Sports</option>
+                  <option value="Politics">Politics</option>
+                  <option value="Entertainment">Entertainment</option>
+                  <option value="Health">Health</option>
+                  <option value="Education">Education</option>
+                </select>
               </div>
+
+              {/* Cover Image Uploader (with Cloudinary & Local fallback) */}
+              <ImageUploader
+                label="Story Cover Image (Upload or select stock)"
+                value={coverImage}
+                onChange={(url) => setCoverImage(url)}
+              />
 
               <div>
                 <label className="block text-xs font-bold text-[#000000] uppercase mb-1.5">
@@ -235,28 +340,37 @@ export default function AuthorStudioPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#000000] uppercase mb-1.5">
-                  Manuscript Body *
+                <label className="block text-xs font-bold text-[#000000] uppercase mb-2">
+                  Manuscript Body (WYSIWYG Rich Editor) *
                 </label>
-                <textarea
-                  rows={10}
-                  placeholder="Draft your story here. Use ### for subheadings and bullet points where helpful..."
+                <RichEditor
                   value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-sm text-[#111111] leading-relaxed focus:outline-hidden resize-y font-sans"
+                  onChange={(html) => setContent(html)}
+                  placeholder="Draft your longform story dispatch here. Use the toolbar for bold, italic, headings, lists, tables, and media embeds..."
+                  height={450}
                 />
               </div>
 
               {/* Action Buttons */}
               <div className="pt-4 border-t border-[#E5E6E8] flex flex-wrap items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={handleSaveDraft}
-                  className="px-4 py-2.5 border border-[#DFDFDF] hover:border-black text-[#535252] rounded-xl text-xs font-bold uppercase transition-colors flex items-center space-x-2 cursor-pointer"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>Save Draft</span>
-                </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveDraft}
+                    className="px-4 py-2.5 border border-[#DFDFDF] hover:border-black text-[#535252] rounded-xl text-xs font-bold uppercase transition-colors flex items-center space-x-2 cursor-pointer"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Save Draft</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClearDraft}
+                    className="p-2.5 text-gray-400 hover:text-red-600 rounded-xl transition-colors cursor-pointer"
+                    title="Discard Draft"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
 
                 <button
                   type="button"
@@ -284,6 +398,7 @@ export default function AuthorStudioPage() {
                 <li>Verify all currency values (NGN and USD equivalents).</li>
                 <li>Ensure headlines are factual and avoid clickbait.</li>
                 <li>Double check local spelling of northern locales and names.</li>
+                <li>Paste any X (Twitter) post or YouTube URL directly into the body.</li>
               </ul>
             </div>
 
@@ -329,5 +444,19 @@ export default function AuthorStudioPage() {
 
       </main>
     </div>
+  );
+}
+
+export default function AuthorStudioPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center p-8 text-sm text-[#707070]">
+          Loading Writer Studio...
+        </div>
+      }
+    >
+      <AuthorStudioContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { 
@@ -27,9 +27,10 @@ import {
   X,
   Eye,
   Filter,
-  RefreshCw
+  RefreshCw, Video, Quote, Heading, UserCheck, UserPlus, ShieldAlert, KeyRound
 } from "lucide-react";
-import { Article, Subscriber, Submission } from "@/types";
+import { TwitterIcon } from "@/components/social-icons";
+import { Article, Subscriber, Submission, NewsroomMember, NewsroomRole } from "@/types";
 import { 
   getArticles, 
   createArticle, 
@@ -37,6 +38,11 @@ import {
   toggleArticleFlag,
   deleteArticle, 
   getSubscribers, 
+  getTeamMembers,
+  createTeamMember,
+  updateTeamMemberRole,
+  updateTeamMemberStatus,
+  deleteTeamMember,
   getPlatformMetrics,
   getSubmissions,
   approveSubmission,
@@ -44,8 +50,10 @@ import {
 } from "@/lib/firebase/db";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { CATEGORIES } from "@/data/mock-articles";
+import ImageUploader from "@/components/image-uploader";
+import RichEditor from "@/components/rich-editor";
 
-export default function AdminDashboardPage() {
+function AdminDashboardContent() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -58,7 +66,18 @@ export default function AdminDashboardPage() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [activeTab, setActiveTab] = useState<"dispatches" | "reviewQueue" | "subscribers" | "desks">("dispatches");
+  const [activeTab, setActiveTab] = useState<"dispatches" | "reviewQueue" | "subscribers" | "desks" | "team">("dispatches");
+  const [teamMembers, setTeamMembers] = useState<NewsroomMember[]>([]);
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [newMemberForm, setNewMemberForm] = useState({
+    name: "",
+    email: "",
+    role: "writer" as NewsroomRole,
+    desk: "Technology & Digital Economy",
+    avatar: "/assets/social-image-1.png",
+    bio: "",
+    status: "active" as "active" | "inactive",
+  });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
@@ -84,6 +103,8 @@ export default function AdminDashboardPage() {
     const subs = await getSubscribers();
     const subsQueue = await getSubmissions();
     const mets = await getPlatformMetrics();
+    const members = await getTeamMembers();
+    setTeamMembers([...members]);
 
     setArticles([...arts]);
     setSubscribers([...subs]);
@@ -118,6 +139,46 @@ export default function AdminDashboardPage() {
       await deleteArticle(id);
       await loadData();
       triggerToast(`Story "${title.slice(0, 25)}..." deleted.`);
+    }
+  };
+
+
+  const handleAddTeamMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMemberForm.name.trim() || !newMemberForm.email.trim()) return;
+    await createTeamMember(newMemberForm);
+    await loadData();
+    setShowTeamModal(false);
+    setNewMemberForm({
+      name: "",
+      email: "",
+      role: "writer",
+      desk: "Technology & Digital Economy",
+      avatar: "/assets/social-image-1.png",
+      bio: "",
+      status: "active",
+    });
+    triggerToast("Staff member added to newsroom roster!");
+  };
+
+  const handleUpdateRole = async (id: string, role: NewsroomRole, name: string) => {
+    await updateTeamMemberRole(id, role);
+    await loadData();
+    triggerToast("Updated role for " + name + " to " + role.toUpperCase());
+  };
+
+  const handleToggleMemberStatus = async (id: string, currentStatus: "active" | "inactive", name: string) => {
+    const nextStatus = currentStatus === "active" ? "inactive" : "active";
+    await updateTeamMemberStatus(id, nextStatus);
+    await loadData();
+    triggerToast(name + " status updated to " + nextStatus);
+  };
+
+  const handleDeleteMember = async (id: string, name: string) => {
+    if (confirm("Are you sure you want to remove " + name + " from newsroom staff?")) {
+      await deleteTeamMember(id);
+      await loadData();
+      triggerToast("Removed " + name + " from newsroom roster.");
     }
   };
 
@@ -234,6 +295,33 @@ export default function AdminDashboardPage() {
     link.click();
     document.body.removeChild(link);
     triggerToast("Subscribers list exported as CSV.");
+  };
+
+  const insertSnippet = (snippet: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      content: prev.content ? `${prev.content}\n\n${snippet}` : snippet,
+    }));
+  };
+
+  const insertTwitterEmbed = () => {
+    const url = prompt(
+      "Paste the X (Twitter) post URL:",
+      "https://x.com/thezango_media/status/1785234567890"
+    );
+    if (url) {
+      insertSnippet(url.trim());
+    }
+  };
+
+  const insertYoutubeEmbed = () => {
+    const url = prompt(
+      "Paste the YouTube video URL:",
+      "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+    );
+    if (url) {
+      insertSnippet(url.trim());
+    }
   };
 
   const filteredArticles = articles.filter((a) => {
@@ -458,6 +546,18 @@ export default function AdminDashboardPage() {
               <span className="absolute bottom-0 left-0 right-0 h-1 bg-[#C61D1F] rounded-t-sm" />
             )}
           </button>
+          <button
+            onClick={() => setActiveTab("team")}
+            className={`pb-3.5 px-4 font-bold text-xs sm:text-sm uppercase tracking-wider transition-colors relative cursor-pointer whitespace-nowrap ${
+              activeTab === "team" ? "text-[#C61D1F]" : "text-[#707070] hover:text-[#000000]"
+            }`}
+          >
+            <span>Newsroom Team & Roles ({teamMembers.length})</span>
+            {activeTab === "team" && (
+              <span className="absolute bottom-0 left-0 right-0 h-1 bg-[#C61D1F] rounded-t-sm" />
+            )}
+          </button>
+
         </div>
 
         {/* TAB 1: Dispatches Management */}
@@ -827,32 +927,195 @@ export default function AdminDashboardPage() {
 
       </main>
 
-      {/* Story Publishing / Edit Modal */}
+      
+        {/* TAB 5: Newsroom Staff & Roles */}
+        {activeTab === "team" && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-3xl border border-[#E5E6E8] p-6 shadow-2xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#E5E6E8]">
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
+                    <h3 className="text-lg font-bold text-[#000000] uppercase tracking-wide">
+                      Newsroom Editorial Team & Access Roles
+                    </h3>
+                  </div>
+                  <p className="text-xs text-[#707070] mt-1">
+                    Manage journalist bylines, clearance levels, desk assignments, and publishing privileges across Northern Nigeria bureau.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setShowTeamModal(true)}
+                  className="px-5 py-2.5 bg-[#C61D1F] hover:bg-[#A51719] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center space-x-2 cursor-pointer shrink-0"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>+ Add Team Member</span>
+                </button>
+              </div>
+
+              {/* Roles Breakdown */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 my-6">
+                <div className="p-4 rounded-2xl bg-red-50/60 border border-red-100">
+                  <div className="flex items-center space-x-2 text-red-700 mb-1">
+                    <ShieldCheck className="w-4 h-4" />
+                    <span className="text-xs font-bold uppercase tracking-wide">Admin Role ({teamMembers.filter(m => m.role === "admin").length})</span>
+                  </div>
+                  <p className="text-[11px] text-[#707070]">
+                    Chief executive clearance: publish dispatches, manage taxonomy, oversee review queue, and modify newsroom personnel.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-100">
+                  <div className="flex items-center space-x-2 text-blue-700 mb-1">
+                    <Edit3 className="w-4 h-4" />
+                    <span className="text-xs font-bold uppercase tracking-wide">Editor Role ({teamMembers.filter(m => m.role === "editor").length})</span>
+                  </div>
+                  <p className="text-[11px] text-[#707070]">
+                    Desk clearance: review writer submissions, approve dispatches, set editorial display tags, and publish stories.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-100">
+                  <div className="flex items-center space-x-2 text-emerald-700 mb-1">
+                    <FileText className="w-4 h-4" />
+                    <span className="text-xs font-bold uppercase tracking-wide">Writer Role ({teamMembers.filter(m => m.role === "writer").length})</span>
+                  </div>
+                  <p className="text-[11px] text-[#707070]">
+                    Contributor clearance: compose stories in author studio, save auto-drafts, and submit manuscripts to the review queue.
+                  </p>
+                </div>
+              </div>
+
+              {/* Team Roster Table */}
+              <div className="overflow-x-auto border border-[#E5E6E8] rounded-2xl">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-[#E5E6E8] bg-[#FAFAFA] text-[11px] font-extrabold uppercase text-[#707070] tracking-wider">
+                      <th className="py-4 px-6">Journalist & Byline</th>
+                      <th className="py-4 px-6">Assigned Desk</th>
+                      <th className="py-4 px-6">Current Role</th>
+                      <th className="py-4 px-6">Status</th>
+                      <th className="py-4 px-6 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#E5E6E8] text-xs">
+                    {teamMembers.map((member) => (
+                      <tr key={member.id} className="hover:bg-gray-50/70 transition-colors">
+                        <td className="py-4 px-6">
+                          <div className="flex items-center space-x-3">
+                            <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-200 shrink-0">
+                              <Image
+                                src={member.avatar || "/assets/social-image-1.png"}
+                                alt={member.name}
+                                fill
+                                sizes="40px"
+                                className="object-cover"
+                              />
+                            </div>
+                            <div>
+                              <div className="font-bold text-[#111111] text-sm">{member.name}</div>
+                              <div className="text-[11px] text-[#707070]">{member.email}</div>
+                              {member.bio && (
+                                <p className="text-[11px] text-gray-500 line-clamp-1 max-w-xs mt-0.5">{member.bio}</p>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 px-6">
+                          <span className="font-semibold text-gray-800 bg-gray-100 px-2.5 py-1 rounded-md text-[11px]">
+                            {member.desk}
+                          </span>
+                        </td>
+                        <td className="py-4 px-6">
+                          <div className="flex items-center space-x-2">
+                            {member.role === "admin" && (
+                              <span className="px-2.5 py-1 bg-red-100 text-red-700 rounded-md font-bold text-[10px] uppercase tracking-wider flex items-center space-x-1">
+                                <ShieldCheck className="w-3 h-3" />
+                                <span>Admin</span>
+                              </span>
+                            )}
+                            {member.role === "editor" && (
+                              <span className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-md font-bold text-[10px] uppercase tracking-wider flex items-center space-x-1">
+                                <Edit3 className="w-3 h-3" />
+                                <span>Editor</span>
+                              </span>
+                            )}
+                            {member.role === "writer" && (
+                              <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-md font-bold text-[10px] uppercase tracking-wider flex items-center space-x-1">
+                                <FileText className="w-3 h-3" />
+                                <span>Writer</span>
+                              </span>
+                            )}
+                            <select
+                              value={member.role}
+                              onChange={(e) => handleUpdateRole(member.id, e.target.value as NewsroomRole, member.name)}
+                              className="bg-white border border-[#DFDFDF] hover:border-black text-[11px] font-semibold rounded-lg px-2 py-1 focus:outline-hidden cursor-pointer"
+                            >
+                              <option value="admin">Admin</option>
+                              <option value="editor">Editor</option>
+                              <option value="writer">Writer</option>
+                            </select>
+                          </div>
+                        </td>
+                        <td className="py-4 px-6">
+                          <button
+                            onClick={() => handleToggleMemberStatus(member.id, member.status, member.name)}
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-colors ${
+                              member.status === "active"
+                                ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                            }`}
+                          >
+                            ● {member.status}
+                          </button>
+                        </td>
+                        <td className="py-4 px-6 text-right">
+                          <button
+                            onClick={() => handleDeleteMember(member.id, member.name)}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                            title="Remove staff member"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+            {/* Story Publishing / Edit Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-gray-200 my-8">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-gray-200 overflow-hidden">
             
-            {/* Modal Header */}
-            <div className="flex items-center justify-between pb-4 mb-6 border-b border-[#E5E6E8]">
+            {/* Pinned Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#E5E6E8] shrink-0 bg-white">
               <div className="flex items-center space-x-2.5">
                 <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
-                <h3 className="text-lg font-extrabold text-[#000000] uppercase tracking-wide">
+                <h3 className="text-base sm:text-lg font-extrabold text-[#000000] uppercase tracking-wide">
                   {editingArticle ? "Edit Story Dispatch" : "Publish New Story Dispatch"}
                 </h3>
               </div>
               <button
+                type="button"
                 onClick={() => {
                   setShowCreateModal(false);
                   setEditingArticle(null);
                 }}
-                className="text-gray-400 hover:text-black p-1 rounded-md"
+                className="text-gray-400 hover:text-black p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Modal Form */}
-            <form onSubmit={handleCreateSubmit} className="space-y-4 text-xs">
+            {/* Scrollable Form Body */}
+            <form id="story-dispatch-form" onSubmit={handleCreateSubmit} className="overflow-y-auto flex-1 p-6 space-y-5 text-xs overscroll-contain">
               
               <div>
                 <label className="block font-bold text-[#000000] uppercase mb-1.5">Headline *</label>
@@ -866,7 +1129,7 @@ export default function AdminDashboardPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block font-bold text-[#000000] uppercase mb-1.5">Beat / Category (All 11 Desks)</label>
                   <select
@@ -883,33 +1146,12 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-[#000000] uppercase mb-1.5">Cover Image Asset</label>
-                  <select
-                    value={formData.coverImage}
-                    onChange={(e) => setFormData({ ...formData, coverImage: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden bg-white"
-                  >
-                    <option value="/assets/hero-featured.jpg">Hero Deal (Featured)</option>
-                    <option value="/assets/news-tomato-jos.jpg">Tomato Jos Agriculture</option>
-                    <option value="/assets/trending-hero.jpg">Climate Tech Northern</option>
-                    <option value="/assets/news-gitex.jpg">GITEX Tech Gathering</option>
-                    <option value="/assets/news-hausa-digital.png">Hausa Language Tech</option>
-                    <option value="/assets/news-oxford-skoll.jpg">Oxford Skoll Scholarship</option>
-                    <option value="/assets/news-startup-kano.png">Startup Kano Prototyping</option>
-                    <option value="/assets/news-hausa-barrier.jpg">Code Arewa Engineering</option>
-                    <option value="/assets/news-climate-startup.jpg">Solar Cold-Chain Clinic</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
                   <label className="block font-bold text-[#000000] uppercase mb-1.5">Author Byline</label>
                   <input
                     type="text"
                     value={formData.authorName}
                     onChange={(e) => setFormData({ ...formData, authorName: e.target.value })}
-                    className="w-full px-3.5 py-2 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden"
                   />
                 </div>
 
@@ -919,10 +1161,17 @@ export default function AdminDashboardPage() {
                     type="text"
                     value={formData.readTime}
                     onChange={(e) => setFormData({ ...formData, readTime: e.target.value })}
-                    className="w-full px-3.5 py-2 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden"
                   />
                 </div>
               </div>
+
+              {/* Dynamic Cover Image Uploader with Cloudinary & Preset Stock */}
+              <ImageUploader
+                label="Story Cover Image (Upload from device or select editorial stock)"
+                value={formData.coverImage}
+                onChange={(url) => setFormData({ ...formData, coverImage: url })}
+              />
 
               <div>
                 <label className="block font-bold text-[#000000] uppercase mb-1.5">Lead Excerpt</label>
@@ -936,22 +1185,20 @@ export default function AdminDashboardPage() {
               </div>
 
               <div>
-                <label className="block font-bold text-[#000000] uppercase mb-1.5">Story Manuscript Body *</label>
-                <textarea
-                  rows={6}
-                  required
-                  placeholder="Full longform article content. Supports markdown headers (###) and bullet lists..."
+                <label className="block font-bold text-[#000000] uppercase mb-2">Story Manuscript Body (WYSIWYG Rich Editor) *</label>
+                <RichEditor
                   value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden font-sans resize-y"
+                  onChange={(html) => setFormData({ ...formData, content: html })}
+                  placeholder="Draft full longform article content. Use the editor toolbar for formatting, tables, images, and video/tweet embeds..."
+                  height={340}
                 />
               </div>
 
               {/* Publication Flags */}
-              <div className="pt-2 border-t border-[#E5E6E8]">
+              <div className="pt-3 border-t border-[#E5E6E8]">
                 <span className="block font-bold text-[#000000] uppercase mb-2">Editorial Display Placements</span>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <label className="flex items-center space-x-2 cursor-pointer">
+                  <label className="flex items-center space-x-2 cursor-pointer bg-gray-50 p-2.5 rounded-xl border border-gray-200 hover:border-gray-400 transition-colors">
                     <input
                       type="checkbox"
                       checked={formData.isFeatured}
@@ -961,7 +1208,7 @@ export default function AdminDashboardPage() {
                     <span className="font-semibold text-gray-700">Hero Headline</span>
                   </label>
 
-                  <label className="flex items-center space-x-2 cursor-pointer">
+                  <label className="flex items-center space-x-2 cursor-pointer bg-gray-50 p-2.5 rounded-xl border border-gray-200 hover:border-gray-400 transition-colors">
                     <input
                       type="checkbox"
                       checked={formData.isLatest}
@@ -971,7 +1218,7 @@ export default function AdminDashboardPage() {
                     <span className="font-semibold text-gray-700">Latest Breaking</span>
                   </label>
 
-                  <label className="flex items-center space-x-2 cursor-pointer">
+                  <label className="flex items-center space-x-2 cursor-pointer bg-gray-50 p-2.5 rounded-xl border border-gray-200 hover:border-gray-400 transition-colors">
                     <input
                       type="checkbox"
                       checked={formData.isTrending}
@@ -981,44 +1228,190 @@ export default function AdminDashboardPage() {
                     <span className="font-semibold text-gray-700">Trending Velocity</span>
                   </label>
 
-                  <label className="flex items-center space-x-2 cursor-pointer">
+                  <label className="flex items-center space-x-2 cursor-pointer bg-gray-50 p-2.5 rounded-xl border border-gray-200 hover:border-gray-400 transition-colors">
                     <input
                       type="checkbox"
                       checked={formData.isEditorsPick}
                       onChange={(e) => setFormData({ ...formData, isEditorsPick: e.target.checked })}
                       className="rounded text-[#C61D1F] focus:ring-[#C61D1F]"
                     />
-                    <span className="font-semibold text-gray-700">Editor&apos;s Pick</span>
+                    <span className="font-semibold text-gray-700">Editor's Pick</span>
                   </label>
                 </div>
               </div>
 
-              {/* Submit Buttons */}
-              <div className="pt-4 border-t border-[#E5E6E8] flex items-center justify-end space-x-3">
+            </form>
+
+            {/* Pinned Sticky Footer */}
+            <div className="px-6 py-4 border-t border-[#E5E6E8] shrink-0 bg-[#F8F9FA] flex items-center justify-between">
+              <span className="text-[11px] text-[#707070]">
+                {editingArticle ? "Editing: " + editingArticle.title.slice(0, 30) + "..." : "Live Publishing Clearance"}
+              </span>
+              <div className="flex items-center space-x-3">
                 <button
                   type="button"
                   onClick={() => {
                     setShowCreateModal(false);
                     setEditingArticle(null);
                   }}
-                  className="px-4 py-2 border border-[#DFDFDF] hover:border-black rounded-xl text-xs font-bold uppercase transition-colors cursor-pointer"
+                  className="px-4 py-2 border border-[#DFDFDF] hover:border-black rounded-xl text-xs font-bold uppercase transition-colors cursor-pointer bg-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
+                  form="story-dispatch-form"
                   className="px-6 py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-md cursor-pointer"
                 >
                   {editingArticle ? "Save Changes" : "Publish Dispatch"}
                 </button>
               </div>
-
-            </form>
+            </div>
 
           </div>
         </div>
       )}
 
+      {/* Add Newsroom Team Member Modal */}
+      {showTeamModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-gray-200 overflow-hidden">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#E5E6E8] shrink-0 bg-white">
+              <div className="flex items-center space-x-2.5">
+                <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
+                <h3 className="text-base font-extrabold text-[#000000] uppercase tracking-wide">
+                  Add Newsroom Staff Member
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTeamModal(false)}
+                className="text-gray-400 hover:text-black p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Scrollable Form Body */}
+            <form id="team-member-form" onSubmit={handleAddTeamMember} className="overflow-y-auto flex-1 p-6 space-y-4 text-xs overscroll-contain">
+              <div>
+                <label className="block font-bold text-[#000000] uppercase mb-1.5">Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Zainab Aliyu"
+                  value={newMemberForm.name}
+                  onChange={(e) => setNewMemberForm({ ...newMemberForm, name: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-sm focus:outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-[#000000] uppercase mb-1.5">Corporate / Journalist Email *</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. zainab.aliyu@thezango.org"
+                  value={newMemberForm.email}
+                  onChange={(e) => setNewMemberForm({ ...newMemberForm, email: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-sm focus:outline-hidden"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-[#000000] uppercase mb-1.5">Newsroom Role *</label>
+                  <select
+                    value={newMemberForm.role}
+                    onChange={(e) => setNewMemberForm({ ...newMemberForm, role: e.target.value as NewsroomRole })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden bg-white"
+                  >
+                    <option value="writer">Staff Writer (Submit Manuscripts)</option>
+                    <option value="editor">Desk Editor (Review & Publish)</option>
+                    <option value="admin">Chief Admin (Full Access & CMS)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-[#000000] uppercase mb-1.5">Assigned Desk / Beat *</label>
+                  <select
+                    value={newMemberForm.desk}
+                    onChange={(e) => setNewMemberForm({ ...newMemberForm, desk: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden bg-white"
+                  >
+                    {CATEGORIES.map((c) => (
+                      <option key={c.id} value={c.name}>{c.name}</option>
+                    ))}
+                    <option value="Executive & Investigation">Executive & Investigation</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-[#000000] uppercase mb-1.5">Avatar Image URL</label>
+                <input
+                  type="text"
+                  value={newMemberForm.avatar}
+                  onChange={(e) => setNewMemberForm({ ...newMemberForm, avatar: e.target.value })}
+                  placeholder="/assets/social-image-1.png or Cloudinary URL"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-[#000000] uppercase mb-1.5">Journalist Bio</label>
+                <textarea
+                  rows={3}
+                  placeholder="Brief editorial background, focus areas, and geographic beat coverage..."
+                  value={newMemberForm.bio}
+                  onChange={(e) => setNewMemberForm({ ...newMemberForm, bio: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden resize-none"
+                />
+              </div>
+            </form>
+
+            {/* Pinned Sticky Footer */}
+            <div className="px-6 py-4 border-t border-[#E5E6E8] shrink-0 bg-[#F8F9FA] flex items-center justify-between">
+              <span className="text-[11px] text-[#707070]">Newsroom Staff Clearance</span>
+              <div className="flex items-center space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowTeamModal(false)}
+                  className="px-4 py-2 border border-[#DFDFDF] hover:border-black rounded-xl text-xs font-bold uppercase transition-colors cursor-pointer bg-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  form="team-member-form"
+                  className="px-6 py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-md cursor-pointer"
+                >
+                  Confirm & Add Staff
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+
     </div>
+  );
+}
+
+export default function AdminDashboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center p-8 text-sm text-[#707070]">
+          Loading Chief Editor CMS...
+        </div>
+      }
+    >
+      <AdminDashboardContent />
+    </Suspense>
   );
 }

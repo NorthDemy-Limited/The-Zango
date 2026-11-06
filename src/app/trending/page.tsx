@@ -1,11 +1,14 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ARTICLES } from "@/data/mock-articles";
-import { Flame, ArrowLeft, ArrowRight, TrendingUp } from "lucide-react";
+import { getArticles } from "@/lib/firebase/db";
+import { Flame, ArrowLeft, ArrowRight } from "lucide-react";
 
-export default function TrendingPage() {
-  const trendingArticles = ARTICLES.filter((a) => a.isTrending || a.isPopular || a.isFeatured);
+export default async function TrendingPage() {
+  const articles = await getArticles();
+  const trendingArticles = articles.filter(
+    (a) => a.isTrending || a.isPopular || a.isFeatured
+  );
 
   return (
     <div className="py-10 lg:py-16 bg-white min-h-screen">
@@ -84,7 +87,7 @@ export default function TrendingPage() {
               <div className="p-5 pt-0">
                 <div className="pt-3 border-t border-[#E5E6E8] flex items-center justify-between text-xs">
                   <Link
-                    href={`/author/${article.author.slug}`}
+                    href={`/author/${article.author.slug || "editorial-desk"}`}
                     className="font-semibold text-[#535252] hover:text-[#C61D1F] transition-colors"
                   >
                     By {article.author.name}

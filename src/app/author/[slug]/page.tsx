@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { AUTHORS, ARTICLES } from "@/data/mock-articles";
+import { getArticles } from "@/lib/firebase/db";
 import { MapPin, ArrowLeft, ArrowRight, BookOpen, CheckCircle2 } from "lucide-react";
 import { TwitterIcon, LinkedinIcon } from "@/components/social-icons";
 
@@ -26,7 +27,8 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
     notFound();
   }
 
-  const authorArticles = ARTICLES.filter(
+  const allArticles = await getArticles();
+  const authorArticles = allArticles.filter(
     (a) => a.author.slug === author.slug || a.author.name === author.name
   );
 

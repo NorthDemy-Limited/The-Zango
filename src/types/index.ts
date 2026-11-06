@@ -58,6 +58,21 @@ export interface Subscriber {
   subscribedAt: string;
 }
 
+export type NewsroomRole = "admin" | "editor" | "writer";
+
+export interface NewsroomMember {
+  id: string;
+  name: string;
+  email: string;
+  role: NewsroomRole;
+  desk: string;
+  avatar?: string;
+  bio?: string;
+  status: "active" | "inactive";
+  articlesCount?: number;
+  joinedAt: string;
+}
+
 export interface Submission {
   id: string;
   title: string;

@@ -1,6 +1,7 @@
 import { db, isFirebaseConfigured } from "./config";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy } from "firebase/firestore";
-import { Article, Subscriber } from "@/types";
+import { Article, Subscriber, Submission, NewsroomMember, NewsroomRole } from "@/types";
 import { ARTICLES } from "@/data/mock-articles";
 
 let localArticlesStore: Article[] = [...ARTICLES];
@@ -12,7 +13,80 @@ let localSubscribersStore: Subscriber[] = [
   { email: "bello.invest@savannah.vc", subscribedAt: "2026-07-24" },
 ];
 
+function mapSupabaseToArticle(row: any): Article {
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    excerpt: row.excerpt,
+    content: row.content,
+    coverImage: row.cover_image,
+    category: row.category,
+    tags: row.tags || [],
+    publishedAt: row.published_at,
+    readTime: row.read_time || "4 min read",
+    isFeatured: !!row.is_featured,
+    isLatest: !!row.is_latest,
+    isTrending: !!row.is_trending,
+    isPopular: !!row.is_popular,
+    isEditorsPick: !!row.is_editors_pick,
+    popularRank: row.popular_rank,
+    views: row.views || 0,
+    author: {
+      id: row.author_id || "author-1",
+      name: row.author_name || "The Zango Bureau",
+      slug: row.author_slug || "the-zango-bureau",
+      role: row.author_role || "Editorial Desk",
+      avatar: row.author_avatar,
+    },
+  };
+}
+
+function mapArticleToSupabase(article: Partial<Article>): any {
+  const row: any = {};
+  if (article.id !== undefined) row.id = article.id;
+  if (article.slug !== undefined) row.slug = article.slug;
+  if (article.title !== undefined) row.title = article.title;
+  if (article.excerpt !== undefined) row.excerpt = article.excerpt;
+  if (article.content !== undefined) row.content = article.content;
+  if (article.coverImage !== undefined) row.cover_image = article.coverImage;
+  if (article.category !== undefined) row.category = article.category;
+  if (article.tags !== undefined) row.tags = article.tags;
+  if (article.publishedAt !== undefined) row.published_at = article.publishedAt;
+  if (article.readTime !== undefined) row.read_time = article.readTime;
+  if (article.isFeatured !== undefined) row.is_featured = article.isFeatured;
+  if (article.isLatest !== undefined) row.is_latest = article.isLatest;
+  if (article.isTrending !== undefined) row.is_trending = article.isTrending;
+  if (article.isPopular !== undefined) row.is_popular = article.isPopular;
+  if (article.isEditorsPick !== undefined) row.is_editors_pick = article.isEditorsPick;
+  if (article.popularRank !== undefined) row.popular_rank = article.popularRank;
+  if (article.views !== undefined) row.views = article.views;
+  if (article.author) {
+    if (article.author.name) row.author_name = article.author.name;
+    if (article.author.slug) row.author_slug = article.author.slug;
+    if (article.author.role) row.author_role = article.author.role;
+    if (article.author.avatar) row.author_avatar = article.author.avatar;
+  }
+  return row;
+}
+
 export async function getArticles(): Promise<Article[]> {
+  // 1. Check Supabase PostgreSQL
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("articles")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (!error && data && data.length > 0) {
+        return data.map(mapSupabaseToArticle);
+      }
+    } catch (err) {
+      console.warn("Could not fetch articles from Supabase:", err);
+    }
+  }
+
+  // 2. Check Firebase Firestore
   if (isFirebaseConfigured && db) {
     try {
       const q = query(collection(db, "articles"), orderBy("publishedAt", "desc"));
@@ -25,7 +99,7 @@ export async function getArticles(): Promise<Article[]> {
     }
   }
 
-  // Ensure any newly added mock articles are synchronized into the local store
+  // 3. Fallback to Local Store
   const existingIds = new Set(localArticlesStore.map((a) => a.id));
   const missingArticles = ARTICLES.filter((a) => !existingIds.has(a.id));
   if (missingArticles.length > 0) {
@@ -35,18 +109,51 @@ export async function getArticles(): Promise<Article[]> {
   return localArticlesStore;
 }
 
+export async function getArticleBySlug(slug: string): Promise<Article | null> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("articles")
+        .select("*")
+        .eq("slug", slug.toLowerCase())
+        .single();
+      if (!error && data) {
+        return mapSupabaseToArticle(data);
+      }
+    } catch (err) {
+      console.warn("Supabase slug lookup failed:", err);
+    }
+  }
+
+  const articles = await getArticles();
+  const found = articles.find((a) => a.slug.toLowerCase() === slug.toLowerCase());
+  if (found) return found;
+  return ARTICLES.find((a) => a.slug.toLowerCase() === slug.toLowerCase()) || null;
+}
+
 export async function createArticle(articleData: Omit<Article, "id">): Promise<Article> {
   const newArticle: Article = {
     ...articleData,
     id: `art-${Date.now()}`,
   };
 
+  // Persist to Supabase
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const row = mapArticleToSupabase(newArticle);
+      await supabase.from("articles").insert([row]);
+    } catch (err) {
+      console.warn("Could not save article to Supabase:", err);
+    }
+  }
+
+  // Persist to Firebase
   if (isFirebaseConfigured && db) {
     try {
       const docRef = await addDoc(collection(db, "articles"), newArticle);
       newArticle.id = docRef.id;
     } catch (err) {
-      console.warn("Could not add article to Firestore, saving locally:", err);
+      console.warn("Could not add article to Firestore:", err);
     }
   }
 
@@ -55,6 +162,14 @@ export async function createArticle(articleData: Omit<Article, "id">): Promise<A
 }
 
 export async function deleteArticle(id: string): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase.from("articles").delete().eq("id", id);
+    } catch (err) {
+      console.warn("Could not delete from Supabase:", err);
+    }
+  }
+
   if (isFirebaseConfigured && db) {
     try {
       await deleteDoc(doc(db, "articles", id));
@@ -67,6 +182,23 @@ export async function deleteArticle(id: string): Promise<boolean> {
 }
 
 export async function getSubscribers(): Promise<Subscriber[]> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("subscribers")
+        .select("email, subscribed_at")
+        .order("created_at", { ascending: false });
+      if (!error && data && data.length > 0) {
+        return data.map((d: any) => ({
+          email: d.email,
+          subscribedAt: d.subscribed_at,
+        }));
+      }
+    } catch (err) {
+      console.warn("Could not fetch subscribers from Supabase:", err);
+    }
+  }
+
   if (isFirebaseConfigured && db) {
     try {
       const q = query(collection(db, "subscribers"), orderBy("subscribedAt", "desc"));
@@ -87,6 +219,19 @@ export async function addSubscriber(email: string): Promise<Subscriber> {
     subscribedAt: new Date().toISOString().split("T")[0],
   };
 
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase.from("subscribers").insert([
+        {
+          email,
+          subscribed_at: newSubscriber.subscribedAt,
+        },
+      ]);
+    } catch (err) {
+      console.warn("Could not add subscriber to Supabase:", err);
+    }
+  }
+
   if (isFirebaseConfigured && db) {
     try {
       await addDoc(collection(db, "subscribers"), newSubscriber);
@@ -104,6 +249,15 @@ export async function updateArticle(id: string, updates: Partial<Article>): Prom
   if (index === -1) return null;
 
   const updated: Article = { ...localArticlesStore[index], ...updates };
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const rowUpdates = mapArticleToSupabase(updates);
+      await supabase.from("articles").update(rowUpdates).eq("id", id);
+    } catch (err) {
+      console.warn("Could not update article in Supabase:", err);
+    }
+  }
 
   if (isFirebaseConfigured && db) {
     try {
@@ -128,7 +282,7 @@ export async function toggleArticleFlag(
   return updateArticle(id, { [flag]: !currentValue });
 }
 
-let localSubmissionsStore: import("@/types").Submission[] = [
+let localSubmissionsStore: Submission[] = [
   {
     id: "sub-1",
     title: "Kano Solar Irrigation Co-Op Triples Dry-Season Yields for 400 Smallholders",
@@ -173,19 +327,70 @@ let localSubmissionsStore: import("@/types").Submission[] = [
   },
 ];
 
-export async function getSubmissions(): Promise<import("@/types").Submission[]> {
+export async function getSubmissions(): Promise<Submission[]> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("submissions")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (!error && data && data.length > 0) {
+        return data.map((d: any) => ({
+          id: d.id,
+          title: d.title,
+          excerpt: d.excerpt,
+          content: d.content,
+          category: d.category,
+          authorName: d.author_name,
+          authorEmail: d.author_email,
+          submittedAt: d.submitted_at,
+          wordCount: d.word_count || 0,
+          readTime: d.read_time,
+          coverImage: d.cover_image,
+          status: d.status,
+        }));
+      }
+    } catch (err) {
+      console.warn("Could not fetch submissions from Supabase:", err);
+    }
+  }
+
   return localSubmissionsStore;
 }
 
 export async function createSubmission(
-  subData: Omit<import("@/types").Submission, "id" | "submittedAt" | "status">
-): Promise<import("@/types").Submission> {
-  const newSubmission: import("@/types").Submission = {
+  subData: Omit<Submission, "id" | "submittedAt" | "status">
+): Promise<Submission> {
+  const newSubmission: Submission = {
     ...subData,
     id: `sub-${Date.now()}`,
     submittedAt: "Just now",
     status: "pending",
   };
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase.from("submissions").insert([
+        {
+          id: newSubmission.id,
+          title: newSubmission.title,
+          excerpt: newSubmission.excerpt,
+          content: newSubmission.content,
+          category: newSubmission.category,
+          author_name: newSubmission.authorName,
+          author_email: newSubmission.authorEmail,
+          submitted_at: newSubmission.submittedAt,
+          word_count: newSubmission.wordCount,
+          read_time: newSubmission.readTime,
+          cover_image: newSubmission.coverImage,
+          status: newSubmission.status,
+        },
+      ]);
+    } catch (err) {
+      console.warn("Could not save submission to Supabase:", err);
+    }
+  }
+
   localSubmissionsStore = [newSubmission, ...localSubmissionsStore];
   return newSubmission;
 }
@@ -195,6 +400,14 @@ export async function approveSubmission(id: string): Promise<Article | null> {
   if (!submission) return null;
 
   submission.status = "approved";
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase.from("submissions").update({ status: "approved" }).eq("id", id);
+    } catch (err) {
+      console.warn("Could not approve submission in Supabase:", err);
+    }
+  }
 
   const slug = submission.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
@@ -224,6 +437,15 @@ export async function rejectSubmission(id: string): Promise<boolean> {
   const submission = localSubmissionsStore.find((s) => s.id === id);
   if (!submission) return false;
   submission.status = "rejected";
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase.from("submissions").update({ status: "rejected" }).eq("id", id);
+    } catch (err) {
+      console.warn("Could not reject submission in Supabase:", err);
+    }
+  }
+
   return true;
 }
 
@@ -241,4 +463,178 @@ export async function getPlatformMetrics() {
     totalViews,
     totalSubscribers: subscribers.length,
   };
+}
+
+
+// ==============================================================================
+// NEWSROOM TEAM ROSTER & ROLE MANAGEMENT
+// ==============================================================================
+let localTeamMembersStore: NewsroomMember[] = [
+  {
+    id: "member-1",
+    name: "Usman Bello",
+    email: "usman.bello@thezango.org",
+    role: "admin",
+    desk: "Executive & Investigation",
+    avatar: "/assets/social-image-1.png",
+    bio: "Chief Executive & Bureau Chief with 15+ years in Sahelian socio-political investigative reporting.",
+    status: "active",
+    articlesCount: 42,
+    joinedAt: "2024-01-15",
+  },
+  {
+    id: "member-2",
+    name: "Aisha Dahiru",
+    email: "aisha.dahiru@thezango.org",
+    role: "editor",
+    desk: "Business & Capital Markets",
+    avatar: "/assets/social-image-2.png",
+    bio: "Senior Markets Editor analyzing private equity, agribusiness finance, and trade dynamics across Northern Nigeria.",
+    status: "active",
+    articlesCount: 28,
+    joinedAt: "2024-03-01",
+  },
+  {
+    id: "member-3",
+    name: "Ibrahim Garba",
+    email: "ibrahim.garba@thezango.org",
+    role: "editor",
+    desk: "Security & Regional Conflict",
+    avatar: "/assets/social-image-3.png",
+    bio: "Defense and Lake Chad basin correspondent, specializing in counter-insurgency and humanitarian corridors.",
+    status: "active",
+    articlesCount: 35,
+    joinedAt: "2024-04-10",
+  },
+  {
+    id: "member-4",
+    name: "Fatima Sanusi",
+    email: "fatima.sanusi@thezango.org",
+    role: "writer",
+    desk: "Technology & Digital Economy",
+    avatar: "/assets/social-image-4.png",
+    bio: "Tech correspondent tracking venture capital, AI hubs, and mobile banking adoption from Kano to Kaduna.",
+    status: "active",
+    articlesCount: 19,
+    joinedAt: "2024-06-20",
+  },
+  {
+    id: "member-5",
+    name: "Zainab Aliyu",
+    email: "zainab.aliyu@thezango.org",
+    role: "writer",
+    desk: "Culture, Heritage & Arts",
+    avatar: "/assets/social-image-1.png",
+    bio: "Cultural essayist documenting Sahelian architecture, Hausa literature, and contemporary creative movements.",
+    status: "active",
+    articlesCount: 14,
+    joinedAt: "2024-08-05",
+  },
+];
+
+export async function getTeamMembers(): Promise<NewsroomMember[]> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("newsroom_members")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (!error && data && data.length > 0) {
+        return data.map((d: any) => ({
+          id: d.id,
+          name: d.name,
+          email: d.email,
+          role: d.role as NewsroomRole,
+          desk: d.desk,
+          avatar: d.avatar,
+          bio: d.bio,
+          status: d.status as "active" | "inactive",
+          articlesCount: d.articles_count || 0,
+          joinedAt: d.joined_at || d.created_at,
+        }));
+      }
+    } catch (err) {
+      console.warn("Could not fetch team members from Supabase:", err);
+    }
+  }
+
+  return localTeamMembersStore;
+}
+
+export async function createTeamMember(
+  data: Omit<NewsroomMember, "id" | "joinedAt" | "articlesCount">
+): Promise<NewsroomMember> {
+  const newMember: NewsroomMember = {
+    ...data,
+    id: "member-" + Date.now(),
+    joinedAt: new Date().toISOString().split("T")[0],
+    articlesCount: 0,
+  };
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase.from("newsroom_members").insert([
+        {
+          id: newMember.id,
+          name: newMember.name,
+          email: newMember.email,
+          role: newMember.role,
+          desk: newMember.desk,
+          avatar: newMember.avatar || "/assets/social-image-1.png",
+          bio: newMember.bio || "",
+          status: newMember.status,
+          articles_count: 0,
+          joined_at: newMember.joinedAt,
+        },
+      ]);
+    } catch (err) {
+      console.warn("Could not save team member to Supabase:", err);
+    }
+  }
+
+  localTeamMembersStore = [newMember, ...localTeamMembersStore];
+  return newMember;
+}
+
+export async function updateTeamMemberRole(id: string, role: NewsroomRole): Promise<boolean> {
+  const member = localTeamMembersStore.find((m) => m.id === id);
+  if (!member) return false;
+  member.role = role;
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase.from("newsroom_members").update({ role }).eq("id", id);
+    } catch (err) {
+      console.warn("Could not update team member role in Supabase:", err);
+    }
+  }
+  return true;
+}
+
+export async function updateTeamMemberStatus(id: string, status: "active" | "inactive"): Promise<boolean> {
+  const member = localTeamMembersStore.find((m) => m.id === id);
+  if (!member) return false;
+  member.status = status;
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase.from("newsroom_members").update({ status }).eq("id", id);
+    } catch (err) {
+      console.warn("Could not update team member status in Supabase:", err);
+    }
+  }
+  return true;
+}
+
+export async function deleteTeamMember(id: string): Promise<boolean> {
+  localTeamMembersStore = localTeamMembersStore.filter((m) => m.id !== id);
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase.from("newsroom_members").delete().eq("id", id);
+    } catch (err) {
+      console.warn("Could not delete team member in Supabase:", err);
+    }
+  }
+  return true;
 }
