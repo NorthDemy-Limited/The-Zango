@@ -85,5 +85,6 @@ export interface Submission {
   wordCount: number;
   readTime: string;
   coverImage?: string;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "needs_revision";
+  feedbackNotes?: string;
 }

@@ -62,7 +62,9 @@ import {
   getPlatformMetrics, 
   getSubmissions, 
   approveSubmission, 
-  rejectSubmission 
+  rejectSubmission,
+  requestRevisionSubmission,
+  updateSubmission
 } from "@/lib/firebase/db";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { CATEGORIES } from "@/data/mock-articles";
@@ -71,7 +73,7 @@ import RichEditor from "@/components/rich-editor";
 
 function AdminDashboardContent() {
   const router = useRouter();
-  const { user, role, logout, switchRole, isAuthenticated, isLoading } = useAuth();
+  const { user, role, logout, switchRole, updateUser, isAuthenticated, isLoading } = useAuth();
 
   const [articles, setArticles] = useState<Article[]>([]);
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
@@ -102,6 +104,25 @@ function AdminDashboardContent() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
+
+  // Revision request modal state
+  const [revisionModalSub, setRevisionModalSub] = useState<Submission | null>(null);
+  const [revisionNotes, setRevisionNotes] = useState("");
+
+  // Executive Profile & Settings state
+  const [profileName, setProfileName] = useState(user?.name || "Usman Bello");
+  const [profileAvatar, setProfileAvatar] = useState(user?.avatar || "/assets/social-image-1.png");
+  const [profileBio, setProfileBio] = useState(user?.bio || "Chief Executive & Bureau Chief with 15+ years in Sahelian socio-political investigative reporting.");
+  const [profileDesk, setProfileDesk] = useState(user?.desk || "Executive & Investigation");
+
+  useEffect(() => {
+    if (user) {
+      setProfileName(user.name || "Usman Bello");
+      setProfileAvatar(user.avatar || "/assets/social-image-1.png");
+      setProfileBio(user.bio || "Chief Executive & Bureau Chief with 15+ years in Sahelian socio-political investigative reporting.");
+      setProfileDesk(user.desk || "Executive & Investigation");
+    }
+  }, [user]);
 
   // New/Edit Article Form State
   const [formData, setFormData] = useState({
@@ -306,6 +327,52 @@ function AdminDashboardContent() {
     }
   };
 
+  const handleOpenEditSubmission = (sub: Submission) => {
+    setEditingArticle(null);
+    setFormData({
+      title: sub.title,
+      slug: sub.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+      category: sub.category,
+      coverImage: sub.coverImage || "/assets/hero-featured.jpg",
+      excerpt: sub.excerpt,
+      content: sub.content,
+      authorName: sub.authorName,
+      readTime: sub.readTime,
+      isFeatured: false,
+      isTrending: false,
+      isEditorsPick: false,
+      isLatest: true,
+    });
+    setShowCreateModal(true);
+  };
+
+  const handleRequestRevision = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!revisionModalSub || !revisionNotes.trim()) return;
+    await requestRevisionSubmission(revisionModalSub.id, revisionNotes.trim());
+    await loadData();
+    setRevisionModalSub(null);
+    setRevisionNotes("");
+    triggerToast("Revision feedback delivered to writer!");
+  };
+
+  const handleSaveProfile = () => {
+    updateUser({
+      name: profileName,
+      avatar: profileAvatar,
+      bio: profileBio,
+      desk: profileDesk,
+    });
+    setTeamMembers((prev) =>
+      prev.map((m) =>
+        m.email === user?.email
+          ? { ...m, name: profileName, avatar: profileAvatar, bio: profileBio, desk: profileDesk }
+          : m
+      )
+    );
+    triggerToast("Admin profile byline and photo saved successfully!");
+  };
+
   const exportSubscribersCSV = () => {
     if (subscribers.length === 0) {
       alert("No subscribers found to export.");
@@ -333,7 +400,7 @@ function AdminDashboardContent() {
     return matchesSearch && matchesCategory;
   });
 
-  const pendingSubmissions = submissions.filter((s) => s.status === "pending");
+  const pendingSubmissions = submissions.filter((s) => s.status === "pending" || s.status === "needs_revision");
   const leadFeaturedArticle = articles.find((a) => a.isFeatured) || articles[0];
 
   return (
@@ -377,27 +444,6 @@ function AdminDashboardContent() {
           {/* Right: Controls & Profile */}
           <div className="flex items-center space-x-3 sm:space-x-4">
             
-            {/* Status Pill */}
-            <span className="hidden sm:inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Verify Credential</span>
-            </span>
-
-            {/* Dynamic Role Switcher Pill */}
-            <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-xl border border-gray-200 bg-white text-xs font-semibold shadow-2xs">
-              <ShieldCheck className="w-3.5 h-3.5 text-[#C61D1F]" />
-              <span className="text-gray-500 text-[11px]">Role:</span>
-              <select
-                value={role || "admin"}
-                onChange={(e) => switchRole(e.target.value as UserRole)}
-                className="font-extrabold text-xs text-gray-900 bg-transparent focus:outline-hidden cursor-pointer"
-              >
-                <option value="admin">Chief Admin</option>
-                <option value="editor">Desk Editor</option>
-                <option value="writer">Staff Writer</option>
-              </select>
-            </div>
-
             {/* Notification Bell */}
             <button 
               onClick={() => setActiveTab("reviewQueue")}
@@ -1162,9 +1208,15 @@ function AdminDashboardContent() {
                           <span className="text-xs text-[#707070]">{sub.wordCount} words</span>
                         </div>
 
-                        <span className="bg-amber-50 text-amber-700 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border border-amber-200">
-                          Pending Clearance
-                        </span>
+                        {sub.status === "needs_revision" ? (
+                          <span className="bg-amber-100 text-amber-900 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border border-amber-300">
+                            ⚠️ Needs Revision
+                          </span>
+                        ) : (
+                          <span className="bg-amber-50 text-amber-700 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border border-amber-200">
+                            Pending Clearance
+                          </span>
+                        )}
                       </div>
 
                       <div>
@@ -1172,24 +1224,56 @@ function AdminDashboardContent() {
                         <p className="text-xs text-[#535252] mt-1.5 leading-relaxed">{sub.excerpt}</p>
                       </div>
 
+                      {/* Feedback Note if present */}
+                      {sub.feedbackNotes && (
+                        <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/90 text-xs text-amber-900 space-y-1">
+                          <span className="font-extrabold uppercase text-[10px] tracking-wider text-amber-800 block">
+                            Editorial Revision Notes Sent to Author:
+                          </span>
+                          <p className="italic">{sub.feedbackNotes}</p>
+                        </div>
+                      )}
+
                       <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 text-xs text-gray-700 max-h-40 overflow-y-auto">
                         <div className="font-bold text-gray-900 mb-1">Manuscript Preview:</div>
                         <div className="line-clamp-4">{sub.content.replace(/<[^>]*>/g, " ")}</div>
                       </div>
 
-                      <div className="pt-2 border-t border-[#E5E6E8] flex items-center justify-between">
+                      <div className="pt-2 border-t border-[#E5E6E8] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="text-xs">
                           <span className="font-bold text-[#111111]">{sub.authorName}</span>
                           {sub.authorEmail && <span className="text-[#707070] ml-1.5">({sub.authorEmail})</span>}
                         </div>
 
-                        <div className="flex items-center space-x-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            onClick={() => handleOpenEditSubmission(sub)}
+                            className="px-3 py-1.5 border border-gray-300 hover:border-black text-gray-800 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center space-x-1.5 bg-white shadow-2xs"
+                            title="Edit manuscript copy before publishing"
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-blue-600" />
+                            <span>Preview & Edit Copy</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setRevisionModalSub(sub);
+                              setRevisionNotes(sub.feedbackNotes || "");
+                            }}
+                            className="px-3 py-1.5 border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center space-x-1.5 shadow-2xs"
+                            title="Send editorial revision notes back to writer"
+                          >
+                            <Send className="w-3.5 h-3.5 text-amber-700" />
+                            <span>Request Edit</span>
+                          </button>
+
                           <button
                             onClick={() => handleRejectSubmission(sub.id, sub.title)}
-                            className="px-3.5 py-1.5 border border-[#DFDFDF] hover:border-red-600 hover:text-red-600 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                            className="px-3 py-1.5 border border-[#DFDFDF] hover:border-red-600 hover:text-red-600 rounded-xl text-xs font-bold transition-colors cursor-pointer"
                           >
                             Reject
                           </button>
+
                           <button
                             onClick={() => handleApproveSubmission(sub.id, sub.title)}
                             className="px-4 py-1.5 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
@@ -1347,37 +1431,53 @@ function AdminDashboardContent() {
                                   Staff Writer
                                 </span>
                               )}
-                              <select
-                                value={member.role}
-                                onChange={(e) => handleUpdateRole(member.id, e.target.value as NewsroomRole, member.name)}
-                                className="bg-white border border-[#DFDFDF] hover:border-black text-[11px] font-semibold rounded-lg px-2 py-1 focus:outline-hidden cursor-pointer"
-                              >
-                                <option value="admin">Admin</option>
-                                <option value="editor">Editor</option>
-                                <option value="writer">Writer</option>
-                              </select>
+                              {(member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) ? (
+                                <span className="px-2 py-0.5 bg-slate-900 text-white rounded-md font-extrabold text-[10px] uppercase tracking-wider flex items-center space-x-1 shadow-2xs">
+                                  <span>🔒 Permanent Bureau Chief</span>
+                                </span>
+                              ) : (
+                                <select
+                                  value={member.role}
+                                  onChange={(e) => handleUpdateRole(member.id, e.target.value as NewsroomRole, member.name)}
+                                  className="bg-white border border-[#DFDFDF] hover:border-black text-[11px] font-semibold rounded-lg px-2 py-1 focus:outline-hidden cursor-pointer"
+                                >
+                                  <option value="admin">Admin</option>
+                                  <option value="editor">Editor</option>
+                                  <option value="writer">Writer</option>
+                                </select>
+                              )}
                             </div>
                           </td>
                           <td className="py-4 px-6">
-                            <button
-                              onClick={() => handleToggleMemberStatus(member.id, member.status, member.name)}
-                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-colors ${
-                                member.status === "active"
-                                  ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                              }`}
-                            >
-                              ● {member.status}
-                            </button>
+                            {(member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) ? (
+                              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                ● Always Active
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => handleToggleMemberStatus(member.id, member.status, member.name)}
+                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-colors ${
+                                  member.status === "active"
+                                    ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                                }`}
+                              >
+                                ● {member.status}
+                              </button>
+                            )}
                           </td>
                           <td className="py-4 px-6 text-right">
-                            <button
-                              onClick={() => handleDeleteMember(member.id, member.name)}
-                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                              title="Remove staff member"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {(member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) ? (
+                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Root Admin</span>
+                            ) : (
+                              <button
+                                onClick={() => handleDeleteMember(member.id, member.name)}
+                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                title="Remove staff member"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -1446,11 +1546,21 @@ function AdminDashboardContent() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
+                  {/* Executive Avatar Picture Uploader */}
                   <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Official Name</label>
+                    <ImageUploader
+                      value={profileAvatar}
+                      onChange={(url) => setProfileAvatar(url)}
+                      label="Executive Profile Picture / Avatar"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Official Byline Name</label>
                     <input
                       type="text"
-                      defaultValue={user?.name || "Usman Bello"}
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
                       className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:border-[#C61D1F] focus:outline-hidden"
                     />
                   </div>
@@ -1459,9 +1569,9 @@ function AdminDashboardContent() {
                     <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Bureau Email</label>
                     <input
                       type="email"
-                      defaultValue={user?.email || "usman.bello@thezango.org"}
+                      value={user?.email || "usman.bello@thezango.org"}
                       disabled
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed font-medium"
                     />
                   </div>
 
@@ -1469,7 +1579,7 @@ function AdminDashboardContent() {
                     <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Clearance Role</label>
                     <input
                       type="text"
-                      defaultValue="Chief Administrator / Bureau Chief (Full Access)"
+                      value="Chief Administrator / Bureau Chief (Full Access)"
                       disabled
                       className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed font-semibold"
                     />
@@ -1478,12 +1588,31 @@ function AdminDashboardContent() {
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Update Passcode</label>
-                    <input
-                      type="password"
-                      placeholder="Enter new account passcode"
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:border-[#C61D1F] focus:outline-hidden"
+                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Assigned Desk / Bureau Beat</label>
+                    <select
+                      value={profileDesk}
+                      onChange={(e) => setProfileDesk(e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:border-[#C61D1F] focus:outline-hidden bg-white"
+                    >
+                      {CATEGORIES.map((c) => (
+                        <option key={c.id} value={c.name}>{c.name}</option>
+                      ))}
+                      <option value="Executive & Investigation">Executive & Investigation</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Journalist Biography (Shown to Readers)</label>
+                    <textarea
+                      rows={3}
+                      value={profileBio}
+                      onChange={(e) => setProfileBio(e.target.value)}
+                      placeholder="Brief background on journalistic coverage across Northern Nigeria & Sahel..."
+                      className="w-full px-3.5 py-2 rounded-xl border border-gray-200 focus:border-[#C61D1F] text-xs focus:outline-hidden resize-none"
                     />
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      This biography and photo will appear under "About the Author" on all articles you publish.
+                    </p>
                   </div>
 
                   <div>
@@ -1505,7 +1634,7 @@ function AdminDashboardContent() {
               <div className="pt-4 border-t border-[#E5E6E8] flex justify-end">
                 <button
                   type="button"
-                  onClick={() => triggerToast("Admin profile settings updated successfully!")}
+                  onClick={handleSaveProfile}
                   className="px-6 py-2.5 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
                 >
                   Save Profile Changes
@@ -1827,13 +1956,10 @@ function AdminDashboardContent() {
               </div>
 
               <div>
-                <label className="block font-bold text-[#000000] uppercase mb-1.5">Avatar Image URL</label>
-                <input
-                  type="text"
+                <ImageUploader
                   value={newMemberForm.avatar}
-                  onChange={(e) => setNewMemberForm({ ...newMemberForm, avatar: e.target.value })}
-                  placeholder="/assets/social-image-1.png or Cloudinary URL"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden"
+                  onChange={(url) => setNewMemberForm({ ...newMemberForm, avatar: url })}
+                  label="Journalist Profile Picture / Avatar"
                 />
               </div>
 
@@ -1869,6 +1995,70 @@ function AdminDashboardContent() {
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* Request Editorial Revision Modal */}
+      {revisionModalSub && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-200 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div className="flex items-center space-x-2">
+                <span className="w-2.5 h-5 bg-amber-500 rounded-xs inline-block" />
+                <h3 className="text-sm font-extrabold text-gray-900 uppercase">
+                  Request Editorial Revision
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRevisionModalSub(null)}
+                className="text-gray-400 hover:text-black p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 space-y-1">
+              <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Manuscript Pitch:</span>
+              <p className="text-xs font-bold text-gray-900 line-clamp-1">{revisionModalSub.title}</p>
+              <div className="text-[11px] text-gray-500">
+                Author: <span className="font-semibold text-black">{revisionModalSub.authorName}</span> ({revisionModalSub.authorEmail || "Correspondent"})
+              </div>
+            </div>
+
+            <form onSubmit={handleRequestRevision} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">
+                  Editorial Feedback & Change Instructions *
+                </label>
+                <textarea
+                  rows={4}
+                  required
+                  placeholder="Explain exactly what the writer needs to improve or verify (e.g. 'Please verify source citations for the Kano export statistics in paragraph 2 and include a quote from the ministry spokesperson')..."
+                  value={revisionNotes}
+                  onChange={(e) => setRevisionNotes(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:border-amber-500 text-xs focus:outline-hidden resize-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setRevisionModalSub(null)}
+                  className="px-4 py-2 border border-gray-200 hover:border-black rounded-xl text-xs font-bold uppercase transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center space-x-1.5 cursor-pointer"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Send to Writer</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

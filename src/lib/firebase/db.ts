@@ -38,6 +38,7 @@ function mapSupabaseToArticle(row: any): Article {
       slug: row.author_slug || "the-zango-bureau",
       role: row.author_role || "Editorial Desk",
       avatar: row.author_avatar,
+      bio: row.author_bio,
     },
   };
 }
@@ -66,6 +67,7 @@ function mapArticleToSupabase(article: Partial<Article>): any {
     if (article.author.slug) row.author_slug = article.author.slug;
     if (article.author.role) row.author_role = article.author.role;
     if (article.author.avatar) row.author_avatar = article.author.avatar;
+    if (article.author.bio) row.author_bio = article.author.bio;
   }
   return row;
 }
@@ -348,6 +350,7 @@ export async function getSubmissions(): Promise<Submission[]> {
           readTime: d.read_time,
           coverImage: d.cover_image,
           status: d.status,
+          feedbackNotes: d.feedback_notes,
         }));
       }
     } catch (err) {
@@ -411,6 +414,13 @@ export async function approveSubmission(id: string): Promise<Article | null> {
 
   const slug = submission.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
+  // Link author metadata if author is registered in newsroom members
+  const member = localTeamMembersStore.find(
+    (m) =>
+      (submission.authorEmail && m.email.toLowerCase() === submission.authorEmail.toLowerCase()) ||
+      m.name.toLowerCase() === submission.authorName.toLowerCase()
+  );
+
   const newArticle = await createArticle({
     title: submission.title,
     slug,
@@ -423,14 +433,60 @@ export async function approveSubmission(id: string): Promise<Article | null> {
     isLatest: true,
     views: 0,
     author: {
-      id: "author-contributor",
+      id: member ? member.id : "author-contributor",
       name: submission.authorName,
       slug: submission.authorName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-      role: "Contributing Correspondent",
+      role: member ? `${member.desk} Journalist` : "Contributing Correspondent",
+      avatar: member?.avatar || "/assets/social-image-1.png",
+      bio: member?.bio || `Contributing journalist covering the ${submission.category} desk for The Zango.`,
     },
   });
 
   return newArticle;
+}
+
+export async function requestRevisionSubmission(id: string, feedbackNotes: string): Promise<boolean> {
+  const submission = localSubmissionsStore.find((s) => s.id === id);
+  if (!submission) return false;
+  submission.status = "needs_revision";
+  submission.feedbackNotes = feedbackNotes;
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase
+        .from("submissions")
+        .update({ status: "needs_revision", feedback_notes: feedbackNotes })
+        .eq("id", id);
+    } catch (err) {
+      console.warn("Could not update submission revision status in Supabase:", err);
+    }
+  }
+
+  return true;
+}
+
+export async function updateSubmission(id: string, updates: Partial<Submission>): Promise<Submission | null> {
+  const index = localSubmissionsStore.findIndex((s) => s.id === id);
+  if (index === -1) return null;
+  localSubmissionsStore[index] = { ...localSubmissionsStore[index], ...updates };
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const dbUpdates: any = {};
+      if (updates.title) dbUpdates.title = updates.title;
+      if (updates.excerpt) dbUpdates.excerpt = updates.excerpt;
+      if (updates.content) dbUpdates.content = updates.content;
+      if (updates.category) dbUpdates.category = updates.category;
+      if (updates.coverImage) dbUpdates.cover_image = updates.coverImage;
+      if (updates.status) dbUpdates.status = updates.status;
+      if (updates.feedbackNotes !== undefined) dbUpdates.feedback_notes = updates.feedbackNotes;
+      await supabase.from("submissions").update(dbUpdates).eq("id", id);
+    } catch (err) {
+      console.warn("Could not update submission in Supabase:", err);
+    }
+  }
+
+  return localSubmissionsStore[index];
 }
 
 export async function rejectSubmission(id: string): Promise<boolean> {

@@ -28,7 +28,8 @@ import {
   Plus
 } from "lucide-react";
 import { ARTICLES } from "@/data/mock-articles";
-import { createSubmission } from "@/lib/firebase/db";
+import { createSubmission, getSubmissions, updateSubmission } from "@/lib/firebase/db";
+import { Submission } from "@/types";
 import { useAuth, UserRole } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import ImageUploader from "@/components/image-uploader";
@@ -46,6 +47,21 @@ function AuthorStudioContent() {
   const [content, setContent] = useState("");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [lastAutoSaved, setLastAutoSaved] = useState<string | null>(null);
+  const [mySubmissions, setMySubmissions] = useState<Submission[]>([]);
+
+  const loadSubmissions = async () => {
+    const all = await getSubmissions();
+    const mine = all.filter(
+      (s) =>
+        (user?.email && s.authorEmail?.toLowerCase() === user.email.toLowerCase()) ||
+        s.authorName?.toLowerCase() === (user?.name || "").toLowerCase()
+    );
+    setMySubmissions(mine);
+  };
+
+  useEffect(() => {
+    loadSubmissions();
+  }, [user]);
 
   // Require auth
   useEffect(() => {
@@ -174,11 +190,23 @@ function AuthorStudioContent() {
       setExcerpt("");
       setContent("");
       setLastAutoSaved(null);
+      await loadSubmissions();
       setTimeout(() => setStatusMessage(null), 5000);
     } catch (err) {
       console.warn("Could not submit article:", err);
       setStatusMessage("Failed to submit. Please try again.");
     }
+  };
+
+  const handleEditSubmission = (sub: Submission) => {
+    setTitle(sub.title);
+    setCategory(sub.category);
+    setCoverImage(sub.coverImage || "/assets/hero-featured.jpg");
+    setExcerpt(sub.excerpt);
+    setContent(sub.content);
+    setActiveTab("composer");
+    setStatusMessage(`Loaded "${sub.title}" into composer for editing!`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -203,26 +231,7 @@ function AuthorStudioContent() {
 
           <div className="flex items-center space-x-3 sm:space-x-4">
             
-            <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-xl border border-gray-200 bg-white text-xs font-semibold shadow-2xs">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span className="text-gray-500 text-[11px]">Role:</span>
-              <select
-                value={role || "writer"}
-                onChange={(e) => {
-                  const targetRole = e.target.value as UserRole;
-                  switchRole(targetRole);
-                  if (targetRole === "admin") window.location.href = "/dashboard/admin";
-                  if (targetRole === "editor") window.location.href = "/dashboard/editor";
-                }}
-                className="font-extrabold text-xs text-gray-900 bg-transparent focus:outline-hidden cursor-pointer"
-              >
-                <option value="writer">Staff Writer</option>
-                <option value="editor">Desk Editor</option>
-                <option value="admin">Chief Admin</option>
-              </select>
-            </div>
-
-            <div className="flex items-center space-x-2.5 pl-2 border-l border-gray-200">
+            <div className="flex items-center space-x-2.5 pl-2">
               <div className="relative w-9 h-9 rounded-full overflow-hidden border-2 border-emerald-600 shrink-0">
                 <Image
                   src={user?.avatar || "/assets/social-image-4.png"}
@@ -461,36 +470,103 @@ function AuthorStudioContent() {
             </div>
           )}
 
-          {/* TAB 2: MY STORIES */}
+          {/* TAB 2: MY STORIES & PITCHES */}
           {activeTab === "stories" && (
-            <div className="bg-white rounded-3xl border border-[#E5E6E8] p-6 shadow-2xs space-y-4">
-              <div className="pb-3 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="font-extrabold text-sm text-gray-900 uppercase tracking-wide">
-                  My Published Bylines ({myStories.length})
-                </h3>
-                <span className="text-xs text-gray-400">Total reach: 18.4K reads</span>
+            <div className="space-y-6">
+              {/* Active Manuscript Pitches */}
+              <div className="bg-white rounded-3xl border border-[#E5E6E8] p-6 shadow-2xs space-y-4">
+                <div className="pb-3 border-b border-gray-100 flex items-center justify-between">
+                  <h3 className="font-extrabold text-sm text-gray-900 uppercase tracking-wide">
+                    Pitched Manuscripts & Review Status ({mySubmissions.length})
+                  </h3>
+                  <span className="text-xs text-gray-400">Live Newsroom Queue</span>
+                </div>
+
+                {mySubmissions.length === 0 ? (
+                  <p className="text-xs text-gray-500 py-4 text-center">
+                    No active pitches currently in review. Submit your draft above to pitch the editors!
+                  </p>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {mySubmissions.map((sub) => (
+                      <div key={sub.id} className="py-4 space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div>
+                            <span className="text-[10px] font-bold text-gray-400 uppercase">{sub.category} • {sub.submittedAt}</span>
+                            <h4 className="font-bold text-sm text-gray-900">{sub.title}</h4>
+                          </div>
+
+                          <div className="flex items-center space-x-2 shrink-0">
+                            {sub.status === "needs_revision" ? (
+                              <span className="px-2.5 py-1 bg-amber-100 text-amber-900 rounded-full text-[10px] font-extrabold uppercase border border-amber-300">
+                                ⚠️ Revision Requested
+                              </span>
+                            ) : sub.status === "approved" ? (
+                              <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-extrabold uppercase border border-emerald-300">
+                                ✓ Approved & Published
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full text-[10px] font-extrabold uppercase border border-blue-200">
+                                ⏳ In Desk Review
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* If Editor Sent Feedback Notes */}
+                        {sub.status === "needs_revision" && (
+                          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="space-y-1">
+                              <span className="font-black text-[10px] uppercase tracking-wider text-amber-800 block">
+                                Editor-in-Chief Feedback:
+                              </span>
+                              <p className="italic">{sub.feedbackNotes || "Please polish grammar and check quotes before re-submitting."}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleEditSubmission(sub)}
+                              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shrink-0 shadow-sm cursor-pointer"
+                            >
+                              Edit & Re-submit →
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <div className="divide-y divide-gray-100">
-                {myStories.map((story) => (
-                  <div key={story.id} className="py-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center space-x-3.5">
-                      <div className="relative w-14 h-11 rounded-lg overflow-hidden shrink-0 border border-gray-100">
-                        <Image src={story.coverImage} alt={story.title} fill sizes="56px" className="object-cover" />
-                      </div>
-                      <div>
-                        <Link href={`/article/${story.slug}`} className="font-bold text-xs text-gray-900 hover:text-emerald-600 line-clamp-1">
-                          {story.title}
-                        </Link>
-                        <span className="text-[11px] text-gray-500">{story.category} • {story.publishedAt}</span>
-                      </div>
-                    </div>
+              {/* Published Bylines */}
+              <div className="bg-white rounded-3xl border border-[#E5E6E8] p-6 shadow-2xs space-y-4">
+                <div className="pb-3 border-b border-gray-100 flex items-center justify-between">
+                  <h3 className="font-extrabold text-sm text-gray-900 uppercase tracking-wide">
+                    Live Published Bylines ({myStories.length})
+                  </h3>
+                  <span className="text-xs text-gray-400">Total reach: 18.4K reads</span>
+                </div>
 
-                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full shrink-0">
-                      Live on Site
-                    </span>
-                  </div>
-                ))}
+                <div className="divide-y divide-gray-100">
+                  {myStories.map((story) => (
+                    <div key={story.id} className="py-4 flex items-center justify-between gap-4">
+                      <div className="flex items-center space-x-3.5">
+                        <div className="relative w-14 h-11 rounded-lg overflow-hidden shrink-0 border border-gray-100">
+                          <Image src={story.coverImage} alt={story.title} fill sizes="56px" className="object-cover" />
+                        </div>
+                        <div>
+                          <Link href={`/article/${story.slug}`} className="font-bold text-xs text-gray-900 hover:text-emerald-600 line-clamp-1">
+                            {story.title}
+                          </Link>
+                          <span className="text-[11px] text-gray-500">{story.category} • {story.publishedAt}</span>
+                        </div>
+                      </div>
+
+                      <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full shrink-0">
+                        Live on Site
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

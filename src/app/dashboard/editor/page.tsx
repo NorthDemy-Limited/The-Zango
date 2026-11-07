@@ -46,7 +46,8 @@ import {
   toggleArticleFlag, 
   getSubmissions, 
   approveSubmission, 
-  rejectSubmission 
+  rejectSubmission,
+  requestRevisionSubmission
 } from "@/lib/firebase/db";
 import { CATEGORIES } from "@/data/mock-articles";
 import ImageUploader from "@/components/image-uploader";
@@ -64,6 +65,8 @@ function EditorDashboardContent() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
+  const [revisionModalSub, setRevisionModalSub] = useState<Submission | null>(null);
+  const [revisionNotes, setRevisionNotes] = useState("");
 
   const [formData, setFormData] = useState({
     title: "",
@@ -208,7 +211,36 @@ function EditorDashboardContent() {
     }
   };
 
-  const pendingSubmissions = submissions.filter((s) => s.status === "pending");
+  const handleOpenEditSubmission = (sub: Submission) => {
+    setEditingArticle(null);
+    setFormData({
+      title: sub.title,
+      slug: sub.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+      category: sub.category,
+      coverImage: sub.coverImage || "/assets/hero-featured.jpg",
+      excerpt: sub.excerpt,
+      content: sub.content,
+      authorName: sub.authorName,
+      readTime: sub.readTime,
+      isFeatured: false,
+      isTrending: false,
+      isEditorsPick: false,
+      isLatest: true,
+    });
+    setShowCreateModal(true);
+  };
+
+  const handleRequestRevision = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!revisionModalSub || !revisionNotes.trim()) return;
+    await requestRevisionSubmission(revisionModalSub.id, revisionNotes.trim());
+    await loadData();
+    setRevisionModalSub(null);
+    setRevisionNotes("");
+    triggerToast("Revision notes sent back to writer successfully!");
+  };
+
+  const pendingSubmissions = submissions.filter((s) => s.status === "pending" || s.status === "needs_revision");
   const filteredArticles = articles.filter((a) => {
     const matchesSearch =
       a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -257,31 +289,6 @@ function EditorDashboardContent() {
 
           {/* Right Controls */}
           <div className="flex items-center space-x-3 sm:space-x-4">
-            <span className="hidden sm:inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-              <span>Desk Editor Clearance</span>
-            </span>
-
-            {/* Dynamic Role Switcher */}
-            <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-xl border border-gray-200 bg-white text-xs font-semibold shadow-2xs">
-              <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-              <span className="text-gray-500 text-[11px]">Role:</span>
-              <select
-                value={role || "editor"}
-                onChange={(e) => {
-                  const targetRole = e.target.value as UserRole;
-                  switchRole(targetRole);
-                  if (targetRole === "admin") window.location.href = "/dashboard/admin";
-                  if (targetRole === "writer") window.location.href = "/dashboard/author";
-                }}
-                className="font-extrabold text-xs text-gray-900 bg-transparent focus:outline-hidden cursor-pointer"
-              >
-                <option value="editor">Desk Editor</option>
-                <option value="admin">Chief Admin</option>
-                <option value="writer">Staff Writer</option>
-              </select>
-            </div>
-
             {/* Notification Bell */}
             <button 
               onClick={() => setActiveTab("reviewQueue")}
@@ -635,25 +642,61 @@ function EditorDashboardContent() {
                           <span className="text-xs text-[#707070]">{sub.wordCount} words</span>
                         </div>
 
-                        <span className="bg-amber-50 text-amber-700 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border border-amber-200">
-                          Awaiting Clearance
-                        </span>
+                        {sub.status === "needs_revision" ? (
+                          <span className="bg-amber-100 text-amber-900 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border border-amber-300">
+                            ⚠️ Needs Revision
+                          </span>
+                        ) : (
+                          <span className="bg-amber-50 text-amber-700 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border border-amber-200">
+                            Awaiting Clearance
+                          </span>
+                        )}
                       </div>
 
                       <h4 className="text-base font-extrabold text-[#111111]">{sub.title}</h4>
                       <p className="text-xs text-[#535252] leading-relaxed">{sub.excerpt}</p>
+
+                      {sub.feedbackNotes && (
+                        <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
+                          <span className="font-extrabold uppercase text-[10px] tracking-wider text-amber-800 block">
+                            Revision Feedback Sent to Writer:
+                          </span>
+                          <p className="italic">{sub.feedbackNotes}</p>
+                        </div>
+                      )}
 
                       <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 text-xs text-gray-700 max-h-40 overflow-y-auto">
                         <div className="font-bold text-gray-900 mb-1">Full Manuscript Preview:</div>
                         <div>{sub.content.replace(/<[^>]*>/g, " ")}</div>
                       </div>
 
-                      <div className="pt-2 border-t border-[#E5E6E8] flex items-center justify-between">
+                      <div className="pt-2 border-t border-[#E5E6E8] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <span className="text-xs font-bold text-gray-900">Byline: {sub.authorName}</span>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            onClick={() => handleOpenEditSubmission(sub)}
+                            className="px-3 py-1.5 border border-gray-300 hover:border-black text-gray-800 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center space-x-1.5 bg-white shadow-2xs"
+                            title="Edit manuscript copy before publishing"
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-blue-600" />
+                            <span>Preview & Edit Copy</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setRevisionModalSub(sub);
+                              setRevisionNotes(sub.feedbackNotes || "");
+                            }}
+                            className="px-3 py-1.5 border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center space-x-1.5 shadow-2xs"
+                            title="Send editorial revision notes back to writer"
+                          >
+                            <Send className="w-3.5 h-3.5 text-amber-700" />
+                            <span>Request Edit</span>
+                          </button>
+
                           <button
                             onClick={() => handleRejectSubmission(sub.id, sub.title)}
-                            className="px-3.5 py-1.5 border border-[#DFDFDF] hover:border-red-600 hover:text-red-600 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                            className="px-3 py-1.5 border border-[#DFDFDF] hover:border-red-600 hover:text-red-600 rounded-xl text-xs font-bold transition-colors cursor-pointer"
                           >
                             Reject
                           </button>
@@ -963,6 +1006,70 @@ function EditorDashboardContent() {
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* Request Editorial Revision Modal */}
+      {revisionModalSub && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-200 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div className="flex items-center space-x-2">
+                <span className="w-2.5 h-5 bg-amber-500 rounded-xs inline-block" />
+                <h3 className="text-sm font-extrabold text-gray-900 uppercase">
+                  Request Editorial Revision
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRevisionModalSub(null)}
+                className="text-gray-400 hover:text-black p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 space-y-1">
+              <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Manuscript Pitch:</span>
+              <p className="text-xs font-bold text-gray-900 line-clamp-1">{revisionModalSub.title}</p>
+              <div className="text-[11px] text-gray-500">
+                Author: <span className="font-semibold text-black">{revisionModalSub.authorName}</span> ({revisionModalSub.authorEmail || "Correspondent"})
+              </div>
+            </div>
+
+            <form onSubmit={handleRequestRevision} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">
+                  Editorial Feedback & Change Instructions *
+                </label>
+                <textarea
+                  rows={4}
+                  required
+                  placeholder="Explain what the writer needs to improve (e.g. 'Please verify source citations and include quotes')..."
+                  value={revisionNotes}
+                  onChange={(e) => setRevisionNotes(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:border-amber-500 text-xs focus:outline-hidden resize-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setRevisionModalSub(null)}
+                  className="px-4 py-2 border border-gray-200 hover:border-black rounded-xl text-xs font-bold uppercase transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center space-x-1.5 cursor-pointer"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Send to Writer</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

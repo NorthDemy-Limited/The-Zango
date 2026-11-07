@@ -19,7 +19,7 @@ BEGIN
         CREATE TYPE newsroom_role AS ENUM ('admin', 'editor', 'writer');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'submission_status') THEN
-        CREATE TYPE submission_status AS ENUM ('pending', 'approved', 'rejected');
+        CREATE TYPE submission_status AS ENUM ('pending', 'approved', 'rejected', 'needs_revision');
     END IF;
 END $$;
 
@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS public.articles (
     author_slug TEXT NOT NULL DEFAULT 'the-zango-bureau',
     author_role TEXT NOT NULL DEFAULT 'Editorial Desk',
     author_avatar TEXT,
+    author_bio TEXT,
     published_at TEXT NOT NULL DEFAULT TO_CHAR(NOW(), 'Mon DD, YYYY'),
     read_time TEXT NOT NULL DEFAULT '4 min read',
     is_featured BOOLEAN DEFAULT FALSE,
@@ -100,7 +101,8 @@ CREATE TABLE IF NOT EXISTS public.submissions (
     word_count INTEGER DEFAULT 0,
     read_time TEXT DEFAULT '4 min read',
     cover_image TEXT,
-    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'needs_revision')),
+    feedback_notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
