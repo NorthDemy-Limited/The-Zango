@@ -87,6 +87,7 @@ function AdminDashboardContent() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [activeTab, setActiveTab] = useState<"overview" | "dispatches" | "reviewQueue" | "team" | "desks" | "subscribers" | "settings">("overview");
   const [teamFilter, setTeamFilter] = useState<"all" | "admin" | "editor" | "writer">("all");
+  const [staffSearchQuery, setStaffSearchQuery] = useState("");
   const [teamMembers, setTeamMembers] = useState<NewsroomMember[]>([]);
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [newMemberForm, setNewMemberForm] = useState({
@@ -506,27 +507,47 @@ function AdminDashboardContent() {
             )}
           </button>
 
-          {/* Sidebar Item 4: Newsroom Team (Admin Only!) */}
-          {role === "admin" && (
-            <button
-              onClick={() => setActiveTab("team")}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === "team"
-                  ? "bg-[#C61D1F] text-white shadow-md shadow-red-500/20"
-                  : "text-[#535252] hover:bg-gray-100 hover:text-black"
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <Users className="w-4 h-4 shrink-0" />
-                <span>Newsroom Staff</span>
-              </div>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                activeTab === "team" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
-              }`}>
-                {teamMembers.length}
-              </span>
-            </button>
-          )}
+          {/* SECTION: NEWSROOM PERSONNEL & MULTI-STAFF */}
+          <div className="pt-2 pb-1 px-4">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+              Newsroom Staff
+            </span>
+          </div>
+
+          {/* Sidebar Item 4: Newsroom Staff (All Members) */}
+          <button
+            onClick={() => {
+              setActiveTab("team");
+              setTeamFilter("all");
+            }}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+              activeTab === "team" && !showTeamModal
+                ? "bg-[#C61D1F] text-white shadow-md shadow-red-500/20"
+                : "text-[#535252] hover:bg-gray-100 hover:text-black"
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <Users className="w-4 h-4 shrink-0" />
+              <span>All Staff Members</span>
+            </div>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+              activeTab === "team" && !showTeamModal ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
+            }`}>
+              {teamMembers.length}
+            </span>
+          </button>
+
+          {/* Sidebar Item 4b: + Create New Staff */}
+          <button
+            onClick={() => {
+              setActiveTab("team");
+              setShowTeamModal(true);
+            }}
+            className="w-full flex items-center space-x-3 px-4 py-2.5 rounded-2xl text-xs font-bold text-[#C61D1F] bg-red-50/70 hover:bg-red-100 transition-all border border-red-200/80 cursor-pointer"
+          >
+            <UserPlus className="w-4 h-4 shrink-0 text-[#C61D1F]" />
+            <span>+ Create New Staff</span>
+          </button>
 
           {/* Sidebar Item 5: Desk Taxonomy */}
           <button
@@ -548,27 +569,25 @@ function AdminDashboardContent() {
             </span>
           </button>
 
-          {/* Sidebar Item 6: Newsletter Subscribers (Admin Only!) */}
-          {role === "admin" && (
-            <button
-              onClick={() => setActiveTab("subscribers")}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === "subscribers"
-                  ? "bg-[#C61D1F] text-white shadow-md shadow-red-500/20"
-                  : "text-[#535252] hover:bg-gray-100 hover:text-black"
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <Mail className="w-4 h-4 shrink-0" />
-                <span>Newsletter Roster</span>
-              </div>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                activeTab === "subscribers" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
-              }`}>
-                {subscribers.length}
-              </span>
-            </button>
-          )}
+          {/* Sidebar Item 6: Newsletter Subscribers */}
+          <button
+            onClick={() => setActiveTab("subscribers")}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+              activeTab === "subscribers"
+                ? "bg-[#C61D1F] text-white shadow-md shadow-red-500/20"
+                : "text-[#535252] hover:bg-gray-100 hover:text-black"
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <Mail className="w-4 h-4 shrink-0" />
+              <span>Newsletter Roster</span>
+            </div>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+              activeTab === "subscribers" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
+            }`}>
+              {subscribers.length}
+            </span>
+          </button>
 
           {/* Admin Account Settings */}
           <div className="pt-4 border-t border-gray-100">
@@ -611,18 +630,27 @@ function AdminDashboardContent() {
               <div className="flex items-start space-x-3">
                 <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-extrabold text-xs uppercase tracking-wider text-amber-900">Staff Writer Contributor Session</h4>
+                  <h4 className="font-extrabold text-xs uppercase tracking-wider text-amber-900">Staff Writer Session Active</h4>
                   <p className="text-xs text-amber-700 mt-0.5">
-                    You are logged in as {user?.name || "Staff Writer"}. Administrative settings and roster modifications are reserved for Chief Admins.
+                    You are currently previewing as {user?.name || "Staff Writer"}. Switch clearance to Chief Admin to unlock full roster and dispatch controls.
                   </p>
                 </div>
               </div>
-              <Link
-                href="/dashboard/author"
-                className="px-4 py-2 bg-[#C61D1F] text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm hover:bg-[#A51719] transition-colors shrink-0 text-center"
-              >
-                Go to Writer Studio →
-              </Link>
+              <div className="flex items-center space-x-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => switchRole("admin")}
+                  className="px-4 py-2 bg-[#111111] hover:bg-black text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  👑 Switch to Chief Admin
+                </button>
+                <Link
+                  href="/dashboard/author"
+                  className="px-4 py-2 bg-[#C61D1F] text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm hover:bg-[#A51719] transition-colors shrink-0 text-center"
+                >
+                  Writer Studio →
+                </Link>
+              </div>
             </div>
           )}
 
@@ -769,6 +797,51 @@ function AdminDashboardContent() {
                   </div>
                 </div>
 
+              </div>
+
+              {/* Newsroom Personnel & Multi-Staff Summary Card */}
+              <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E5E6E8] shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 rounded-2xl bg-red-50 text-[#C61D1F] flex items-center justify-center shrink-0 border border-red-100">
+                    <Users className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="w-2 h-4 bg-[#C61D1F] rounded-xs inline-block" />
+                      <h4 className="font-extrabold text-sm text-[#111111] uppercase tracking-wide">
+                        Newsroom Personnel & Staff Architecture
+                      </h4>
+                    </div>
+                    <p className="text-xs text-[#707070] mt-0.5">
+                      {teamMembers.length} Active Staff:{" "}
+                      <span className="font-semibold text-red-700">{teamMembers.filter(m => m.role === "admin").length} Chief Admins</span>,{" "}
+                      <span className="font-semibold text-blue-700">{teamMembers.filter(m => m.role === "editor").length} Desk Editors</span>,{" "}
+                      <span className="font-semibold text-emerald-700">{teamMembers.filter(m => m.role === "writer").length} Staff Writers</span>.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2 shrink-0">
+                  <button
+                    onClick={() => {
+                      setActiveTab("team");
+                      setShowTeamModal(true);
+                    }}
+                    className="px-4 py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-sm flex items-center space-x-1.5 cursor-pointer"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>+ Add Staff</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab("team");
+                      setTeamFilter("all");
+                    }}
+                    className="px-4 py-2 border border-gray-200 hover:border-black rounded-xl text-xs font-bold uppercase tracking-wider text-gray-700 hover:text-black transition-all cursor-pointer bg-white"
+                  >
+                    View All Staff →
+                  </button>
+                </div>
               </div>
 
               {/* Section: CONTINUE EDITORIAL WORK (Matching "Continue Learning" from template) */}
@@ -1132,8 +1205,8 @@ function AdminDashboardContent() {
             </div>
           )}
 
-          {/* TAB 4: NEWSROOM TEAM (Admin only) */}
-          {activeTab === "team" && role === "admin" && (
+          {/* TAB 4: NEWSROOM TEAM (Multi-Staff Architecture) */}
+          {activeTab === "team" && (
             <div className="space-y-6">
               <div className="bg-white rounded-3xl border border-[#E5E6E8] p-6 shadow-2xs">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#E5E6E8]">
@@ -1158,47 +1231,62 @@ function AdminDashboardContent() {
                   </button>
                 </div>
 
-                {/* Multi-Staff Role Filter Tabs */}
-                <div className="flex items-center space-x-2 pt-4 overflow-x-auto">
-                  <button
-                    onClick={() => setTeamFilter("all")}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                      teamFilter === "all" ? "bg-[#111111] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
-                  >
-                    All Staff ({teamMembers.length})
-                  </button>
+                {/* Search & Multi-Staff Role Filter Bar */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-4">
+                  {/* Role Filter Tabs */}
+                  <div className="flex items-center space-x-2 overflow-x-auto pb-1">
+                    <button
+                      onClick={() => setTeamFilter("all")}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                        teamFilter === "all" ? "bg-[#111111] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      All Staff ({teamMembers.length})
+                    </button>
 
-                  <button
-                    onClick={() => setTeamFilter("admin")}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                      teamFilter === "admin" ? "bg-red-600 text-white" : "bg-red-50 text-red-700 hover:bg-red-100"
-                    }`}
-                  >
-                    👑 Chief Admins ({teamMembers.filter(m => m.role === "admin").length})
-                  </button>
+                    <button
+                      onClick={() => setTeamFilter("admin")}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                        teamFilter === "admin" ? "bg-red-600 text-white" : "bg-red-50 text-red-700 hover:bg-red-100"
+                      }`}
+                    >
+                      👑 Chief Admins ({teamMembers.filter(m => m.role === "admin").length})
+                    </button>
 
-                  <button
-                    onClick={() => setTeamFilter("editor")}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                      teamFilter === "editor" ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-700 hover:bg-blue-100"
-                    }`}
-                  >
-                    ✍️ Desk Editors ({teamMembers.filter(m => m.role === "editor").length})
-                  </button>
+                    <button
+                      onClick={() => setTeamFilter("editor")}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                        teamFilter === "editor" ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                      }`}
+                    >
+                      ✍️ Desk Editors ({teamMembers.filter(m => m.role === "editor").length})
+                    </button>
 
-                  <button
-                    onClick={() => setTeamFilter("writer")}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                      teamFilter === "writer" ? "bg-emerald-600 text-white" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                    }`}
-                  >
-                    📝 Staff Writers ({teamMembers.filter(m => m.role === "writer").length})
-                  </button>
+                    <button
+                      onClick={() => setTeamFilter("writer")}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                        teamFilter === "writer" ? "bg-emerald-600 text-white" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                      }`}
+                    >
+                      📝 Staff Writers ({teamMembers.filter(m => m.role === "writer").length})
+                    </button>
+                  </div>
+
+                  {/* Search Staff Input */}
+                  <div className="relative w-full md:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search staff by name or email..."
+                      value={staffSearchQuery}
+                      onChange={(e) => setStaffSearchQuery(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:bg-white focus:border-[#C61D1F] focus:outline-hidden"
+                    />
+                  </div>
                 </div>
 
                 {/* Team Roster Table */}
-                <div className="overflow-x-auto border border-[#E5E6E8] rounded-2xl mt-6">
+                <div className="overflow-x-auto border border-[#E5E6E8] rounded-2xl mt-4">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-[#E5E6E8] bg-[#FAFAFA] text-[11px] font-extrabold uppercase text-[#707070] tracking-wider">
@@ -1210,7 +1298,15 @@ function AdminDashboardContent() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#E5E6E8] text-xs">
-                      {teamMembers.filter(m => teamFilter === "all" || m.role === teamFilter).map((member) => (
+                      {teamMembers
+                        .filter(m => teamFilter === "all" || m.role === teamFilter)
+                        .filter(m => 
+                          staffSearchQuery === "" ||
+                          m.name.toLowerCase().includes(staffSearchQuery.toLowerCase()) ||
+                          m.email.toLowerCase().includes(staffSearchQuery.toLowerCase()) ||
+                          m.desk.toLowerCase().includes(staffSearchQuery.toLowerCase())
+                        )
+                        .map((member) => (
                         <tr key={member.id} className="hover:bg-gray-50/70 transition-colors">
                           <td className="py-4 px-6">
                             <div className="flex items-center space-x-3">
@@ -1418,8 +1514,8 @@ function AdminDashboardContent() {
             </div>
           )}
 
-          {/* TAB 6: NEWSLETTER ROSTER (Admin only) */}
-          {activeTab === "subscribers" && role === "admin" && (
+          {/* TAB 6: NEWSLETTER ROSTER */}
+          {activeTab === "subscribers" && (
             <div className="bg-white rounded-3xl border border-[#E5E6E8] overflow-hidden shadow-2xs">
               <div className="p-6 border-b border-[#E5E6E8] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
