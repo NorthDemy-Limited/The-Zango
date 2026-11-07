@@ -85,7 +85,8 @@ function AdminDashboardContent() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [activeTab, setActiveTab] = useState<"overview" | "dispatches" | "reviewQueue" | "team" | "desks" | "subscribers">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "dispatches" | "reviewQueue" | "team" | "desks" | "subscribers" | "settings">("overview");
+  const [teamFilter, setTeamFilter] = useState<"all" | "admin" | "editor" | "writer">("all");
   const [teamMembers, setTeamMembers] = useState<NewsroomMember[]>([]);
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [newMemberForm, setNewMemberForm] = useState({
@@ -569,18 +570,21 @@ function AdminDashboardContent() {
             </button>
           )}
 
-          {/* Writer Link */}
+          {/* Admin Account Settings */}
           <div className="pt-4 border-t border-gray-100">
-            <Link
-              href="/dashboard/author"
-              className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl text-xs font-bold text-gray-500 hover:text-[#C61D1F] hover:bg-red-50/50 transition-colors"
+            <button
+              onClick={() => setActiveTab("settings")}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === "settings"
+                  ? "bg-[#C61D1F] text-white shadow-md shadow-red-500/20"
+                  : "text-[#535252] hover:bg-gray-100 hover:text-black"
+              }`}
             >
-              <div className="flex items-center space-x-2.5">
-                <BookOpen className="w-4 h-4" />
-                <span>Writer Studio</span>
+              <div className="flex items-center space-x-3">
+                <KeyRound className="w-4 h-4 shrink-0" />
+                <span>Account Settings</span>
               </div>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+            </button>
           </div>
 
         </aside>
@@ -1134,11 +1138,14 @@ function AdminDashboardContent() {
               <div className="bg-white rounded-3xl border border-[#E5E6E8] p-6 shadow-2xs">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#E5E6E8]">
                   <div>
-                    <h3 className="text-base font-extrabold text-[#111111] uppercase tracking-wide">
-                      Newsroom Editorial Team & Role Clearances
-                    </h3>
+                    <div className="flex items-center space-x-2">
+                      <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
+                      <h3 className="text-base font-extrabold text-[#111111] uppercase tracking-wide">
+                        Newsroom Personnel & Role Architecture
+                      </h3>
+                    </div>
                     <p className="text-xs text-[#707070] mt-1">
-                      Manage journalist bylines, clearance levels, and desk assignments across the bureau.
+                      Enterprise Multi-Staff System: assign multiple Chief Admins, multiple Desk Editors across beats, and unlimited field correspondents.
                     </p>
                   </div>
 
@@ -1147,7 +1154,46 @@ function AdminDashboardContent() {
                     className="px-5 py-2.5 bg-[#C61D1F] hover:bg-[#A51719] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center space-x-2 cursor-pointer shrink-0"
                   >
                     <UserPlus className="w-4 h-4" />
-                    <span>+ Add Team Member</span>
+                    <span>+ Add Staff Member</span>
+                  </button>
+                </div>
+
+                {/* Multi-Staff Role Filter Tabs */}
+                <div className="flex items-center space-x-2 pt-4 overflow-x-auto">
+                  <button
+                    onClick={() => setTeamFilter("all")}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                      teamFilter === "all" ? "bg-[#111111] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    All Staff ({teamMembers.length})
+                  </button>
+
+                  <button
+                    onClick={() => setTeamFilter("admin")}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                      teamFilter === "admin" ? "bg-red-600 text-white" : "bg-red-50 text-red-700 hover:bg-red-100"
+                    }`}
+                  >
+                    👑 Chief Admins ({teamMembers.filter(m => m.role === "admin").length})
+                  </button>
+
+                  <button
+                    onClick={() => setTeamFilter("editor")}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                      teamFilter === "editor" ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                    }`}
+                  >
+                    ✍️ Desk Editors ({teamMembers.filter(m => m.role === "editor").length})
+                  </button>
+
+                  <button
+                    onClick={() => setTeamFilter("writer")}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                      teamFilter === "writer" ? "bg-emerald-600 text-white" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                    }`}
+                  >
+                    📝 Staff Writers ({teamMembers.filter(m => m.role === "writer").length})
                   </button>
                 </div>
 
@@ -1164,7 +1210,7 @@ function AdminDashboardContent() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#E5E6E8] text-xs">
-                      {teamMembers.map((member) => (
+                      {teamMembers.filter(m => teamFilter === "all" || m.role === teamFilter).map((member) => (
                         <tr key={member.id} className="hover:bg-gray-50/70 transition-colors">
                           <td className="py-4 px-6">
                             <div className="flex items-center space-x-3">
@@ -1285,6 +1331,89 @@ function AdminDashboardContent() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          
+          {/* TAB 7: ACCOUNT & PROFILE SETTINGS */}
+          {activeTab === "settings" && (
+            <div className="bg-white rounded-3xl border border-[#E5E6E8] p-6 sm:p-8 shadow-2xs space-y-6">
+              <div className="pb-4 border-b border-[#E5E6E8]">
+                <h3 className="text-base font-extrabold text-[#111111] uppercase tracking-wide">
+                  Executive Admin Profile & Bureau Settings
+                </h3>
+                <p className="text-xs text-[#707070] mt-1">
+                  Manage your credentials, official newsroom identity, and editorial alert preferences.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Official Name</label>
+                    <input
+                      type="text"
+                      defaultValue={user?.name || "Usman Bello"}
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:border-[#C61D1F] focus:outline-hidden"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Bureau Email</label>
+                    <input
+                      type="email"
+                      defaultValue={user?.email || "usman.bello@thezango.org"}
+                      disabled
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Clearance Role</label>
+                    <input
+                      type="text"
+                      defaultValue="Chief Administrator / Bureau Chief (Full Access)"
+                      disabled
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed font-semibold"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Update Passcode</label>
+                    <input
+                      type="password"
+                      placeholder="Enter new account passcode"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:border-[#C61D1F] focus:outline-hidden"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Editorial Notifications</label>
+                    <div className="space-y-2">
+                      <label className="flex items-center space-x-2 text-xs text-gray-700 cursor-pointer">
+                        <input type="checkbox" defaultChecked className="rounded text-[#C61D1F] focus:ring-[#C61D1F]" />
+                        <span>Email alert whenever a correspondent submits a pitch</span>
+                      </label>
+                      <label className="flex items-center space-x-2 text-xs text-gray-700 cursor-pointer">
+                        <input type="checkbox" defaultChecked className="rounded text-[#C61D1F] focus:ring-[#C61D1F]" />
+                        <span>Daily subscriber briefing summary at 6:00 AM</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-[#E5E6E8] flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => triggerToast("Admin profile settings updated successfully!")}
+                  className="px-6 py-2.5 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
+                >
+                  Save Profile Changes
+                </button>
               </div>
             </div>
           )}

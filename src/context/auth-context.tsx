@@ -65,8 +65,8 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   isLoading: true,
   login: async () => ({ success: false }),
-  logout: () => {},
-  switchRole: () => {},
+  logout: () => { },
+  switchRole: () => { },
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -170,3 +170,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   return useContext(AuthContext);
 }
+

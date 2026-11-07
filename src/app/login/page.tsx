@@ -3,27 +3,22 @@
 import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useAuth, PRESET_USERS, UserRole } from "@/context/auth-context";
 import { 
   ShieldCheck, 
   Lock, 
   Mail, 
   ArrowRight, 
-  CheckCircle2, 
   AlertCircle, 
   Eye, 
   EyeOff,
-  User,
-  ArrowLeft,
-  Sparkles,
-  KeyRound
+  ArrowLeft
 } from "lucide-react";
 
 function LoginContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectPath = searchParams.get("redirect") || "/dashboard/admin";
+  const redirectParam = searchParams.get("redirect");
   const { login } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -40,15 +35,20 @@ function LoginContent() {
     setErrorMessage(null);
 
     const res = await login(email, password);
-    setLoading(false);
 
     if (res.success) {
-      if (email.toLowerCase().includes("writer") || email.toLowerCase().includes("fatima")) {
-        router.push("/dashboard/author");
-      } else {
-        router.push(redirectPath);
+      const clean = email.trim().toLowerCase();
+      let target = "/dashboard/admin";
+      if (clean.includes("editor") || clean.includes("aisha")) {
+        target = "/dashboard/editor";
+      } else if (clean.includes("writer") || clean.includes("fatima")) {
+        target = "/dashboard/author";
+      } else if (redirectParam) {
+        target = redirectParam;
       }
+      window.location.href = target;
     } else {
+      setLoading(false);
       setErrorMessage(res.error || "Authentication failed. Please verify credentials.");
     }
   };
@@ -56,18 +56,18 @@ function LoginContent() {
   const handleQuickLogin = async (roleKey: string) => {
     setLoading(true);
     setErrorMessage(null);
-    const target = PRESET_USERS[roleKey];
-    if (target) {
-      setEmail(target.email);
+    const targetUser = PRESET_USERS[roleKey];
+    if (targetUser) {
+      setEmail(targetUser.email);
       setPassword("password123");
       const res = await login(roleKey);
-      setLoading(false);
       if (res.success) {
-        if (roleKey === "writer") {
-          router.push("/dashboard/author");
-        } else {
-          router.push(redirectPath);
-        }
+        let dest = "/dashboard/admin";
+        if (roleKey === "editor") dest = "/dashboard/editor";
+        if (roleKey === "writer") dest = "/dashboard/author";
+        window.location.href = dest;
+      } else {
+        setLoading(false);
       }
     }
   };
@@ -178,76 +178,81 @@ function LoginContent() {
             disabled={loading}
             className="w-full py-3.5 px-4 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-2xl text-xs font-extrabold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer mt-2 disabled:opacity-50"
           >
-            <span>{loading ? "Verifying Clearance..." : "Authenticate & Open Workspace"}</span>
+            <span>{loading ? "Authenticating & Redirecting..." : "Authenticate & Open Workspace"}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 
-        {/* Fast Role Demo Switcher (Requested for Team & Testing) */}
+        {/* 1-Click Role Access (Instant Direct Portals) */}
         <div className="mt-8 pt-6 border-t border-[#E5E6E8]">
           <div className="flex items-center justify-between mb-3">
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#707070]">
-              Instant Role Test Access
+              Instant 1-Click Demo Portals
             </span>
-            <span className="text-[10px] text-gray-400 font-medium">1-Click Sign In</span>
+            <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
+              Click to Enter
+            </span>
           </div>
 
-          <div className="grid grid-cols-1 gap-2">
+          <div className="grid grid-cols-1 gap-2.5">
             <button
               type="button"
+              disabled={loading}
               onClick={() => handleQuickLogin("admin")}
-              className="w-full p-2.5 rounded-xl border border-red-200 bg-red-50/50 hover:bg-red-100/60 transition-colors flex items-center justify-between text-left cursor-pointer group"
+              className="w-full p-3 rounded-2xl border border-red-200 bg-red-50/60 hover:bg-red-100/80 transition-all flex items-center justify-between text-left cursor-pointer group shadow-2xs hover:shadow-sm"
             >
-              <div className="flex items-center space-x-2.5">
-                <span className="w-7 h-7 rounded-lg bg-red-600 text-white flex items-center justify-center text-xs font-bold">
+              <div className="flex items-center space-x-3">
+                <span className="w-8 h-8 rounded-xl bg-[#C61D1F] text-white flex items-center justify-center text-sm font-bold shadow-xs">
                   👑
                 </span>
                 <div>
-                  <div className="text-xs font-extrabold text-red-950 group-hover:text-red-700">
+                  <div className="text-xs font-extrabold text-red-950 group-hover:text-[#C61D1F] transition-colors">
                     Chief Admin (Usman Bello)
                   </div>
-                  <div className="text-[10px] text-red-600/80">Full CMS, Roster, Desks & Publishing</div>
+                  <div className="text-[10px] text-red-700/80 font-medium">Portal: /dashboard/admin • Full CMS & Staff</div>
                 </div>
               </div>
-              <ArrowRight className="w-3.5 h-3.5 text-red-400 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight className="w-4 h-4 text-red-400 group-hover:translate-x-1 group-hover:text-[#C61D1F] transition-all" />
             </button>
 
             <button
               type="button"
+              disabled={loading}
               onClick={() => handleQuickLogin("editor")}
-              className="w-full p-2.5 rounded-xl border border-blue-200 bg-blue-50/50 hover:bg-blue-100/60 transition-colors flex items-center justify-between text-left cursor-pointer group"
+              className="w-full p-3 rounded-2xl border border-blue-200 bg-blue-50/60 hover:bg-blue-100/80 transition-all flex items-center justify-between text-left cursor-pointer group shadow-2xs hover:shadow-sm"
             >
-              <div className="flex items-center space-x-2.5">
-                <span className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
+              <div className="flex items-center space-x-3">
+                <span className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center text-sm font-bold shadow-xs">
                   ✍️
                 </span>
                 <div>
-                  <div className="text-xs font-extrabold text-blue-950 group-hover:text-blue-700">
+                  <div className="text-xs font-extrabold text-blue-950 group-hover:text-blue-700 transition-colors">
                     Desk Editor (Aisha Dahiru)
                   </div>
-                  <div className="text-[10px] text-blue-600/80">Review Queue & Desk Stories</div>
+                  <div className="text-[10px] text-blue-700/80 font-medium">Portal: /dashboard/editor • Review & Publishing</div>
                 </div>
               </div>
-              <ArrowRight className="w-3.5 h-3.5 text-blue-400 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight className="w-4 h-4 text-blue-400 group-hover:translate-x-1 group-hover:text-blue-700 transition-all" />
             </button>
 
             <button
               type="button"
+              disabled={loading}
               onClick={() => handleQuickLogin("writer")}
-              className="w-full p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100/60 transition-colors flex items-center justify-between text-left cursor-pointer group"
+              className="w-full p-3 rounded-2xl border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100/80 transition-all flex items-center justify-between text-left cursor-pointer group shadow-2xs hover:shadow-sm"
             >
-              <div className="flex items-center space-x-2.5">
-                <span className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">
+              <div className="flex items-center space-x-3">
+                <span className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-sm font-bold shadow-xs">
                   📝
                 </span>
                 <div>
-                  <div className="text-xs font-extrabold text-emerald-950 group-hover:text-emerald-700">
+                  <div className="text-xs font-extrabold text-emerald-950 group-hover:text-emerald-700 transition-colors">
                     Staff Writer (Fatima Sanusi)
                   </div>
-                  <div className="text-[10px] text-emerald-600/80">Author Studio & Pitch Submissions</div>
+                  <div className="text-[10px] text-emerald-700/80 font-medium">Portal: /dashboard/author • Studio & Drafts</div>
                 </div>
               </div>
-              <ArrowRight className="w-3.5 h-3.5 text-emerald-400 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight className="w-4 h-4 text-emerald-400 group-hover:translate-x-1 group-hover:text-emerald-700 transition-all" />
             </button>
           </div>
         </div>
@@ -260,7 +265,6 @@ function LoginContent() {
     </div>
   );
 }
-
 
 export default function LoginPage() {
   return (
