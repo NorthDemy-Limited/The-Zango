@@ -27,7 +27,7 @@ import {
   X,
   Plus
 } from "lucide-react";
-import { ARTICLES } from "@/data/mock-articles";
+import { ARTICLES, CATEGORIES } from "@/data/mock-articles";
 import { createSubmission, getSubmissions, updateSubmission } from "@/lib/firebase/db";
 import { Submission } from "@/types";
 import { useAuth, UserRole } from "@/context/auth-context";
@@ -37,7 +37,7 @@ import RichEditor from "@/components/rich-editor";
 
 function AuthorStudioContent() {
   const router = useRouter();
-  const { user, role, logout, switchRole, isAuthenticated, isLoading } = useAuth();
+  const { user, role, logout, switchRole, updateUser, isAuthenticated, isLoading } = useAuth();
 
   const [activeTab, setActiveTab] = useState<"composer" | "stories" | "stats" | "settings">("composer");
   const [title, setTitle] = useState("");
@@ -48,6 +48,32 @@ function AuthorStudioContent() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [lastAutoSaved, setLastAutoSaved] = useState<string | null>(null);
   const [mySubmissions, setMySubmissions] = useState<Submission[]>([]);
+
+  // Writer Profile Settings state
+  const [profileName, setProfileName] = useState(user?.name || "Fatima Sanusi");
+  const [profileAvatar, setProfileAvatar] = useState(user?.avatar || "/assets/social-image-4.png");
+  const [profileBio, setProfileBio] = useState(user?.bio || "Tech correspondent tracking venture capital, AI hubs, and mobile banking adoption from Kano to Kaduna.");
+  const [profileDesk, setProfileDesk] = useState(user?.desk || "Technology & Digital Economy");
+
+  useEffect(() => {
+    if (user) {
+      setProfileName(user.name || "Fatima Sanusi");
+      setProfileAvatar(user.avatar || "/assets/social-image-4.png");
+      setProfileBio(user.bio || "Tech correspondent tracking venture capital, AI hubs, and mobile banking adoption from Kano to Kaduna.");
+      setProfileDesk(user.desk || "Technology & Digital Economy");
+    }
+  }, [user]);
+
+  const handleSaveProfile = () => {
+    updateUser({
+      name: profileName,
+      avatar: profileAvatar,
+      bio: profileBio,
+      desk: profileDesk,
+    });
+    setStatusMessage("Staff Writer profile, avatar, and bio saved successfully!");
+    setTimeout(() => setStatusMessage(null), 4000);
+  };
 
   const loadSubmissions = async () => {
     const all = await getSubmissions();
@@ -594,26 +620,72 @@ function AuthorStudioContent() {
             <div className="bg-white rounded-3xl border border-[#E5E6E8] p-6 sm:p-8 shadow-2xs space-y-6">
               <div className="pb-4 border-b border-[#E5E6E8]">
                 <h3 className="text-base font-extrabold text-[#111111] uppercase tracking-wide">
-                  Staff Writer Profile
+                  Staff Writer Profile & Identity
                 </h3>
+                <p className="text-xs text-[#707070] mt-1">
+                  Manage your journalist byline, assigned beat, profile picture, and author biography.
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
+                  {/* Writer Profile Avatar Uploader */}
                   <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Byline Name</label>
-                    <input type="text" defaultValue={user?.name || "Fatima Sanusi"} className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:border-emerald-600 focus:outline-hidden" />
+                    <ImageUploader
+                      value={profileAvatar}
+                      onChange={(url) => setProfileAvatar(url)}
+                      label="Writer Profile Picture / Avatar"
+                    />
                   </div>
+
                   <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Official Email</label>
-                    <input type="email" defaultValue={user?.email || "fatima.sanusi@thezango.org"} disabled className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed" />
+                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Official Byline Name</label>
+                    <input
+                      type="text"
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:border-emerald-600 focus:outline-hidden"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Corporate Email</label>
+                    <input
+                      type="email"
+                      value={user?.email || "fatima.sanusi@thezango.org"}
+                      disabled
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed font-medium"
+                    />
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Journalist Bio</label>
-                    <textarea rows={3} defaultValue={user?.bio || "Correspondent covering capital markets, digital economy, and culture."} className="w-full px-3.5 py-2 text-xs rounded-xl border border-gray-200 focus:border-emerald-600 focus:outline-hidden resize-none" />
+                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Assigned Beat / Desk</label>
+                    <select
+                      value={profileDesk}
+                      onChange={(e) => setProfileDesk(e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:border-emerald-600 focus:outline-hidden bg-white"
+                    >
+                      {CATEGORIES.map((cat) => (
+                        <option key={cat.id} value={cat.name}>{cat.name}</option>
+                      ))}
+                      <option value="Executive & Investigation">Executive & Investigation</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Journalist Biography (Shown to Readers)</label>
+                    <textarea
+                      rows={3}
+                      value={profileBio}
+                      onChange={(e) => setProfileBio(e.target.value)}
+                      placeholder="Brief background on your reporting focus across Northern Nigeria..."
+                      className="w-full px-3.5 py-2 rounded-xl border border-gray-200 focus:border-emerald-600 text-xs focus:outline-hidden resize-none"
+                    />
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      This biography and photo will appear under "About the Author" on all stories published under your byline.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -621,10 +693,10 @@ function AuthorStudioContent() {
               <div className="pt-4 border-t border-[#E5E6E8] flex justify-end">
                 <button
                   type="button"
-                  onClick={() => setStatusMessage("Profile updated successfully!")}
+                  onClick={handleSaveProfile}
                   className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
                 >
-                  Save Profile
+                  Save Profile Changes
                 </button>
               </div>
             </div>

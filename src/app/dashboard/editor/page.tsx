@@ -55,7 +55,7 @@ import RichEditor from "@/components/rich-editor";
 
 function EditorDashboardContent() {
   const router = useRouter();
-  const { user, role, logout, switchRole, isAuthenticated, isLoading } = useAuth();
+  const { user, role, logout, switchRole, updateUser, isAuthenticated, isLoading } = useAuth();
 
   const [articles, setArticles] = useState<Article[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -67,6 +67,21 @@ function EditorDashboardContent() {
   const [notification, setNotification] = useState<string | null>(null);
   const [revisionModalSub, setRevisionModalSub] = useState<Submission | null>(null);
   const [revisionNotes, setRevisionNotes] = useState("");
+
+  // Editor Profile Settings state
+  const [profileName, setProfileName] = useState(user?.name || "Aisha Dahiru");
+  const [profileAvatar, setProfileAvatar] = useState(user?.avatar || "/assets/social-image-2.png");
+  const [profileBio, setProfileBio] = useState(user?.bio || "Senior Markets Editor analyzing private equity, agribusiness finance, and trade dynamics across Northern Nigeria.");
+  const [profileDesk, setProfileDesk] = useState(user?.desk || "Business & Capital Markets");
+
+  useEffect(() => {
+    if (user) {
+      setProfileName(user.name || "Aisha Dahiru");
+      setProfileAvatar(user.avatar || "/assets/social-image-2.png");
+      setProfileBio(user.bio || "Senior Markets Editor analyzing private equity, agribusiness finance, and trade dynamics across Northern Nigeria.");
+      setProfileDesk(user.desk || "Business & Capital Markets");
+    }
+  }, [user]);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -238,6 +253,16 @@ function EditorDashboardContent() {
     setRevisionModalSub(null);
     setRevisionNotes("");
     triggerToast("Revision notes sent back to writer successfully!");
+  };
+
+  const handleSaveProfile = () => {
+    updateUser({
+      name: profileName,
+      avatar: profileAvatar,
+      bio: profileBio,
+      desk: profileDesk,
+    });
+    triggerToast("Desk Editor profile, avatar, and byline saved successfully!");
   };
 
   const pendingSubmissions = submissions.filter((s) => s.status === "pending" || s.status === "needs_revision");
@@ -833,31 +858,71 @@ function EditorDashboardContent() {
                   Desk Editor Profile & Preferences
                 </h3>
                 <p className="text-xs text-[#707070] mt-1">
-                  Manage your journalist byline, assigned beat, and editorial notification clearances.
+                  Manage your journalist byline, assigned beat, profile photo, and editorial notification clearances.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
+                  {/* Editor Profile Avatar Uploader */}
                   <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Official Name</label>
-                    <input type="text" defaultValue={user?.name || "Aisha Dahiru"} className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:border-blue-600 focus:outline-hidden" />
+                    <ImageUploader
+                      value={profileAvatar}
+                      onChange={(url) => setProfileAvatar(url)}
+                      label="Desk Editor Profile Picture / Avatar"
+                    />
                   </div>
+
                   <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Official Email</label>
-                    <input type="email" defaultValue={user?.email || "aisha.dahiru@thezango.org"} disabled className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed" />
+                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Official Byline Name</label>
+                    <input
+                      type="text"
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:border-blue-600 focus:outline-hidden"
+                    />
                   </div>
+
                   <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Assigned Beat</label>
-                    <input type="text" defaultValue={user?.desk || "Business & Capital Markets"} disabled className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed font-semibold" />
+                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Bureau Email</label>
+                    <input
+                      type="email"
+                      value={user?.email || "aisha.dahiru@thezango.org"}
+                      disabled
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed font-medium"
+                    />
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Update Password</label>
-                    <input type="password" placeholder="Enter new account passcode" className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:border-blue-600 focus:outline-hidden" />
+                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Assigned Editorial Beat / Desk</label>
+                    <select
+                      value={profileDesk}
+                      onChange={(e) => setProfileDesk(e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:border-blue-600 focus:outline-hidden bg-white"
+                    >
+                      {CATEGORIES.map((cat) => (
+                        <option key={cat.id} value={cat.name}>{cat.name}</option>
+                      ))}
+                      <option value="Executive & Investigation">Executive & Investigation</option>
+                    </select>
                   </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Journalist Biography (Shown to Readers)</label>
+                    <textarea
+                      rows={3}
+                      value={profileBio}
+                      onChange={(e) => setProfileBio(e.target.value)}
+                      placeholder="Brief background on financial, markets, or investigative coverage..."
+                      className="w-full px-3.5 py-2 rounded-xl border border-gray-200 focus:border-blue-600 text-xs focus:outline-hidden resize-none"
+                    />
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      This biography and photo will appear under "About the Author" on all articles you publish.
+                    </p>
+                  </div>
+
                   <div>
                     <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Notifications</label>
                     <label className="flex items-center space-x-2 text-xs text-gray-700 cursor-pointer">
@@ -871,10 +936,10 @@ function EditorDashboardContent() {
               <div className="pt-4 border-t border-[#E5E6E8] flex justify-end">
                 <button
                   type="button"
-                  onClick={() => triggerToast("Editor profile settings updated successfully!")}
+                  onClick={handleSaveProfile}
                   className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
                 >
-                  Save Changes
+                  Save Profile Changes
                 </button>
               </div>
             </div>
