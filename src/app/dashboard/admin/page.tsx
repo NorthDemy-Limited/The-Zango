@@ -112,19 +112,20 @@ function AdminDashboardContent() {
   const [revisionNotes, setRevisionNotes] = useState("");
 
   // Executive Profile & Settings state
-  const [profileName, setProfileName] = useState(user?.name || "Usman Bello");
-  const [profileAvatar, setProfileAvatar] = useState(user?.avatar || "/assets/social-image-1.png");
-  const [profileBio, setProfileBio] = useState(user?.bio || "Chief Executive & Bureau Chief with 15+ years in Sahelian socio-political investigative reporting.");
-  const [profileDesk, setProfileDesk] = useState(user?.desk || "Executive & Investigation");
+  const [profileNameOverride, setProfileNameOverride] = useState<string | null>(null);
+  const [profileAvatarOverride, setProfileAvatarOverride] = useState<string | null>(null);
+  const [profileBioOverride, setProfileBioOverride] = useState<string | null>(null);
+  const [profileDeskOverride, setProfileDeskOverride] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      setProfileName(user.name || "Usman Bello");
-      setProfileAvatar(user.avatar || "/assets/social-image-1.png");
-      setProfileBio(user.bio || "Chief Executive & Bureau Chief with 15+ years in Sahelian socio-political investigative reporting.");
-      setProfileDesk(user.desk || "Executive & Investigation");
-    }
-  }, [user]);
+  const profileName = profileNameOverride ?? (user?.name || "Usman Bello");
+  const profileAvatar = profileAvatarOverride ?? (user?.avatar || "/assets/social-image-1.png");
+  const profileBio = profileBioOverride ?? (user?.bio || "Chief Executive & Bureau Chief with 15+ years in Sahelian socio-political investigative reporting.");
+  const profileDesk = profileDeskOverride ?? (user?.desk || "Executive & Investigation");
+
+  const setProfileName = (val: string) => setProfileNameOverride(val);
+  const setProfileAvatar = (val: string) => setProfileAvatarOverride(val);
+  const setProfileBio = (val: string) => setProfileBioOverride(val);
+  const setProfileDesk = (val: string) => setProfileDeskOverride(val);
 
   // Dynamic Desks, Tags & Slug state
   const [desksList, setDesksList] = useState<Category[]>(CATEGORIES);
@@ -240,7 +241,16 @@ function AdminDashboardContent() {
   };
 
   useEffect(() => {
-    loadData();
+    let active = true;
+    const fetchAdminData = async () => {
+      await loadData();
+    };
+    if (active) {
+      void fetchAdminData();
+    }
+    return () => {
+      active = false;
+    };
   }, []);
 
   const triggerToast = (msg: string) => {
@@ -1147,7 +1157,7 @@ function AdminDashboardContent() {
                   </h2>
                   
                   <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                    You're overseeing 11 active regional desks with high publishing velocity across Kano, Kaduna, Maiduguri, and Sokoto bureaus.
+                    You&apos;re overseeing 11 active regional desks with high publishing velocity across Kano, Kaduna, Maiduguri, and Sokoto bureaus.
                   </p>
 
                   <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -1327,7 +1337,7 @@ function AdminDashboardContent() {
                         {pendingSubmissions.length} Manuscript{pendingSubmissions.length > 1 ? "s" : ""} Awaiting Editorial Clearance
                       </h4>
                       <p className="text-xs text-slate-600 mt-0.5">
-                        Latest submission: <span className="font-semibold text-slate-900">"{pendingSubmissions[0].title}"</span> by {pendingSubmissions[0].authorName}.
+                        Latest submission: <span className="font-semibold text-slate-900">&ldquo;{pendingSubmissions[0].title}&rdquo;</span> by {pendingSubmissions[0].authorName}.
                       </p>
                     </div>
                   </div>
@@ -2078,7 +2088,7 @@ function AdminDashboardContent() {
                       className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden resize-none"
                     />
                     <p className="text-[11px] text-slate-400 mt-1">
-                      This biography and photo will appear under "About the Author" on all articles you publish.
+                      This biography and photo will appear under &ldquo;About the Author&rdquo; on all articles you publish.
                     </p>
                   </div>
 
@@ -2236,7 +2246,7 @@ function AdminDashboardContent() {
                           }}
                           className="text-[10px] text-blue-600 hover:underline font-bold"
                         >
-                          Use "{slugAvailability.suggestedSlug}"
+                          Use &ldquo;{slugAvailability.suggestedSlug}&rdquo;
                         </button>
                       )}
                     </div>
@@ -2419,7 +2429,7 @@ function AdminDashboardContent() {
                       onChange={(e) => setFormData({ ...formData, isEditorsPick: e.target.checked })}
                       className="rounded text-[#C61D1F] focus:ring-[#C61D1F]"
                     />
-                    <span className="font-semibold text-slate-800">Editor's Pick</span>
+                    <span className="font-semibold text-slate-800">Editor&apos;s Pick</span>
                   </label>
                 </div>
               </div>

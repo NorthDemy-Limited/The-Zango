@@ -50,19 +50,20 @@ function AuthorStudioContent() {
   const [mySubmissions, setMySubmissions] = useState<Submission[]>([]);
 
   // Writer Profile Settings state
-  const [profileName, setProfileName] = useState(user?.name || "Fatima Sanusi");
-  const [profileAvatar, setProfileAvatar] = useState(user?.avatar || "/assets/social-image-4.png");
-  const [profileBio, setProfileBio] = useState(user?.bio || "Tech correspondent tracking venture capital, AI hubs, and mobile banking adoption from Kano to Kaduna.");
-  const [profileDesk, setProfileDesk] = useState(user?.desk || "Technology & Digital Economy");
+  const [profileNameOverride, setProfileNameOverride] = useState<string | null>(null);
+  const [profileAvatarOverride, setProfileAvatarOverride] = useState<string | null>(null);
+  const [profileBioOverride, setProfileBioOverride] = useState<string | null>(null);
+  const [profileDeskOverride, setProfileDeskOverride] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      setProfileName(user.name || "Fatima Sanusi");
-      setProfileAvatar(user.avatar || "/assets/social-image-4.png");
-      setProfileBio(user.bio || "Tech correspondent tracking venture capital, AI hubs, and mobile banking adoption from Kano to Kaduna.");
-      setProfileDesk(user.desk || "Technology & Digital Economy");
-    }
-  }, [user]);
+  const profileName = profileNameOverride ?? (user?.name || "Fatima Sanusi");
+  const profileAvatar = profileAvatarOverride ?? (user?.avatar || "/assets/social-image-4.png");
+  const profileBio = profileBioOverride ?? (user?.bio || "Tech correspondent tracking venture capital, AI hubs, and mobile banking adoption from Kano to Kaduna.");
+  const profileDesk = profileDeskOverride ?? (user?.desk || "Technology & Digital Economy");
+
+  const setProfileName = (val: string) => setProfileNameOverride(val);
+  const setProfileAvatar = (val: string) => setProfileAvatarOverride(val);
+  const setProfileBio = (val: string) => setProfileBioOverride(val);
+  const setProfileDesk = (val: string) => setProfileDeskOverride(val);
 
   const handleSaveProfile = () => {
     updateUser({
@@ -86,32 +87,48 @@ function AuthorStudioContent() {
   };
 
   useEffect(() => {
-    loadSubmissions();
+    let active = true;
+    const fetchAuthorSubmissions = async () => {
+      await loadSubmissions();
+    };
+    if (active) {
+      void fetchAuthorSubmissions();
+    }
+    return () => {
+      active = false;
+    };
   }, [user]);
 
   // Require auth
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      window.location.href = "/login?redirect=/dashboard/author";
+      router.push("/login?redirect=/dashboard/author");
     }
-  }, [isAuthenticated, isLoading]);
+  }, [isAuthenticated, isLoading, router]);
 
   // Restore draft from localStorage on mount
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("thezango_writer_draft");
-      if (saved) {
-        const draft = JSON.parse(saved);
-        if (draft.title) setTitle(draft.title);
-        if (draft.category) setCategory(draft.category);
-        if (draft.coverImage) setCoverImage(draft.coverImage);
-        if (draft.excerpt) setExcerpt(draft.excerpt);
-        if (draft.content) setContent(draft.content);
-        setLastAutoSaved(draft.savedAt || "Previous session");
+    let active = true;
+    const restoreDraft = async () => {
+      try {
+        const saved = typeof window !== "undefined" ? localStorage.getItem("thezango_writer_draft") : null;
+        if (saved && active) {
+          const draft = JSON.parse(saved);
+          if (draft.title) setTitle(draft.title);
+          if (draft.category) setCategory(draft.category);
+          if (draft.coverImage) setCoverImage(draft.coverImage);
+          if (draft.excerpt) setExcerpt(draft.excerpt);
+          if (draft.content) setContent(draft.content);
+          setLastAutoSaved(draft.savedAt || "Previous session");
+        }
+      } catch {
+        // ignore
       }
-    } catch (e) {
-      // ignore
-    }
+    };
+    void restoreDraft();
+    return () => {
+      active = false;
+    };
   }, []);
 
   // Auto-save draft changes to localStorage
@@ -684,7 +701,7 @@ function AuthorStudioContent() {
                       className="w-full px-3.5 py-2 rounded-xl border border-gray-200 focus:border-emerald-600 text-xs focus:outline-hidden resize-none"
                     />
                     <p className="text-[11px] text-gray-400 mt-1">
-                      This biography and photo will appear under "About the Author" on all stories published under your byline.
+                      This biography and photo will appear under &ldquo;About the Author&rdquo; on all stories published under your byline.
                     </p>
                   </div>
                 </div>

@@ -69,19 +69,20 @@ function EditorDashboardContent() {
   const [revisionNotes, setRevisionNotes] = useState("");
 
   // Editor Profile Settings state
-  const [profileName, setProfileName] = useState(user?.name || "Aisha Dahiru");
-  const [profileAvatar, setProfileAvatar] = useState(user?.avatar || "/assets/social-image-2.png");
-  const [profileBio, setProfileBio] = useState(user?.bio || "Senior Markets Editor analyzing private equity, agribusiness finance, and trade dynamics across Northern Nigeria.");
-  const [profileDesk, setProfileDesk] = useState(user?.desk || "Business & Capital Markets");
+  const [profileNameOverride, setProfileNameOverride] = useState<string | null>(null);
+  const [profileAvatarOverride, setProfileAvatarOverride] = useState<string | null>(null);
+  const [profileBioOverride, setProfileBioOverride] = useState<string | null>(null);
+  const [profileDeskOverride, setProfileDeskOverride] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      setProfileName(user.name || "Aisha Dahiru");
-      setProfileAvatar(user.avatar || "/assets/social-image-2.png");
-      setProfileBio(user.bio || "Senior Markets Editor analyzing private equity, agribusiness finance, and trade dynamics across Northern Nigeria.");
-      setProfileDesk(user.desk || "Business & Capital Markets");
-    }
-  }, [user]);
+  const profileName = profileNameOverride ?? (user?.name || "Aisha Dahiru");
+  const profileAvatar = profileAvatarOverride ?? (user?.avatar || "/assets/social-image-2.png");
+  const profileBio = profileBioOverride ?? (user?.bio || "Senior Markets Editor analyzing private equity, agribusiness finance, and trade dynamics across Northern Nigeria.");
+  const profileDesk = profileDeskOverride ?? (user?.desk || "Business & Capital Markets");
+
+  const setProfileName = (val: string) => setProfileNameOverride(val);
+  const setProfileAvatar = (val: string) => setProfileAvatarOverride(val);
+  const setProfileBio = (val: string) => setProfileBioOverride(val);
+  const setProfileDesk = (val: string) => setProfileDeskOverride(val);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -101,9 +102,9 @@ function EditorDashboardContent() {
   // Gatekeeping: require authentication
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      window.location.href = "/login?redirect=/dashboard/editor";
+      router.push("/login?redirect=/dashboard/editor");
     }
-  }, [isAuthenticated, isLoading]);
+  }, [isAuthenticated, isLoading, router]);
 
   const loadData = async () => {
     const arts = await getArticles();
@@ -113,7 +114,16 @@ function EditorDashboardContent() {
   };
 
   useEffect(() => {
-    loadData();
+    let active = true;
+    const fetchEditorData = async () => {
+      await loadData();
+    };
+    if (active) {
+      void fetchEditorData();
+    }
+    return () => {
+      active = false;
+    };
   }, []);
 
   const triggerToast = (msg: string) => {
@@ -919,7 +929,7 @@ function EditorDashboardContent() {
                       className="w-full px-3.5 py-2 rounded-xl border border-gray-200 focus:border-blue-600 text-xs focus:outline-hidden resize-none"
                     />
                     <p className="text-[11px] text-gray-400 mt-1">
-                      This biography and photo will appear under "About the Author" on all articles you publish.
+                      This biography and photo will appear under &ldquo;About the Author&rdquo; on all articles you publish.
                     </p>
                   </div>
 
