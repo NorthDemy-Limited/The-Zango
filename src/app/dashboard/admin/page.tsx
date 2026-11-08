@@ -49,7 +49,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { useAuth, UserRole } from "@/context/auth-context";
-import { Article, Subscriber, Submission, NewsroomMember, NewsroomRole } from "@/types";
+import { Article, Subscriber, Submission, NewsroomMember, NewsroomRole, Category } from "@/types";
 import { 
   getArticles, 
   createArticle, 
@@ -126,6 +126,16 @@ function AdminDashboardContent() {
     }
   }, [user]);
 
+  // Dynamic Desks, Tags & Slug state
+  const [desksList, setDesksList] = useState<Category[]>(CATEGORIES);
+  const [availableTags, setAvailableTags] = useState<{ tag: string; count: number }[]>([]);
+  const [slugAvailability, setSlugAvailability] = useState<{
+    available?: boolean;
+    message?: string;
+    suggestedSlug?: string;
+    checking?: boolean;
+  } | null>(null);
+
   // New/Edit Article Form State
   const [formData, setFormData] = useState({
     title: "",
@@ -136,6 +146,7 @@ function AdminDashboardContent() {
     content: "",
     authorName: "The Zango Bureau",
     readTime: "4 min read",
+    tags: "Northern Nigeria, Business",
     isFeatured: false,
     isTrending: false,
     isEditorsPick: false,
@@ -150,22 +161,82 @@ function AdminDashboardContent() {
   }, [isAuthenticated, isLoading, router]);
 
   const loadData = async () => {
-    const arts = await getArticles();
-    const subs = await getSubscribers();
-    const subsQueue = await getSubmissions();
-    const mets = await getPlatformMetrics();
-    const members = await getTeamMembers();
-    setTeamMembers([...members]);
+    try {
+      const [artsRes, subsRes, queueRes, metsRes, staffRes, desksRes, tagsRes] = await Promise.all([
+        fetch("/api/admin/articles").then((r) => r.json()).catch(() => null),
+        fetch("/api/admin/subscribers").then((r) => r.json()).catch(() => null),
+        fetch("/api/admin/submissions").then((r) => r.json()).catch(() => null),
+        fetch("/api/admin/metrics").then((r) => r.json()).catch(() => null),
+        fetch("/api/admin/staff").then((r) => r.json()).catch(() => null),
+        fetch("/api/admin/desks").then((r) => r.json()).catch(() => null),
+        fetch("/api/admin/tags").then((r) => r.json()).catch(() => null),
+      ]);
 
-    setArticles([...arts]);
-    setSubscribers([...subs]);
-    setSubmissions([...subsQueue]);
-    setMetrics({
-      totalArticles: mets.totalArticles,
-      totalViews: mets.totalViews,
-      totalSubscribers: mets.totalSubscribers,
-      draftCount: mets.draftCount,
-    });
+      if (desksRes?.success && desksRes.desks) setDesksList(desksRes.desks);
+      if (tagsRes?.success && tagsRes.tags) setAvailableTags(tagsRes.tags);
+
+      if (artsRes?.success && artsRes.articles) {
+        setArticles(artsRes.articles);
+      } else {
+        const arts = await getArticles();
+        setArticles([...arts]);
+      }
+
+      if (subsRes?.success && subsRes.subscribers) {
+        setSubscribers(subsRes.subscribers);
+      } else {
+        const subs = await getSubscribers();
+        setSubscribers([...subs]);
+      }
+
+      if (queueRes?.success && queueRes.submissions) {
+        setSubmissions(queueRes.submissions);
+      } else {
+        const subsQueue = await getSubmissions();
+        setSubmissions([...subsQueue]);
+      }
+
+      if (staffRes?.success && staffRes.members) {
+        setTeamMembers(staffRes.members);
+      } else {
+        const members = await getTeamMembers();
+        setTeamMembers([...members]);
+      }
+
+      if (metsRes?.success && metsRes.metrics) {
+        setMetrics({
+          totalArticles: metsRes.metrics.totalArticles,
+          totalViews: metsRes.metrics.totalViews,
+          totalSubscribers: metsRes.metrics.totalSubscribers,
+          draftCount: metsRes.metrics.draftCount,
+        });
+      } else {
+        const mets = await getPlatformMetrics();
+        setMetrics({
+          totalArticles: mets.totalArticles,
+          totalViews: mets.totalViews,
+          totalSubscribers: mets.totalSubscribers,
+          draftCount: mets.draftCount,
+        });
+      }
+    } catch (e) {
+      console.error("loadData error, falling back to local db:", e);
+      const arts = await getArticles();
+      const subs = await getSubscribers();
+      const subsQueue = await getSubmissions();
+      const mets = await getPlatformMetrics();
+      const members = await getTeamMembers();
+      setTeamMembers([...members]);
+      setArticles([...arts]);
+      setSubscribers([...subs]);
+      setSubmissions([...subsQueue]);
+      setMetrics({
+        totalArticles: mets.totalArticles,
+        totalViews: mets.totalViews,
+        totalSubscribers: mets.totalSubscribers,
+        draftCount: mets.draftCount,
+      });
+    }
   };
 
   useEffect(() => {
@@ -177,7 +248,74 @@ function AdminDashboardContent() {
     setTimeout(() => setNotification(null), 4000);
   };
 
+  // Real-time Slug Availability Checker
+  const checkSlugAvailability = async (slugToCheck: string) => {
+    if (!slugToCheck.trim()) {
+      setSlugAvailability(null);
+      return;
+    }
+    setSlugAvailability({ checking: true });
+    try {
+      const url = `/api/admin/articles/check-slug?slug=${encodeURIComponent(slugToCheck.trim())}${
+        editingArticle ? `&excludeId=${editingArticle.id}` : ""
+      }`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.success) {
+        setSlugAvailability({
+          available: data.available,
+          message: data.message,
+          suggestedSlug: data.suggestedSlug,
+          checking: false,
+        });
+      }
+    } catch {
+      setSlugAvailability(null);
+    }
+  };
+
+  const handleHeadlineChange = (newTitle: string) => {
+    const autoSlug = newTitle
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+
+    // If user hasn't typed a custom slug or it's a new article, keep slug in sync
+    if (!editingArticle || formData.slug === "") {
+      setFormData((prev) => ({ ...prev, title: newTitle, slug: autoSlug }));
+      checkSlugAvailability(autoSlug);
+    } else {
+      setFormData((prev) => ({ ...prev, title: newTitle }));
+    }
+  };
+
+  const handleContentChange = (html: string) => {
+    const cleanText = html.replace(/<[^>]*>/g, " ");
+    const words = cleanText.split(/\s+/).filter(Boolean).length;
+    const computedRead = `${Math.max(1, Math.ceil(words / 200))} min read`;
+    setFormData((prev) => ({
+      ...prev,
+      content: html,
+      readTime: computedRead,
+    }));
+  };
+
   const handleToggleFlag = async (id: string, flag: "isFeatured" | "isTrending" | "isEditorsPick" | "isLatest") => {
+    try {
+      const res = await fetch(`/api/admin/articles/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "toggleFlag", flag }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await loadData();
+        triggerToast(`Updated ${flag} status for dispatch.`);
+        return;
+      }
+    } catch {
+      // fallback
+    }
     const updated = await toggleArticleFlag(id, flag);
     if (updated) {
       await loadData();
@@ -187,6 +325,17 @@ function AdminDashboardContent() {
 
   const handleDelete = async (id: string, title: string) => {
     if (confirm(`Are you sure you want to delete "${title}"?`)) {
+      try {
+        const res = await fetch(`/api/admin/articles/${id}`, { method: "DELETE" });
+        const data = await res.json();
+        if (data.success) {
+          await loadData();
+          triggerToast(`Story "${title.slice(0, 25)}..." deleted.`);
+          return;
+        }
+      } catch {
+        // fallback
+      }
       await deleteArticle(id);
       await loadData();
       triggerToast(`Story "${title.slice(0, 25)}..." deleted.`);
@@ -196,6 +345,31 @@ function AdminDashboardContent() {
   const handleAddTeamMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMemberForm.name.trim() || !newMemberForm.email.trim()) return;
+    try {
+      const res = await fetch("/api/admin/staff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newMemberForm),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await loadData();
+        setShowTeamModal(false);
+        setNewMemberForm({
+          name: "",
+          email: "",
+          role: "writer",
+          desk: "Technology & Digital Economy",
+          avatar: "/assets/social-image-1.png",
+          bio: "",
+          status: "active",
+        });
+        triggerToast("Staff member added to newsroom roster!");
+        return;
+      }
+    } catch {
+      // fallback
+    }
     await createTeamMember(newMemberForm);
     await loadData();
     setShowTeamModal(false);
@@ -212,6 +386,21 @@ function AdminDashboardContent() {
   };
 
   const handleUpdateRole = async (id: string, targetRole: NewsroomRole, name: string) => {
+    try {
+      const res = await fetch(`/api/admin/staff/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: targetRole }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await loadData();
+        triggerToast("Updated role for " + name + " to " + targetRole.toUpperCase());
+        return;
+      }
+    } catch {
+      // fallback
+    }
     await updateTeamMemberRole(id, targetRole);
     await loadData();
     triggerToast("Updated role for " + name + " to " + targetRole.toUpperCase());
@@ -219,6 +408,21 @@ function AdminDashboardContent() {
 
   const handleToggleMemberStatus = async (id: string, currentStatus: "active" | "inactive", name: string) => {
     const nextStatus = currentStatus === "active" ? "inactive" : "active";
+    try {
+      const res = await fetch(`/api/admin/staff/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await loadData();
+        triggerToast(name + " status updated to " + nextStatus);
+        return;
+      }
+    } catch {
+      // fallback
+    }
     await updateTeamMemberStatus(id, nextStatus);
     await loadData();
     triggerToast(name + " status updated to " + nextStatus);
@@ -226,6 +430,17 @@ function AdminDashboardContent() {
 
   const handleDeleteMember = async (id: string, name: string) => {
     if (confirm("Are you sure you want to remove " + name + " from newsroom staff?")) {
+      try {
+        const res = await fetch(`/api/admin/staff/${id}`, { method: "DELETE" });
+        const data = await res.json();
+        if (data.success) {
+          await loadData();
+          triggerToast("Removed " + name + " from newsroom roster.");
+          return;
+        }
+      } catch {
+        // fallback
+      }
       await deleteTeamMember(id);
       await loadData();
       triggerToast("Removed " + name + " from newsroom roster.");
@@ -234,6 +449,7 @@ function AdminDashboardContent() {
 
   const handleOpenEdit = (article: Article) => {
     setEditingArticle(article);
+    setSlugAvailability(null);
     setFormData({
       title: article.title,
       slug: article.slug,
@@ -243,6 +459,7 @@ function AdminDashboardContent() {
       content: article.content,
       authorName: article.author.name,
       readTime: article.readTime,
+      tags: article.tags ? article.tags.join(", ") : "Northern Nigeria",
       isFeatured: !!article.isFeatured,
       isTrending: !!article.isTrending,
       isEditorsPick: !!article.isEditorsPick,
@@ -253,6 +470,7 @@ function AdminDashboardContent() {
 
   const handleOpenCreateModal = () => {
     setEditingArticle(null);
+    setSlugAvailability(null);
     setFormData({
       title: "",
       slug: "",
@@ -262,6 +480,7 @@ function AdminDashboardContent() {
       content: "",
       authorName: user?.name || "The Zango Bureau",
       readTime: "4 min read",
+      tags: "Northern Nigeria, Economy",
       isFeatured: false,
       isTrending: false,
       isEditorsPick: false,
@@ -281,7 +500,42 @@ function AdminDashboardContent() {
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)/g, "");
 
+    const parsedTags = formData.tags
+      ? formData.tags.split(",").map((t) => t.trim()).filter(Boolean)
+      : ["Northern Nigeria"];
+
     if (editingArticle) {
+      try {
+        const res = await fetch(`/api/admin/articles/${editingArticle.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: formData.title,
+            slug,
+            category: formData.category,
+            coverImage: formData.coverImage,
+            excerpt: formData.excerpt,
+            content: formData.content,
+            authorName: formData.authorName,
+            readTime: formData.readTime,
+            isFeatured: formData.isFeatured,
+            isTrending: formData.isTrending,
+            isEditorsPick: formData.isEditorsPick,
+            isLatest: formData.isLatest,
+            tags: parsedTags,
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          triggerToast(`Updated dispatch: "${formData.title.slice(0, 30)}..."`);
+          await loadData();
+          setShowCreateModal(false);
+          setEditingArticle(null);
+          return;
+        }
+      } catch {
+        // fallback
+      }
       await updateArticle(editingArticle.id, {
         title: formData.title,
         slug,
@@ -295,6 +549,7 @@ function AdminDashboardContent() {
           slug: formData.authorName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
         },
         readTime: formData.readTime,
+        tags: parsedTags,
         isFeatured: formData.isFeatured,
         isTrending: formData.isTrending,
         isEditorsPick: formData.isEditorsPick,
@@ -302,6 +557,37 @@ function AdminDashboardContent() {
       });
       triggerToast(`Updated dispatch: "${formData.title.slice(0, 30)}..."`);
     } else {
+      try {
+        const res = await fetch("/api/admin/articles", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: formData.title,
+            slug,
+            category: formData.category,
+            coverImage: formData.coverImage || "/assets/hero-featured.jpg",
+            excerpt: formData.excerpt || "Editorial dispatch from The Zango Bureau...",
+            content: formData.content || formData.title,
+            authorName: formData.authorName,
+            readTime: formData.readTime || "4 min read",
+            isFeatured: formData.isFeatured,
+            isTrending: formData.isTrending,
+            isEditorsPick: formData.isEditorsPick,
+            isLatest: formData.isLatest,
+            tags: parsedTags,
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          triggerToast(`Published new dispatch: "${formData.title.slice(0, 30)}..."`);
+          await loadData();
+          setShowCreateModal(false);
+          setEditingArticle(null);
+          return;
+        }
+      } catch {
+        // fallback
+      }
       await createArticle({
         title: formData.title,
         slug,
@@ -316,6 +602,7 @@ function AdminDashboardContent() {
         isEditorsPick: formData.isEditorsPick,
         isLatest: formData.isLatest,
         views: 0,
+        tags: parsedTags,
         author: {
           id: "author-bureau",
           name: formData.authorName,
@@ -333,6 +620,21 @@ function AdminDashboardContent() {
   };
 
   const handleApproveSubmission = async (id: string, title: string) => {
+    try {
+      const res = await fetch(`/api/admin/submissions/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "approve" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await loadData();
+        triggerToast(`Approved and published: "${title.slice(0, 30)}..."`);
+        return;
+      }
+    } catch {
+      // fallback
+    }
     const published = await approveSubmission(id);
     if (published) {
       await loadData();
@@ -342,6 +644,21 @@ function AdminDashboardContent() {
 
   const handleRejectSubmission = async (id: string, title: string) => {
     if (confirm(`Reject submission "${title}"?`)) {
+      try {
+        const res = await fetch(`/api/admin/submissions/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "reject" }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          await loadData();
+          triggerToast(`Rejected submission: "${title.slice(0, 30)}..."`);
+          return;
+        }
+      } catch {
+        // fallback
+      }
       await rejectSubmission(id);
       await loadData();
       triggerToast(`Rejected submission: "${title.slice(0, 30)}..."`);
@@ -350,6 +667,7 @@ function AdminDashboardContent() {
 
   const handleOpenEditSubmission = (sub: Submission) => {
     setEditingArticle(null);
+    setSlugAvailability(null);
     setFormData({
       title: sub.title,
       slug: sub.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
@@ -359,6 +677,7 @@ function AdminDashboardContent() {
       content: sub.content,
       authorName: sub.authorName,
       readTime: sub.readTime,
+      tags: "Northern Nigeria, Investigation",
       isFeatured: false,
       isTrending: false,
       isEditorsPick: false,
@@ -370,6 +689,23 @@ function AdminDashboardContent() {
   const handleRequestRevision = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!revisionModalSub || !revisionNotes.trim()) return;
+    try {
+      const res = await fetch(`/api/admin/submissions/${revisionModalSub.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "revision", feedbackNotes: revisionNotes.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await loadData();
+        setRevisionModalSub(null);
+        setRevisionNotes("");
+        triggerToast("Revision feedback delivered to writer!");
+        return;
+      }
+    } catch {
+      // fallback
+    }
     await requestRevisionSubmission(revisionModalSub.id, revisionNotes.trim());
     await loadData();
     setRevisionModalSub(null);
@@ -1028,6 +1364,7 @@ function AdminDashboardContent() {
                         src={leadFeaturedArticle.coverImage}
                         alt={leadFeaturedArticle.title}
                         fill
+                        priority
                         sizes="260px"
                         className="object-cover"
                       />
@@ -1855,6 +2192,7 @@ function AdminDashboardContent() {
             {/* Scrollable Form Body */}
             <form id="story-dispatch-form" onSubmit={handleCreateSubmit} className="overflow-y-auto flex-1 p-6 space-y-5 text-xs overscroll-contain">
               
+              {/* Headline */}
               <div>
                 <label className="block font-bold text-slate-900 uppercase mb-1.5">Headline *</label>
                 <input
@@ -1862,20 +2200,80 @@ function AdminDashboardContent() {
                   required
                   placeholder="e.g. Kano Agritech Hub Secures $1.5M Seed Round"
                   value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  onChange={(e) => handleHeadlineChange(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-sm focus:outline-hidden"
                 />
               </div>
 
+              {/* Dynamic Live Slug & Availability Checker */}
+              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <label className="font-bold text-slate-700 uppercase text-[11px]">
+                    URL Slug & Public Link
+                  </label>
+                  {slugAvailability?.checking && (
+                    <span className="text-[10px] text-slate-400 font-semibold animate-pulse">
+                      Validating slug...
+                    </span>
+                  )}
+                  {slugAvailability?.available === true && (
+                    <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md flex items-center space-x-1">
+                      <span>✓ URL available</span>
+                    </span>
+                  )}
+                  {slugAvailability?.available === false && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-[10px] text-amber-800 font-bold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+                        ⚠️ Already in use
+                      </span>
+                      {slugAvailability.suggestedSlug && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const sug = slugAvailability.suggestedSlug!;
+                            setFormData((prev) => ({ ...prev, slug: sug }));
+                            checkSlugAvailability(sug);
+                          }}
+                          className="text-[10px] text-blue-600 hover:underline font-bold"
+                        >
+                          Use "{slugAvailability.suggestedSlug}"
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center rounded-xl border border-slate-200 bg-white overflow-hidden focus-within:border-[#C61D1F]">
+                  <span className="px-3 text-slate-400 text-xs font-mono select-none bg-slate-50 border-r border-slate-200 py-2">
+                    /article/
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="custom-story-slug"
+                    value={formData.slug}
+                    onChange={(e) => {
+                      const val = e.target.value
+                        .toLowerCase()
+                        .replace(/[^a-z0-9-]+/g, "");
+                      setFormData((prev) => ({ ...prev, slug: val }));
+                      checkSlugAvailability(val);
+                    }}
+                    className="flex-1 px-3 py-2 text-xs font-mono text-slate-800 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+
+              {/* Desk, Author Byline & Read Time */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Dynamic Desks */}
                 <div>
-                  <label className="block font-bold text-slate-900 uppercase mb-1.5">Beat / Desk (All 11 Desks)</label>
+                  <label className="block font-bold text-slate-900 uppercase mb-1.5">Beat / Desk ({desksList.length})</label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden bg-white"
                   >
-                    {CATEGORIES.map((cat) => (
+                    {desksList.map((cat) => (
                       <option key={cat.id} value={cat.name}>
                         {cat.name}
                       </option>
@@ -1883,18 +2281,29 @@ function AdminDashboardContent() {
                   </select>
                 </div>
 
+                {/* Dynamic Author Byline from Staff Roster */}
                 <div>
                   <label className="block font-bold text-slate-900 uppercase mb-1.5">Author Byline</label>
                   <input
                     type="text"
+                    list="author-byline-options"
                     value={formData.authorName}
                     onChange={(e) => setFormData({ ...formData, authorName: e.target.value })}
+                    placeholder="Select or enter byline..."
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden"
                   />
+                  <datalist id="author-byline-options">
+                    <option value="The Zango Bureau" />
+                    {user?.name && <option value={user.name} />}
+                    {teamMembers.map((m) => (
+                      <option key={m.id} value={m.name} label={`${m.name} (${m.role.toUpperCase()})`} />
+                    ))}
+                  </datalist>
                 </div>
 
+                {/* Auto-computed Read Time */}
                 <div>
-                  <label className="block font-bold text-slate-900 uppercase mb-1.5">Read Time</label>
+                  <label className="block font-bold text-slate-900 uppercase mb-1.5">Estimated Read Time</label>
                   <input
                     type="text"
                     value={formData.readTime}
@@ -1902,6 +2311,43 @@ function AdminDashboardContent() {
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden"
                   />
                 </div>
+              </div>
+
+              {/* Story Tags / Keywords */}
+              <div>
+                <label className="block font-bold text-slate-900 uppercase mb-1.5">
+                  Story Tags & Topics (Comma separated)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Northern Nigeria, Kano, Venture Capital, Agribusiness"
+                  value={formData.tags}
+                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden"
+                />
+                {availableTags.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 pt-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      Popular Beats:
+                    </span>
+                    {availableTags.slice(0, 8).map((t) => (
+                      <button
+                        key={t.tag}
+                        type="button"
+                        onClick={() => {
+                          const current = formData.tags ? formData.tags.split(",").map((s) => s.trim()) : [];
+                          if (!current.includes(t.tag)) {
+                            const updated = [...current, t.tag].filter(Boolean).join(", ");
+                            setFormData((prev) => ({ ...prev, tags: updated }));
+                          }
+                        }}
+                        className="text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md transition-colors"
+                      >
+                        + {t.tag}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Dynamic Cover Image Uploader */}
@@ -1926,7 +2372,7 @@ function AdminDashboardContent() {
                 <label className="block font-bold text-slate-900 uppercase mb-2">Story Manuscript Body (WYSIWYG Rich Editor) *</label>
                 <RichEditor
                   value={formData.content}
-                  onChange={(html) => setFormData({ ...formData, content: html })}
+                  onChange={handleContentChange}
                   placeholder="Draft full longform article content. Use the editor toolbar for formatting, tables, images, and video/tweet embeds..."
                   height={340}
                 />
