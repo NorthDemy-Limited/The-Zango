@@ -43,7 +43,10 @@ import {
   Send,
   Lock,
   Tag,
-  Mail
+  Mail,
+  Sliders,
+  CheckCircle,
+  AlertCircle
 } from "lucide-react";
 import { useAuth, UserRole } from "@/context/auth-context";
 import { Article, Subscriber, Submission, NewsroomMember, NewsroomRole } from "@/types";
@@ -66,7 +69,6 @@ import {
   requestRevisionSubmission,
   updateSubmission
 } from "@/lib/firebase/db";
-import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { CATEGORIES } from "@/data/mock-articles";
 import ImageUploader from "@/components/image-uploader";
 import RichEditor from "@/components/rich-editor";
@@ -249,6 +251,25 @@ function AdminDashboardContent() {
     setShowCreateModal(true);
   };
 
+  const handleOpenCreateModal = () => {
+    setEditingArticle(null);
+    setFormData({
+      title: "",
+      slug: "",
+      category: "Business",
+      coverImage: "/assets/hero-featured.jpg",
+      excerpt: "",
+      content: "",
+      authorName: user?.name || "The Zango Bureau",
+      readTime: "4 min read",
+      isFeatured: false,
+      isTrending: false,
+      isEditorsPick: false,
+      isLatest: false,
+    });
+    setShowCreateModal(true);
+  };
+
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title.trim()) return;
@@ -404,83 +425,111 @@ function AdminDashboardContent() {
   const leadFeaturedArticle = articles.find((a) => a.isFeatured) || articles[0];
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-50/70 flex flex-col font-sans selection:bg-[#C61D1F]/15 selection:text-[#C61D1F]">
       
-      {/* 1. TOP NAVBAR (Matching the template) */}
-      <header className="bg-white border-b border-[#E5E6E8] sticky top-0 z-40 shadow-2xs h-18">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
+      {/* 1. TOP HEADER (Modern, Glassmorphic, Elevated) */}
+      <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-40 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] h-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between gap-4">
           
-          {/* Left: Brand Logo & Jump to... Search */}
-          <div className="flex items-center space-x-6">
+          {/* Left: Brand Identity & Quick Navigation */}
+          <div className="flex items-center space-x-5">
             <Link href="/" className="flex items-center space-x-2.5 group">
-              <div className="relative w-36 h-9">
+              <div className="relative w-32 h-8">
                 <Image
                   src="/assets/logo.png"
                   alt="The Zango"
                   fill
-                  sizes="150px"
+                  sizes="130px"
                   className="object-contain"
                   priority
                 />
               </div>
+              <span className="hidden sm:inline-flex items-center text-[10px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-md bg-red-50 text-[#C61D1F] border border-red-100">
+                CHIEF CMS
+              </span>
             </Link>
 
-            {/* Jump to... Global Search Bar */}
-            <div className="hidden md:flex items-center relative w-72 lg:w-84">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Jump to..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-12 py-2 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden bg-[#FAFAFA] focus:bg-white transition-all"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400 bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded-sm">
-                Ctrl K
-              </span>
+            {/* Quick Live Operational Status */}
+            <div className="hidden xl:flex items-center space-x-2 pl-4 border-l border-slate-200 text-xs text-slate-500 font-medium">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>11 Regional Desks Active</span>
             </div>
           </div>
 
-          {/* Right: Controls & Profile */}
-          <div className="flex items-center space-x-3 sm:space-x-4">
+          {/* Center: Global Quick Search Input */}
+          <div className="hidden md:flex items-center relative w-72 lg:w-96">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search stories, journalists, desks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-14 py-2 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden bg-slate-50/70 focus:bg-white transition-all placeholder:text-slate-400"
+            />
+            {searchQuery ? (
+              <button 
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            ) : (
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-extrabold text-slate-400 bg-slate-100/90 border border-slate-200/90 px-1.5 py-0.5 rounded-md tracking-wider">
+                ⌘K
+              </span>
+            )}
+          </div>
+
+          {/* Right: Actions, Notifications & Profile */}
+          <div className="flex items-center space-x-2 sm:space-x-3">
             
-            {/* Notification Bell */}
+            {/* Global Quick Action: Direct + New Story Button */}
+            <button
+              onClick={handleOpenCreateModal}
+              className="px-3.5 py-1.5 sm:px-4 sm:py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs hover:shadow-md flex items-center space-x-1.5 cursor-pointer shrink-0"
+              title="Publish New Story Dispatch"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">New Dispatch</span>
+            </button>
+
+            {/* Notification Bell with Review Queue indicator */}
             <button 
               onClick={() => setActiveTab("reviewQueue")}
-              className="relative p-2 text-gray-500 hover:text-black hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
-              title="Review queue notifications"
+              className="relative p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              title="Editorial Review Queue"
             >
               <Bell className="w-4 h-4" />
               {pendingSubmissions.length > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#C61D1F]" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#C61D1F] ring-2 ring-white animate-pulse" />
               )}
             </button>
 
-            {/* User Profile Info */}
-            <div className="flex items-center space-x-2.5 pl-2 border-l border-gray-200">
-              <div className="relative w-9 h-9 rounded-full overflow-hidden border-2 border-[#C61D1F] shrink-0">
+            {/* User Profile Pill */}
+            <div className="flex items-center space-x-2.5 pl-2 border-l border-slate-200">
+              <div className="relative w-8 h-8 rounded-full overflow-hidden border border-slate-300 shadow-2xs shrink-0">
                 <Image
                   src={user?.avatar || "/assets/social-image-1.png"}
                   alt={user?.name || "Usman Bello"}
                   fill
-                  sizes="36px"
+                  sizes="32px"
                   className="object-cover"
                 />
               </div>
               <div className="hidden lg:block text-left">
-                <div className="font-extrabold text-xs text-[#111111] leading-tight">
+                <div className="font-extrabold text-xs text-slate-900 leading-tight">
                   {user?.name || "Usman Bello"}
                 </div>
-                <div className="text-[10px] font-bold uppercase text-[#C61D1F] tracking-wider">
+                <div className="text-[9px] font-extrabold uppercase text-[#C61D1F] tracking-wider">
                   {user?.badge || "CHIEF ADMIN"}
                 </div>
               </div>
             </div>
 
-            {/* Logout Button */}
+            {/* Sign Out Button */}
             <button
               onClick={logout}
-              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
               title="Sign Out"
             >
               <LogOut className="w-4 h-4" />
@@ -491,165 +540,202 @@ function AdminDashboardContent() {
       </header>
 
       {/* 2. MAIN DASHBOARD BODY (Sidebar + Workspace Canvas) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1 flex flex-col md:flex-row items-start gap-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full flex-1 flex flex-col md:flex-row items-start gap-6">
         
-        {/* LEFT ROUNDED SIDEBAR (Matching the template) */}
-        <aside className="w-full md:w-60 lg:w-64 shrink-0 bg-white rounded-3xl p-3 border border-[#E5E6E8] shadow-2xs space-y-1">
+        {/* LEFT COMPACT ROUNDED SIDEBAR */}
+        <aside className="w-full md:w-60 lg:w-64 shrink-0 bg-white rounded-3xl p-3 border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-4">
           
-          {/* Sidebar Item 1: Overview */}
-          <button
-            onClick={() => setActiveTab("overview")}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "overview"
-                ? "bg-[#C61D1F] text-white shadow-md shadow-red-500/20"
-                : "text-[#535252] hover:bg-gray-100 hover:text-black"
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <LayoutDashboard className="w-4 h-4 shrink-0" />
-              <span>Dashboard</span>
-            </div>
-          </button>
-
-          {/* Sidebar Item 2: Dispatches */}
-          <button
-            onClick={() => setActiveTab("dispatches")}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "dispatches"
-                ? "bg-[#C61D1F] text-white shadow-md shadow-red-500/20"
-                : "text-[#535252] hover:bg-gray-100 hover:text-black"
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <FileText className="w-4 h-4 shrink-0" />
-              <span>{role === "editor" ? "Desk Dispatches" : "All Dispatches"}</span>
-            </div>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-              activeTab === "dispatches" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
-            }`}>
-              {articles.length}
+          {/* Group 1: CORE WORKSPACE */}
+          <div className="space-y-1">
+            <span className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
+              Core Newsroom
             </span>
-          </button>
 
-          {/* Sidebar Item 3: Review Queue */}
-          <button
-            onClick={() => setActiveTab("reviewQueue")}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "reviewQueue"
-                ? "bg-[#C61D1F] text-white shadow-md shadow-red-500/20"
-                : "text-[#535252] hover:bg-gray-100 hover:text-black"
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <Inbox className="w-4 h-4 shrink-0" />
-              <span>Review Queue</span>
-            </div>
-            {pendingSubmissions.length > 0 && (
+            {/* Sidebar Item 1: Overview */}
+            <button
+              onClick={() => setActiveTab("overview")}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === "overview"
+                  ? "bg-[#C61D1F] text-white shadow-sm"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <LayoutDashboard className="w-4 h-4 shrink-0" />
+                <span>Dashboard</span>
+              </div>
+            </button>
+
+            {/* Sidebar Item 2: Dispatches */}
+            <button
+              onClick={() => setActiveTab("dispatches")}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === "dispatches"
+                  ? "bg-[#C61D1F] text-white shadow-sm"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <FileText className="w-4 h-4 shrink-0" />
+                <span>Story Dispatches</span>
+              </div>
               <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                activeTab === "reviewQueue" ? "bg-white text-[#C61D1F]" : "bg-amber-100 text-amber-800"
+                activeTab === "dispatches" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
               }`}>
-                {pendingSubmissions.length}
+                {articles.length}
               </span>
-            )}
-          </button>
+            </button>
 
-          {/* SECTION: NEWSROOM PERSONNEL & MULTI-STAFF */}
-          <div className="pt-2 pb-1 px-4">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
-              Newsroom Staff
-            </span>
+            {/* Sidebar Item 3: Review Queue */}
+            <button
+              onClick={() => setActiveTab("reviewQueue")}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === "reviewQueue"
+                  ? "bg-[#C61D1F] text-white shadow-sm"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <Inbox className="w-4 h-4 shrink-0" />
+                <span>Review Queue</span>
+              </div>
+              {pendingSubmissions.length > 0 ? (
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-extrabold ${
+                  activeTab === "reviewQueue" ? "bg-white text-[#C61D1F]" : "bg-amber-100 text-amber-900 border border-amber-200"
+                }`}>
+                  {pendingSubmissions.length}
+                </span>
+              ) : (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                  activeTab === "reviewQueue" ? "bg-white/20 text-white" : "text-slate-400"
+                }`}>
+                  0
+                </span>
+              )}
+            </button>
           </div>
 
-          {/* Sidebar Item 4: Newsroom Staff (All Members) */}
-          <button
-            onClick={() => {
-              setActiveTab("team");
-              setTeamFilter("all");
-            }}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "team" && !showTeamModal
-                ? "bg-[#C61D1F] text-white shadow-md shadow-red-500/20"
-                : "text-[#535252] hover:bg-gray-100 hover:text-black"
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <Users className="w-4 h-4 shrink-0" />
-              <span>All Staff Members</span>
-            </div>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-              activeTab === "team" && !showTeamModal ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
-            }`}>
-              {teamMembers.length}
+          {/* Group 2: STAFF & REGIONAL DESKS */}
+          <div className="space-y-1 pt-2 border-t border-slate-100">
+            <span className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
+              Staff & Beats
             </span>
-          </button>
 
-          {/* Sidebar Item 4b: + Create New Staff */}
-          <button
-            onClick={() => {
-              setActiveTab("team");
-              setShowTeamModal(true);
-            }}
-            className="w-full flex items-center space-x-3 px-4 py-2.5 rounded-2xl text-xs font-bold text-[#C61D1F] bg-red-50/70 hover:bg-red-100 transition-all border border-red-200/80 cursor-pointer"
-          >
-            <UserPlus className="w-4 h-4 shrink-0 text-[#C61D1F]" />
-            <span>+ Create New Staff</span>
-          </button>
+            {/* Sidebar Item 4: Newsroom Staff (All Members) */}
+            <button
+              onClick={() => {
+                setActiveTab("team");
+                setTeamFilter("all");
+              }}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === "team" && !showTeamModal
+                  ? "bg-[#C61D1F] text-white shadow-sm"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <Users className="w-4 h-4 shrink-0" />
+                <span>Newsroom Staff</span>
+              </div>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === "team" && !showTeamModal ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+              }`}>
+                {teamMembers.length}
+              </span>
+            </button>
 
-          {/* Sidebar Item 5: Desk Taxonomy */}
-          <button
-            onClick={() => setActiveTab("desks")}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "desks"
-                ? "bg-[#C61D1F] text-white shadow-md shadow-red-500/20"
-                : "text-[#535252] hover:bg-gray-100 hover:text-black"
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <Layers className="w-4 h-4 shrink-0" />
-              <span>Desk Taxonomy</span>
-            </div>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-              activeTab === "desks" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
-            }`}>
-              11
+            {/* Sidebar Item 4b: Quick + Create Staff */}
+            <button
+              onClick={() => {
+                setActiveTab("team");
+                setShowTeamModal(true);
+              }}
+              className="w-full flex items-center space-x-2.5 px-3.5 py-2 rounded-2xl text-xs font-bold text-[#C61D1F] bg-red-50/70 hover:bg-red-100/90 transition-all border border-red-200/70 cursor-pointer"
+            >
+              <UserPlus className="w-3.5 h-3.5 shrink-0" />
+              <span>+ Add Newsroom Staff</span>
+            </button>
+
+            {/* Sidebar Item 5: Desk Taxonomy */}
+            <button
+              onClick={() => setActiveTab("desks")}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === "desks"
+                  ? "bg-[#C61D1F] text-white shadow-sm"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <Layers className="w-4 h-4 shrink-0" />
+                <span>Desk Taxonomy</span>
+              </div>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === "desks" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+              }`}>
+                11
+              </span>
+            </button>
+          </div>
+
+          {/* Group 3: PREFERENCES & AUDIENCE */}
+          <div className="space-y-1 pt-2 border-t border-slate-100">
+            <span className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
+              Audience & Platform
             </span>
-          </button>
 
-          {/* Sidebar Item 6: Newsletter Subscribers */}
-          <button
-            onClick={() => setActiveTab("subscribers")}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "subscribers"
-                ? "bg-[#C61D1F] text-white shadow-md shadow-red-500/20"
-                : "text-[#535252] hover:bg-gray-100 hover:text-black"
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <Mail className="w-4 h-4 shrink-0" />
-              <span>Newsletter Roster</span>
-            </div>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-              activeTab === "subscribers" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
-            }`}>
-              {subscribers.length}
-            </span>
-          </button>
+            {/* Sidebar Item 6: Newsletter Subscribers */}
+            <button
+              onClick={() => setActiveTab("subscribers")}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === "subscribers"
+                  ? "bg-[#C61D1F] text-white shadow-sm"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <Mail className="w-4 h-4 shrink-0" />
+                <span>Newsletter Roster</span>
+              </div>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === "subscribers" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+              }`}>
+                {subscribers.length}
+              </span>
+            </button>
 
-          {/* Admin Account Settings */}
-          <div className="pt-4 border-t border-gray-100">
+            {/* Sidebar Item 7: Account Settings */}
             <button
               onClick={() => setActiveTab("settings")}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "settings"
-                  ? "bg-[#C61D1F] text-white shadow-md shadow-red-500/20"
-                  : "text-[#535252] hover:bg-gray-100 hover:text-black"
+                  ? "bg-[#C61D1F] text-white shadow-sm"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
               }`}
             >
               <div className="flex items-center space-x-3">
                 <KeyRound className="w-4 h-4 shrink-0" />
-                <span>Account Settings</span>
+                <span>Bureau Settings</span>
               </div>
             </button>
+          </div>
+
+          {/* Quick Persona Info Pill */}
+          <div className="pt-3 border-t border-slate-100">
+            <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/70 text-[11px] space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-extrabold uppercase tracking-wider text-slate-400 text-[9px]">Root Clearance</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              </div>
+              <div className="font-bold text-slate-800 truncate">{user?.name || "Usman Bello"}</div>
+              <div className="flex items-center justify-between text-slate-500 pt-0.5">
+                <Link href="/dashboard/editor" className="hover:text-[#C61D1F] transition-colors font-medium">
+                  Editor Portal →
+                </Link>
+                <Link href="/dashboard/author" className="hover:text-[#C61D1F] transition-colors font-medium">
+                  Writer Studio →
+                </Link>
+              </div>
+            </div>
           </div>
 
         </aside>
@@ -657,14 +743,17 @@ function AdminDashboardContent() {
         {/* RIGHT WORKSPACE CANVAS */}
         <main className="flex-1 w-full space-y-6">
 
-          {/* Toast Notification */}
+          {/* Smooth Toast Notification */}
           {notification && (
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-xs animate-in fade-in">
+            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-xs animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="flex items-center space-x-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>{notification}</span>
               </div>
-              <button onClick={() => setNotification(null)} className="text-emerald-700 hover:text-emerald-900">
+              <button 
+                onClick={() => setNotification(null)} 
+                className="text-emerald-700 hover:text-emerald-900 p-1"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -686,13 +775,13 @@ function AdminDashboardContent() {
                 <button
                   type="button"
                   onClick={() => switchRole("admin")}
-                  className="px-4 py-2 bg-[#111111] hover:bg-black text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                  className="px-4 py-2 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
                 >
                   👑 Switch to Chief Admin
                 </button>
                 <Link
                   href="/dashboard/author"
-                  className="px-4 py-2 bg-[#C61D1F] text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm hover:bg-[#A51719] transition-colors shrink-0 text-center"
+                  className="px-4 py-2 bg-[#C61D1F] text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-xs hover:bg-[#A51719] transition-colors shrink-0 text-center"
                 >
                   Writer Studio →
                 </Link>
@@ -700,64 +789,55 @@ function AdminDashboardContent() {
             </div>
           )}
 
-          {/* TAB 1: OVERVIEW (Matching the template's Hero Banner + Micro Cards + Continue Card) */}
+          {/* TAB 1: OVERVIEW (Modern Command Center) */}
           {activeTab === "overview" && (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-in fade-in duration-200">
               
-              {/* Executive Welcome Card (Matching Template) */}
-              <div className="rounded-3xl bg-gradient-to-r from-[#0B1528] via-[#0F1E36] to-[#14294C] p-6 sm:p-8 text-white relative overflow-hidden shadow-xl border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              {/* Executive Welcome Hero Banner */}
+              <div className="rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-[#1c0809] p-6 sm:p-8 text-white relative overflow-hidden shadow-xl border border-slate-800/80 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                 
                 {/* Background ambient lighting */}
-                <div className="absolute -right-10 -bottom-10 w-72 h-72 bg-[#C61D1F]/20 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute -right-8 -bottom-8 w-80 h-80 bg-[#C61D1F]/20 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute top-0 right-1/4 w-40 h-40 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
 
                 <div className="space-y-3 z-10 max-w-xl">
-                  <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-white/10 text-white/90 text-xs font-semibold backdrop-blur-sm border border-white/10">
-                    <span>Good morning</span> <span>☀️</span>
-                  </span>
+                  <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/10 text-white/90 text-xs font-semibold backdrop-blur-sm border border-white/10">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span>Sahelian & Northern Nigeria Editorial Cycle</span>
+                  </div>
                   
                   <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
                     Welcome back, {user?.name ? user.name.split(" ")[0] : "Usman"}
                   </h2>
                   
                   <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                    You're 78% through the weekly editorial publishing review across Northern Nigeria desks. Keep it up!
+                    You're overseeing 11 active regional desks with high publishing velocity across Kano, Kaduna, Maiduguri, and Sokoto bureaus.
                   </p>
 
                   <div className="flex flex-wrap items-center gap-3 pt-2">
                     <button
-                      onClick={() => {
-                        setEditingArticle(null);
-                        setFormData({
-                          title: "",
-                          slug: "",
-                          category: "Business",
-                          coverImage: "/assets/hero-featured.jpg",
-                          excerpt: "",
-                          content: "",
-                          authorName: user?.name || "The Zango Bureau",
-                          readTime: "4 min read",
-                          isFeatured: false,
-                          isTrending: false,
-                          isEditorsPick: false,
-                          isLatest: false,
-                        });
-                        setShowCreateModal(true);
-                      }}
+                      onClick={handleOpenCreateModal}
                       className="px-5 py-2.5 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-extrabold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center space-x-2 cursor-pointer"
                     >
-                      <span>▶ Publish Story</span>
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Publish Story</span>
                     </button>
 
                     <button
                       onClick={() => setActiveTab("reviewQueue")}
-                      className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all border border-white/15 cursor-pointer"
+                      className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all border border-white/15 cursor-pointer flex items-center space-x-2"
                     >
-                      <span>Explore Review Queue →</span>
+                      <span>Review Manuscripts</span>
+                      {pendingSubmissions.length > 0 && (
+                        <span className="w-5 h-5 rounded-full bg-[#C61D1F] text-white text-[10px] font-extrabold flex items-center justify-center">
+                          {pendingSubmissions.length}
+                        </span>
+                      )}
                     </button>
                   </div>
                 </div>
 
-                {/* Right Circular Progress Ring (Matching the 50% circle in template) */}
+                {/* Right Circular Throughput Ring */}
                 <div className="flex items-center space-x-6 shrink-0 z-10">
                   <div className="relative w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center">
                     <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
@@ -779,129 +859,171 @@ function AdminDashboardContent() {
                         className="text-[#C61D1F]"
                         fill="transparent"
                         strokeDasharray={2 * Math.PI * 40}
-                        strokeDashoffset={2 * Math.PI * 40 * (1 - 0.78)}
+                        strokeDashoffset={2 * Math.PI * 40 * (1 - 0.84)}
                         strokeLinecap="round"
                       />
                     </svg>
                     <div className="absolute flex flex-col items-center justify-center text-center">
-                      <span className="text-xl sm:text-2xl font-extrabold text-white">78%</span>
-                      <span className="text-[9px] font-bold uppercase text-slate-300">Throughput</span>
+                      <span className="text-xl sm:text-2xl font-extrabold text-white">84%</span>
+                      <span className="text-[9px] font-extrabold uppercase text-slate-300 tracking-wider">Clearance</span>
                     </div>
                   </div>
                 </div>
 
               </div>
 
-              {/* Row of 4 Micro-Metric Cards (Matching template) */}
+              {/* 4 Sleek Micro-Metric Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 
-                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5E6E8] shadow-2xs flex items-center space-x-4">
-                  <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                    <BookOpen className="w-5 h-5" />
+                {/* Metric 1 */}
+                <div 
+                  onClick={() => setActiveTab("dispatches")}
+                  className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:border-slate-300 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                      <BookOpen className="w-5 h-5" />
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                      Live
+                    </span>
                   </div>
                   <div>
-                    <span className="text-[10px] font-extrabold uppercase text-[#707070] tracking-wider block">
-                      Active Stories
+                    <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider block">
+                      Published Stories
                     </span>
-                    <span className="text-lg font-extrabold text-[#111111]">{articles.length} Published</span>
+                    <span className="text-xl sm:text-2xl font-extrabold text-slate-900 group-hover:text-blue-600 transition-colors">
+                      {articles.length}
+                    </span>
+                    <span className="text-[11px] text-slate-500 block mt-0.5">Across all 11 beats</span>
                   </div>
                 </div>
 
-                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5E6E8] shadow-2xs flex items-center space-x-4">
-                  <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                    <Flame className="w-5 h-5" />
+                {/* Metric 2 */}
+                <div 
+                  onClick={() => setActiveTab("reviewQueue")}
+                  className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:border-slate-300 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                      <Inbox className="w-5 h-5" />
+                    </div>
+                    {pendingSubmissions.length > 0 ? (
+                      <span className="text-[10px] font-extrabold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full animate-pulse">
+                        Action needed
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                        Cleared
+                      </span>
+                    )}
                   </div>
                   <div>
-                    <span className="text-[10px] font-extrabold uppercase text-[#707070] tracking-wider block">
+                    <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider block">
                       Review Queue
                     </span>
-                    <span className="text-lg font-extrabold text-[#111111]">{pendingSubmissions.length} Pending</span>
+                    <span className="text-xl sm:text-2xl font-extrabold text-slate-900 group-hover:text-amber-600 transition-colors">
+                      {pendingSubmissions.length}
+                    </span>
+                    <span className="text-[11px] text-slate-500 block mt-0.5">Writer manuscripts</span>
                   </div>
                 </div>
 
-                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5E6E8] shadow-2xs flex items-center space-x-4">
-                  <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-5 h-5" />
+                {/* Metric 3 */}
+                <div 
+                  onClick={() => setActiveTab("subscribers")}
+                  className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:border-slate-300 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                      +18% M/M
+                    </span>
                   </div>
                   <div>
-                    <span className="text-[10px] font-extrabold uppercase text-[#707070] tracking-wider block">
+                    <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider block">
                       Verified Readers
                     </span>
-                    <span className="text-lg font-extrabold text-[#111111]">{metrics.totalSubscribers} Readers</span>
-                  </div>
-                </div>
-
-                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5E6E8] shadow-2xs flex items-center space-x-4">
-                  <div className="w-11 h-11 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-                    <Layers className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-extrabold uppercase text-[#707070] tracking-wider block">
-                      Regional Desks
+                    <span className="text-xl sm:text-2xl font-extrabold text-slate-900 group-hover:text-emerald-600 transition-colors">
+                      {metrics.totalSubscribers}
                     </span>
-                    <span className="text-lg font-extrabold text-[#111111]">11 Operational</span>
+                    <span className="text-[11px] text-slate-500 block mt-0.5">Daily Briefing Roster</span>
                   </div>
                 </div>
 
-              </div>
-
-              {/* Newsroom Personnel & Multi-Staff Summary Card */}
-              <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E5E6E8] shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 rounded-2xl bg-red-50 text-[#C61D1F] flex items-center justify-center shrink-0 border border-red-100">
-                    <Users className="w-6 h-6" />
+                {/* Metric 4 */}
+                <div 
+                  onClick={() => setActiveTab("team")}
+                  className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:border-slate-300 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full">
+                      Staff
+                    </span>
                   </div>
                   <div>
-                    <div className="flex items-center space-x-2">
-                      <span className="w-2 h-4 bg-[#C61D1F] rounded-xs inline-block" />
-                      <h4 className="font-extrabold text-sm text-[#111111] uppercase tracking-wide">
-                        Newsroom Personnel & Staff Architecture
-                      </h4>
-                    </div>
-                    <p className="text-xs text-[#707070] mt-0.5">
-                      {teamMembers.length} Active Staff:{" "}
-                      <span className="font-semibold text-red-700">{teamMembers.filter(m => m.role === "admin").length} Chief Admins</span>,{" "}
-                      <span className="font-semibold text-blue-700">{teamMembers.filter(m => m.role === "editor").length} Desk Editors</span>,{" "}
-                      <span className="font-semibold text-emerald-700">{teamMembers.filter(m => m.role === "writer").length} Staff Writers</span>.
-                    </p>
+                    <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider block">
+                      Newsroom Staff
+                    </span>
+                    <span className="text-xl sm:text-2xl font-extrabold text-slate-900 group-hover:text-purple-600 transition-colors">
+                      {teamMembers.length}
+                    </span>
+                    <span className="text-[11px] text-slate-500 block mt-0.5">Admins, Editors & Writers</span>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2 shrink-0">
-                  <button
-                    onClick={() => {
-                      setActiveTab("team");
-                      setShowTeamModal(true);
-                    }}
-                    className="px-4 py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-sm flex items-center space-x-1.5 cursor-pointer"
-                  >
-                    <UserPlus className="w-3.5 h-3.5" />
-                    <span>+ Add Staff</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveTab("team");
-                      setTeamFilter("all");
-                    }}
-                    className="px-4 py-2 border border-gray-200 hover:border-black rounded-xl text-xs font-bold uppercase tracking-wider text-gray-700 hover:text-black transition-all cursor-pointer bg-white"
-                  >
-                    View All Staff →
-                  </button>
-                </div>
               </div>
 
-              {/* Section: CONTINUE EDITORIAL WORK (Matching "Continue Learning" from template) */}
+              {/* URGENT REVIEW ALERT BANNER (Shows only if pending submissions exist) */}
+              {pendingSubmissions.length > 0 && (
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/90 rounded-3xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
+                  <div className="flex items-center space-x-3.5">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <AlertCircle className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-sm text-slate-900">
+                        {pendingSubmissions.length} Manuscript{pendingSubmissions.length > 1 ? "s" : ""} Awaiting Editorial Clearance
+                      </h4>
+                      <p className="text-xs text-slate-600 mt-0.5">
+                        Latest submission: <span className="font-semibold text-slate-900">"{pendingSubmissions[0].title}"</span> by {pendingSubmissions[0].authorName}.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setActiveTab("reviewQueue")}
+                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer shrink-0"
+                  >
+                    Open Review Queue →
+                  </button>
+                </div>
+              )}
+
+              {/* FEATURED LEAD DISPATCH SPOTLIGHT */}
               {leadFeaturedArticle && (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-[#707070]">
-                      Continue Editorial Work
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+                      Active Lead Headline Dispatch
                     </span>
-                    <span className="text-xs text-gray-400">Last updated: Today</span>
+                    <Link
+                      href={`/article/${leadFeaturedArticle.slug}`}
+                      target="_blank"
+                      className="text-xs font-bold text-[#C61D1F] hover:underline flex items-center space-x-1"
+                    >
+                      <span>View Live On Site</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </Link>
                   </div>
 
-                  <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E5E6E8] shadow-2xs flex flex-col md:flex-row items-center gap-6">
-                    <div className="relative w-full md:w-64 h-40 rounded-2xl overflow-hidden shrink-0 border border-gray-100">
+                  <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] flex flex-col md:flex-row items-center gap-6">
+                    <div className="relative w-full md:w-64 h-44 rounded-2xl overflow-hidden shrink-0 border border-slate-100 shadow-2xs">
                       <Image
                         src={leadFeaturedArticle.coverImage}
                         alt={leadFeaturedArticle.title}
@@ -915,65 +1037,68 @@ function AdminDashboardContent() {
                     </div>
 
                     <div className="flex-1 space-y-2 text-left">
-                      <div className="text-[11px] font-semibold text-gray-400">
-                        Apex Desk • {leadFeaturedArticle.publishedAt} • {leadFeaturedArticle.readTime}
+                      <div className="text-[11px] font-semibold text-slate-400">
+                        Lead Headline • {leadFeaturedArticle.publishedAt} • {leadFeaturedArticle.readTime}
                       </div>
-                      <h3 className="text-lg sm:text-xl font-extrabold text-[#111111] hover:text-[#C61D1F] transition-colors line-clamp-2">
+                      <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 hover:text-[#C61D1F] transition-colors line-clamp-2">
                         {leadFeaturedArticle.title}
                       </h3>
-                      <p className="text-xs text-[#707070] line-clamp-2">
+                      <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
                         {leadFeaturedArticle.excerpt}
                       </p>
 
                       <div className="pt-3 flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold">
-                            C
+                          <span className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold">
+                            {leadFeaturedArticle.author.name.charAt(0)}
                           </span>
-                          <span className="text-xs font-bold text-gray-800">{leadFeaturedArticle.author.name}</span>
+                          <span className="text-xs font-bold text-slate-800">{leadFeaturedArticle.author.name}</span>
                         </div>
 
-                        <button
-                          onClick={() => handleOpenEdit(leadFeaturedArticle)}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors shadow-xs flex items-center space-x-2 cursor-pointer"
-                        >
-                          <span>▶ Edit Dispatch</span>
-                        </button>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleOpenEdit(leadFeaturedArticle)}
+                            className="px-4 py-2 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Edit Dispatch</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Fast Jump Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              {/* Dual Action Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div 
                   onClick={() => setActiveTab("dispatches")}
-                  className="bg-white p-5 rounded-2xl border border-[#E5E6E8] shadow-2xs hover:border-[#C61D1F] transition-all cursor-pointer group"
+                  className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:border-[#C61D1F] transition-all cursor-pointer group"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-[#111111] group-hover:text-[#C61D1F]">
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-slate-900 group-hover:text-[#C61D1F]">
                       Manage All Dispatches ({articles.length})
                     </span>
-                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#C61D1F] group-hover:translate-x-1 transition-all" />
+                    <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#C61D1F] group-hover:translate-x-1 transition-all" />
                   </div>
-                  <p className="text-xs text-[#707070]">
+                  <p className="text-xs text-slate-600">
                     Review and modify headlines, hero display tags, and category beats across 11 Northern Nigeria desks.
                   </p>
                 </div>
 
                 <div 
-                  onClick={() => setActiveTab("reviewQueue")}
-                  className="bg-white p-5 rounded-2xl border border-[#E5E6E8] shadow-2xs hover:border-[#C61D1F] transition-all cursor-pointer group"
+                  onClick={() => setActiveTab("team")}
+                  className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:border-[#C61D1F] transition-all cursor-pointer group"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-[#111111] group-hover:text-[#C61D1F]">
-                      Writer Review Queue ({pendingSubmissions.length})
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-slate-900 group-hover:text-[#C61D1F]">
+                      Newsroom Personnel Roster ({teamMembers.length})
                     </span>
-                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#C61D1F] group-hover:translate-x-1 transition-all" />
+                    <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#C61D1F] group-hover:translate-x-1 transition-all" />
                   </div>
-                  <p className="text-xs text-[#707070]">
-                    Read writer drafts submitted through author studio, verify sources, and publish straight to the front page.
+                  <p className="text-xs text-slate-600">
+                    Configure staff permissions, assign beat divisions, and invite regional correspondents.
                   </p>
                 </div>
               </div>
@@ -981,31 +1106,31 @@ function AdminDashboardContent() {
             </div>
           )}
 
-          {/* TAB 2: DISPATCHES (Story Management Table) */}
+          {/* TAB 2: DISPATCHES (Story Management Catalog) */}
           {activeTab === "dispatches" && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-in fade-in duration-200">
               
               {/* Filter Bar */}
-              <div className="bg-white p-4 rounded-2xl border border-[#E5E6E8] flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="bg-white p-4 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] flex flex-col sm:flex-row items-center justify-between gap-4">
                 
                 {/* Search */}
                 <div className="relative w-full sm:w-80">
-                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     placeholder="Filter stories by headline, author..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 text-xs border border-[#DFDFDF] rounded-xl focus:border-[#C61D1F] focus:outline-hidden"
+                    className="w-full pl-9 pr-4 py-2 text-xs border border-slate-200 rounded-xl focus:border-[#C61D1F] focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all"
                   />
                 </div>
 
-                {/* Desk Selector */}
-                <div className="flex items-center space-x-2 w-full sm:w-auto">
+                {/* Desk Selector & Add Story */}
+                <div className="flex items-center space-x-2.5 w-full sm:w-auto">
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full sm:w-48 px-3 py-2 text-xs border border-[#DFDFDF] rounded-xl focus:border-[#C61D1F] focus:outline-hidden bg-white cursor-pointer"
+                    className="w-full sm:w-48 px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-[#C61D1F] focus:outline-hidden bg-white cursor-pointer font-medium"
                   >
                     <option value="all">All Desks (11)</option>
                     {CATEGORIES.map((cat) => (
@@ -1016,27 +1141,10 @@ function AdminDashboardContent() {
                   </select>
 
                   <button
-                    onClick={() => {
-                      setEditingArticle(null);
-                      setFormData({
-                        title: "",
-                        slug: "",
-                        category: "Business",
-                        coverImage: "/assets/hero-featured.jpg",
-                        excerpt: "",
-                        content: "",
-                        authorName: user?.name || "The Zango Bureau",
-                        readTime: "4 min read",
-                        isFeatured: false,
-                        isTrending: false,
-                        isEditorsPick: false,
-                        isLatest: false,
-                      });
-                      setShowCreateModal(true);
-                    }}
-                    className="px-4 py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center space-x-1.5 cursor-pointer shrink-0"
+                    onClick={handleOpenCreateModal}
+                    className="px-4 py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs flex items-center space-x-1.5 cursor-pointer shrink-0"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-3.5 h-3.5" />
                     <span>+ Publish</span>
                   </button>
                 </div>
@@ -1044,31 +1152,31 @@ function AdminDashboardContent() {
               </div>
 
               {/* Table */}
-              <div className="bg-white rounded-3xl border border-[#E5E6E8] overflow-hidden shadow-2xs">
+              <div className="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-[#E5E6E8] bg-[#FAFAFA] text-[11px] font-extrabold uppercase text-[#707070] tracking-wider">
-                        <th className="py-4 px-6">Story Dispatch</th>
-                        <th className="py-4 px-6">Desk / Category</th>
-                        <th className="py-4 px-6">Author Byline</th>
-                        <th className="py-4 px-6">Placements & Badges</th>
-                        <th className="py-4 px-6 text-right">Actions</th>
+                      <tr className="border-b border-slate-200/80 bg-slate-50/80 text-[11px] font-extrabold uppercase text-slate-500 tracking-wider">
+                        <th className="py-3.5 px-6">Story Dispatch</th>
+                        <th className="py-3.5 px-6">Desk / Category</th>
+                        <th className="py-3.5 px-6">Author Byline</th>
+                        <th className="py-3.5 px-6">Placements & Badges</th>
+                        <th className="py-3.5 px-6 text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#E5E6E8] text-xs">
+                    <tbody className="divide-y divide-slate-100 text-xs">
                       {filteredArticles.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="py-12 text-center text-[#707070]">
+                          <td colSpan={5} className="py-12 text-center text-slate-500">
                             No published dispatches match your filter query.
                           </td>
                         </tr>
                       ) : (
                         filteredArticles.map((article) => (
-                          <tr key={article.id} className="hover:bg-gray-50/70 transition-colors">
+                          <tr key={article.id} className="hover:bg-slate-50/60 transition-colors">
                             <td className="py-4 px-6">
                               <div className="flex items-center space-x-3.5">
-                                <div className="relative w-14 h-11 rounded-lg overflow-hidden shrink-0 border border-gray-100">
+                                <div className="relative w-14 h-12 rounded-xl overflow-hidden shrink-0 border border-slate-200 shadow-2xs">
                                   <Image
                                     src={article.coverImage}
                                     alt={article.title}
@@ -1078,82 +1186,103 @@ function AdminDashboardContent() {
                                   />
                                 </div>
                                 <div className="max-w-md">
-                                  <Link
-                                    href={`/article/${article.slug}`}
-                                    className="font-bold text-[#111111] hover:text-[#C61D1F] transition-colors line-clamp-1 block text-sm"
-                                  >
+                                  <div className="font-bold text-slate-900 line-clamp-1 hover:text-[#C61D1F] transition-colors">
                                     {article.title}
-                                  </Link>
-                                  <span className="text-[11px] text-[#707070] line-clamp-1 mt-0.5">
-                                    {article.excerpt}
-                                  </span>
+                                  </div>
+                                  <div className="text-[11px] text-slate-400 mt-0.5">
+                                    {article.publishedAt} • {article.readTime}
+                                  </div>
                                 </div>
                               </div>
                             </td>
 
                             <td className="py-4 px-6">
-                              <span className="inline-block bg-[#FDF2F2] text-[#C61D1F] font-bold text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-sm">
+                              <span className="font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md text-[11px]">
                                 {article.category}
                               </span>
                             </td>
 
-                            <td className="py-4 px-6 font-semibold text-[#111111]">
-                              {article.author.name}
+                            <td className="py-4 px-6">
+                              <span className="font-medium text-slate-800">{article.author.name}</span>
                             </td>
 
                             <td className="py-4 px-6">
-                              <div className="flex items-center space-x-1.5">
+                              <div className="flex flex-wrap gap-1.5">
                                 <button
                                   onClick={() => handleToggleFlag(article.id, "isFeatured")}
-                                  title="Toggle Hero Headline"
-                                  className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase transition-colors cursor-pointer ${
                                     article.isFeatured
-                                      ? "bg-red-100 text-[#C61D1F]"
-                                      : "bg-gray-100 text-gray-400 hover:text-black"
+                                      ? "bg-red-600 text-white"
+                                      : "bg-slate-100 text-slate-400 hover:bg-slate-200"
                                   }`}
+                                  title="Toggle Lead Hero Headline"
                                 >
-                                  <Star className="w-3.5 h-3.5" />
+                                  Hero
                                 </button>
+
                                 <button
                                   onClick={() => handleToggleFlag(article.id, "isTrending")}
-                                  title="Toggle Trending Velocity"
-                                  className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase transition-colors cursor-pointer ${
                                     article.isTrending
-                                      ? "bg-amber-100 text-amber-700"
-                                      : "bg-gray-100 text-gray-400 hover:text-black"
+                                      ? "bg-amber-500 text-white"
+                                      : "bg-slate-100 text-slate-400 hover:bg-slate-200"
                                   }`}
+                                  title="Toggle Trending Velocity"
                                 >
-                                  <Flame className="w-3.5 h-3.5" />
+                                  Trending
                                 </button>
+
                                 <button
                                   onClick={() => handleToggleFlag(article.id, "isEditorsPick")}
-                                  title="Toggle Editor's Pick"
-                                  className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase transition-colors cursor-pointer ${
                                     article.isEditorsPick
-                                      ? "bg-purple-100 text-purple-700"
-                                      : "bg-gray-100 text-gray-400 hover:text-black"
+                                      ? "bg-blue-600 text-white"
+                                      : "bg-slate-100 text-slate-400 hover:bg-slate-200"
                                   }`}
+                                  title="Toggle Editor's Pick"
                                 >
-                                  <Sparkles className="w-3.5 h-3.5" />
+                                  Pick
+                                </button>
+
+                                <button
+                                  onClick={() => handleToggleFlag(article.id, "isLatest")}
+                                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase transition-colors cursor-pointer ${
+                                    article.isLatest
+                                      ? "bg-emerald-600 text-white"
+                                      : "bg-slate-100 text-slate-400 hover:bg-slate-200"
+                                  }`}
+                                  title="Toggle Latest News Stream"
+                                >
+                                  Latest
                                 </button>
                               </div>
                             </td>
 
                             <td className="py-4 px-6 text-right">
                               <div className="flex items-center justify-end space-x-2">
+                                <Link
+                                  href={`/article/${article.slug}`}
+                                  target="_blank"
+                                  className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+                                  title="View Live Public Article"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </Link>
+
                                 <button
                                   onClick={() => handleOpenEdit(article)}
-                                  className="p-1.5 text-gray-500 hover:text-black hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-                                  title="Edit Story"
+                                  className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                                  title="Edit Dispatch"
                                 >
-                                  <Edit3 className="w-4 h-4" />
+                                  <Edit3 className="w-3.5 h-3.5" />
                                 </button>
+
                                 <button
                                   onClick={() => handleDelete(article.id, article.title)}
-                                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                                  title="Delete Story"
+                                  className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                  title="Delete Dispatch"
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               </div>
                             </td>
@@ -1170,24 +1299,26 @@ function AdminDashboardContent() {
 
           {/* TAB 3: REVIEW QUEUE */}
           {activeTab === "reviewQueue" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-[#E5E6E8]">
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200/80">
                 <div>
-                  <h3 className="text-base font-extrabold text-[#111111] uppercase tracking-wide">
+                  <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wide">
                     Author Submissions & Review Queue ({pendingSubmissions.length})
                   </h3>
-                  <p className="text-xs text-[#707070]">
+                  <p className="text-xs text-slate-500 mt-0.5">
                     Verify manuscripts submitted by regional correspondents before publishing live.
                   </p>
                 </div>
               </div>
 
               {pendingSubmissions.length === 0 ? (
-                <div className="bg-white rounded-3xl p-12 text-center border border-[#E5E6E8] shadow-2xs">
-                  <Inbox className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                  <h4 className="font-extrabold text-[#111111] text-sm">Review Queue Clear</h4>
-                  <p className="text-xs text-[#707070] mt-1 max-w-sm mx-auto">
-                    All contributing manuscripts have been cleared or published.
+                <div className="bg-white rounded-3xl p-12 text-center border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+                    <CheckCircle className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-extrabold text-slate-900 text-sm">Editorial Queue All Cleared</h4>
+                  <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                    All contributing manuscripts have been evaluated, edited, or published live.
                   </p>
                 </div>
               ) : (
@@ -1195,17 +1326,17 @@ function AdminDashboardContent() {
                   {pendingSubmissions.map((sub) => (
                     <div
                       key={sub.id}
-                      className="bg-white p-6 rounded-3xl border border-[#E5E6E8] shadow-2xs space-y-4"
+                      className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-4"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <span className="bg-[#FDF2F2] text-[#C61D1F] text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-sm">
+                          <span className="bg-red-50 text-[#C61D1F] text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md">
                             {sub.category}
                           </span>
-                          <span className="text-gray-300">•</span>
-                          <span className="text-xs text-[#707070]">{sub.submittedAt}</span>
-                          <span className="text-gray-300">•</span>
-                          <span className="text-xs text-[#707070]">{sub.wordCount} words</span>
+                          <span className="text-slate-300">•</span>
+                          <span className="text-xs text-slate-500">{sub.submittedAt}</span>
+                          <span className="text-slate-300">•</span>
+                          <span className="text-xs text-slate-500">{sub.wordCount} words</span>
                         </div>
 
                         {sub.status === "needs_revision" ? (
@@ -1213,15 +1344,15 @@ function AdminDashboardContent() {
                             ⚠️ Needs Revision
                           </span>
                         ) : (
-                          <span className="bg-amber-50 text-amber-700 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border border-amber-200">
+                          <span className="bg-amber-50 text-amber-800 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border border-amber-200">
                             Pending Clearance
                           </span>
                         )}
                       </div>
 
                       <div>
-                        <h4 className="text-base font-extrabold text-[#111111]">{sub.title}</h4>
-                        <p className="text-xs text-[#535252] mt-1.5 leading-relaxed">{sub.excerpt}</p>
+                        <h4 className="text-base font-extrabold text-slate-900">{sub.title}</h4>
+                        <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">{sub.excerpt}</p>
                       </div>
 
                       {/* Feedback Note if present */}
@@ -1234,21 +1365,21 @@ function AdminDashboardContent() {
                         </div>
                       )}
 
-                      <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 text-xs text-gray-700 max-h-40 overflow-y-auto">
-                        <div className="font-bold text-gray-900 mb-1">Manuscript Preview:</div>
+                      <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/60 text-xs text-slate-700 max-h-40 overflow-y-auto">
+                        <div className="font-bold text-slate-900 mb-1">Manuscript Preview:</div>
                         <div className="line-clamp-4">{sub.content.replace(/<[^>]*>/g, " ")}</div>
                       </div>
 
-                      <div className="pt-2 border-t border-[#E5E6E8] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="text-xs">
-                          <span className="font-bold text-[#111111]">{sub.authorName}</span>
-                          {sub.authorEmail && <span className="text-[#707070] ml-1.5">({sub.authorEmail})</span>}
+                          <span className="font-bold text-slate-900">{sub.authorName}</span>
+                          {sub.authorEmail && <span className="text-slate-400 ml-1.5">({sub.authorEmail})</span>}
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
                           <button
                             onClick={() => handleOpenEditSubmission(sub)}
-                            className="px-3 py-1.5 border border-gray-300 hover:border-black text-gray-800 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center space-x-1.5 bg-white shadow-2xs"
+                            className="px-3 py-1.5 border border-slate-200 hover:border-slate-800 text-slate-800 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center space-x-1.5 bg-white shadow-2xs"
                             title="Edit manuscript copy before publishing"
                           >
                             <Edit3 className="w-3.5 h-3.5 text-blue-600" />
@@ -1269,14 +1400,14 @@ function AdminDashboardContent() {
 
                           <button
                             onClick={() => handleRejectSubmission(sub.id, sub.title)}
-                            className="px-3 py-1.5 border border-[#DFDFDF] hover:border-red-600 hover:text-red-600 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                            className="px-3 py-1.5 border border-slate-200 hover:border-red-600 hover:text-red-600 rounded-xl text-xs font-bold transition-colors cursor-pointer"
                           >
                             Reject
                           </button>
 
                           <button
                             onClick={() => handleApproveSubmission(sub.id, sub.title)}
-                            className="px-4 py-1.5 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
+                            className="px-4 py-1.5 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
                           >
                             Approve & Publish Live
                           </button>
@@ -1291,26 +1422,26 @@ function AdminDashboardContent() {
 
           {/* TAB 4: NEWSROOM TEAM (Multi-Staff Architecture) */}
           {activeTab === "team" && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-3xl border border-[#E5E6E8] p-6 shadow-2xs">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#E5E6E8]">
+            <div className="space-y-6 animate-in fade-in duration-200">
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/80">
                   <div>
                     <div className="flex items-center space-x-2">
-                      <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
-                      <h3 className="text-base font-extrabold text-[#111111] uppercase tracking-wide">
-                        Newsroom Personnel & Role Architecture
+                      <span className="w-2 h-4 bg-[#C61D1F] rounded-xs inline-block" />
+                      <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wide">
+                        Newsroom Personnel & Staff Architecture
                       </h3>
                     </div>
-                    <p className="text-xs text-[#707070] mt-1">
-                      Enterprise Multi-Staff System: assign multiple Chief Admins, multiple Desk Editors across beats, and unlimited field correspondents.
+                    <p className="text-xs text-slate-500 mt-1">
+                      Enterprise Multi-Staff System: assign multiple Chief Admins, Desk Editors, and field correspondents.
                     </p>
                   </div>
 
                   <button
                     onClick={() => setShowTeamModal(true)}
-                    className="px-5 py-2.5 bg-[#C61D1F] hover:bg-[#A51719] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center space-x-2 cursor-pointer shrink-0"
+                    className="px-4 py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs flex items-center space-x-2 cursor-pointer shrink-0"
                   >
-                    <UserPlus className="w-4 h-4" />
+                    <UserPlus className="w-3.5 h-3.5" />
                     <span>+ Add Staff Member</span>
                   </button>
                 </div>
@@ -1321,8 +1452,8 @@ function AdminDashboardContent() {
                   <div className="flex items-center space-x-2 overflow-x-auto pb-1">
                     <button
                       onClick={() => setTeamFilter("all")}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                        teamFilter === "all" ? "bg-[#111111] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                        teamFilter === "all" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                       }`}
                     >
                       All Staff ({teamMembers.length})
@@ -1330,7 +1461,7 @@ function AdminDashboardContent() {
 
                     <button
                       onClick={() => setTeamFilter("admin")}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                         teamFilter === "admin" ? "bg-red-600 text-white" : "bg-red-50 text-red-700 hover:bg-red-100"
                       }`}
                     >
@@ -1339,7 +1470,7 @@ function AdminDashboardContent() {
 
                     <button
                       onClick={() => setTeamFilter("editor")}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                         teamFilter === "editor" ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-700 hover:bg-blue-100"
                       }`}
                     >
@@ -1348,7 +1479,7 @@ function AdminDashboardContent() {
 
                     <button
                       onClick={() => setTeamFilter("writer")}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                         teamFilter === "writer" ? "bg-emerald-600 text-white" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                       }`}
                     >
@@ -1358,30 +1489,30 @@ function AdminDashboardContent() {
 
                   {/* Search Staff Input */}
                   <div className="relative w-full md:w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                     <input
                       type="text"
                       placeholder="Search staff by name or email..."
                       value={staffSearchQuery}
                       onChange={(e) => setStaffSearchQuery(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:bg-white focus:border-[#C61D1F] focus:outline-hidden"
+                      className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:border-[#C61D1F] focus:outline-hidden"
                     />
                   </div>
                 </div>
 
                 {/* Team Roster Table */}
-                <div className="overflow-x-auto border border-[#E5E6E8] rounded-2xl mt-4">
+                <div className="overflow-x-auto border border-slate-200/80 rounded-2xl mt-4">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-[#E5E6E8] bg-[#FAFAFA] text-[11px] font-extrabold uppercase text-[#707070] tracking-wider">
-                        <th className="py-4 px-6">Journalist & Byline</th>
-                        <th className="py-4 px-6">Assigned Desk</th>
-                        <th className="py-4 px-6">Role Clearance</th>
-                        <th className="py-4 px-6">Status</th>
-                        <th className="py-4 px-6 text-right">Actions</th>
+                      <tr className="border-b border-slate-200/80 bg-slate-50/80 text-[11px] font-extrabold uppercase text-slate-500 tracking-wider">
+                        <th className="py-3.5 px-6">Journalist & Byline</th>
+                        <th className="py-3.5 px-6">Assigned Desk</th>
+                        <th className="py-3.5 px-6">Role Clearance</th>
+                        <th className="py-3.5 px-6">Status</th>
+                        <th className="py-3.5 px-6 text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#E5E6E8] text-xs">
+                    <tbody className="divide-y divide-slate-100 text-xs">
                       {teamMembers
                         .filter(m => teamFilter === "all" || m.role === teamFilter)
                         .filter(m => 
@@ -1391,10 +1522,10 @@ function AdminDashboardContent() {
                           m.desk.toLowerCase().includes(staffSearchQuery.toLowerCase())
                         )
                         .map((member) => (
-                        <tr key={member.id} className="hover:bg-gray-50/70 transition-colors">
+                        <tr key={member.id} className="hover:bg-slate-50/60 transition-colors">
                           <td className="py-4 px-6">
                             <div className="flex items-center space-x-3">
-                              <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-200 shrink-0">
+                              <div className="relative w-10 h-10 rounded-full overflow-hidden border border-slate-200 shrink-0">
                                 <Image
                                   src={member.avatar || "/assets/social-image-1.png"}
                                   alt={member.name}
@@ -1404,13 +1535,13 @@ function AdminDashboardContent() {
                                 />
                               </div>
                               <div>
-                                <div className="font-bold text-[#111111] text-sm">{member.name}</div>
-                                <div className="text-[11px] text-[#707070]">{member.email}</div>
+                                <div className="font-bold text-slate-900 text-sm">{member.name}</div>
+                                <div className="text-[11px] text-slate-400">{member.email}</div>
                               </div>
                             </div>
                           </td>
                           <td className="py-4 px-6">
-                            <span className="font-semibold text-gray-800 bg-gray-100 px-2.5 py-1 rounded-md text-[11px]">
+                            <span className="font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md text-[11px]">
                               {member.desk}
                             </span>
                           </td>
@@ -1439,7 +1570,7 @@ function AdminDashboardContent() {
                                 <select
                                   value={member.role}
                                   onChange={(e) => handleUpdateRole(member.id, e.target.value as NewsroomRole, member.name)}
-                                  className="bg-white border border-[#DFDFDF] hover:border-black text-[11px] font-semibold rounded-lg px-2 py-1 focus:outline-hidden cursor-pointer"
+                                  className="bg-white border border-slate-200 hover:border-slate-800 text-[11px] font-semibold rounded-lg px-2 py-1 focus:outline-hidden cursor-pointer"
                                 >
                                   <option value="admin">Admin</option>
                                   <option value="editor">Editor</option>
@@ -1459,7 +1590,7 @@ function AdminDashboardContent() {
                                 className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-colors ${
                                   member.status === "active"
                                     ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                                 }`}
                               >
                                 ● {member.status}
@@ -1468,14 +1599,14 @@ function AdminDashboardContent() {
                           </td>
                           <td className="py-4 px-6 text-right">
                             {(member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) ? (
-                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Root Admin</span>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Root Admin</span>
                             ) : (
                               <button
                                 onClick={() => handleDeleteMember(member.id, member.name)}
-                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                                 title="Remove staff member"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             )}
                           </td>
@@ -1491,13 +1622,13 @@ function AdminDashboardContent() {
 
           {/* TAB 5: DESK TAXONOMY */}
           {activeTab === "desks" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-[#E5E6E8]">
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200/80">
                 <div>
-                  <h3 className="text-base font-extrabold text-[#111111] uppercase tracking-wide">
+                  <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wide">
                     Editorial Desks & Beats ({CATEGORIES.length})
                   </h3>
-                  <p className="text-xs text-[#707070]">
+                  <p className="text-xs text-slate-500 mt-0.5">
                     The 11 core newsroom divisions covering Northern Nigeria and the Sahel corridor.
                   </p>
                 </div>
@@ -1507,16 +1638,16 @@ function AdminDashboardContent() {
                 {CATEGORIES.map((desk) => (
                   <div
                     key={desk.id}
-                    className="bg-white p-5 rounded-3xl border border-[#E5E6E8] shadow-2xs space-y-2 hover:border-[#C61D1F] transition-all"
+                    className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-2 hover:border-[#C61D1F] transition-all group"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-sm text-[#111111]">{desk.name}</span>
-                      <span className="bg-[#FDF2F2] text-[#C61D1F] text-[10px] font-extrabold px-2 py-0.5 rounded-sm uppercase">
+                      <span className="font-extrabold text-sm text-slate-900 group-hover:text-[#C61D1F] transition-colors">{desk.name}</span>
+                      <span className="bg-red-50 text-[#C61D1F] text-[10px] font-extrabold px-2 py-0.5 rounded-md uppercase">
                         {desk.count} stories
                       </span>
                     </div>
-                    <p className="text-xs text-[#707070] line-clamp-2">{desk.description}</p>
-                    <div className="pt-2 flex items-center justify-between text-[11px] text-gray-400">
+                    <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">{desk.description}</p>
+                    <div className="pt-2 flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-100">
                       <span>Status: {desk.status || "Active"}</span>
                       <Link
                         href={`/category/${desk.slug}`}
@@ -1531,15 +1662,14 @@ function AdminDashboardContent() {
             </div>
           )}
 
-          
-          {/* TAB 7: ACCOUNT & PROFILE SETTINGS */}
+          {/* TAB 6: ACCOUNT & BUREAU SETTINGS */}
           {activeTab === "settings" && (
-            <div className="bg-white rounded-3xl border border-[#E5E6E8] p-6 sm:p-8 shadow-2xs space-y-6">
-              <div className="pb-4 border-b border-[#E5E6E8]">
-                <h3 className="text-base font-extrabold text-[#111111] uppercase tracking-wide">
+            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-6 animate-in fade-in duration-200">
+              <div className="pb-4 border-b border-slate-200/80">
+                <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wide">
                   Executive Admin Profile & Bureau Settings
                 </h3>
-                <p className="text-xs text-[#707070] mt-1">
+                <p className="text-xs text-slate-500 mt-1">
                   Manage your credentials, official newsroom identity, and editorial alert preferences.
                 </p>
               </div>
@@ -1556,43 +1686,43 @@ function AdminDashboardContent() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Official Byline Name</label>
+                    <label className="block text-xs font-bold uppercase text-slate-700 mb-1.5">Official Byline Name</label>
                     <input
                       type="text"
                       value={profileName}
                       onChange={(e) => setProfileName(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:border-[#C61D1F] focus:outline-hidden"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:border-[#C61D1F] focus:outline-hidden"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Bureau Email</label>
+                    <label className="block text-xs font-bold uppercase text-slate-700 mb-1.5">Bureau Email</label>
                     <input
                       type="email"
                       value={user?.email || "usman.bello@thezango.org"}
                       disabled
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed font-medium"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed font-medium"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Clearance Role</label>
+                    <label className="block text-xs font-bold uppercase text-slate-700 mb-1.5">Clearance Role</label>
                     <input
                       type="text"
                       value="Chief Administrator / Bureau Chief (Full Access)"
                       disabled
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed font-semibold"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed font-semibold"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Assigned Desk / Bureau Beat</label>
+                    <label className="block text-xs font-bold uppercase text-slate-700 mb-1.5">Assigned Desk / Bureau Beat</label>
                     <select
                       value={profileDesk}
                       onChange={(e) => setProfileDesk(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:border-[#C61D1F] focus:outline-hidden bg-white"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:border-[#C61D1F] focus:outline-hidden bg-white"
                     >
                       {CATEGORIES.map((c) => (
                         <option key={c.id} value={c.name}>{c.name}</option>
@@ -1602,27 +1732,27 @@ function AdminDashboardContent() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Journalist Biography (Shown to Readers)</label>
+                    <label className="block text-xs font-bold uppercase text-slate-700 mb-1.5">Journalist Biography (Shown to Readers)</label>
                     <textarea
                       rows={3}
                       value={profileBio}
                       onChange={(e) => setProfileBio(e.target.value)}
                       placeholder="Brief background on journalistic coverage across Northern Nigeria & Sahel..."
-                      className="w-full px-3.5 py-2 rounded-xl border border-gray-200 focus:border-[#C61D1F] text-xs focus:outline-hidden resize-none"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden resize-none"
                     />
-                    <p className="text-[11px] text-gray-400 mt-1">
+                    <p className="text-[11px] text-slate-400 mt-1">
                       This biography and photo will appear under "About the Author" on all articles you publish.
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Editorial Notifications</label>
+                    <label className="block text-xs font-bold uppercase text-slate-700 mb-1.5">Editorial Notifications</label>
                     <div className="space-y-2">
-                      <label className="flex items-center space-x-2 text-xs text-gray-700 cursor-pointer">
+                      <label className="flex items-center space-x-2 text-xs text-slate-700 cursor-pointer">
                         <input type="checkbox" defaultChecked className="rounded text-[#C61D1F] focus:ring-[#C61D1F]" />
                         <span>Email alert whenever a correspondent submits a pitch</span>
                       </label>
-                      <label className="flex items-center space-x-2 text-xs text-gray-700 cursor-pointer">
+                      <label className="flex items-center space-x-2 text-xs text-slate-700 cursor-pointer">
                         <input type="checkbox" defaultChecked className="rounded text-[#C61D1F] focus:ring-[#C61D1F]" />
                         <span>Daily subscriber briefing summary at 6:00 AM</span>
                       </label>
@@ -1631,11 +1761,11 @@ function AdminDashboardContent() {
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-[#E5E6E8] flex justify-end">
+              <div className="pt-4 border-t border-slate-100 flex justify-end">
                 <button
                   type="button"
                   onClick={handleSaveProfile}
-                  className="px-6 py-2.5 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
+                  className="px-6 py-2.5 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
                 >
                   Save Profile Changes
                 </button>
@@ -1643,24 +1773,24 @@ function AdminDashboardContent() {
             </div>
           )}
 
-          {/* TAB 6: NEWSLETTER ROSTER */}
+          {/* TAB 7: NEWSLETTER ROSTER */}
           {activeTab === "subscribers" && (
-            <div className="bg-white rounded-3xl border border-[#E5E6E8] overflow-hidden shadow-2xs">
-              <div className="p-6 border-b border-[#E5E6E8] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] animate-in fade-in duration-200">
+              <div className="p-6 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-base font-extrabold text-[#111111]">
+                  <h3 className="text-base font-extrabold text-slate-900">
                     The Zango Brief Subscribers ({subscribers.length})
                   </h3>
-                  <p className="text-xs text-[#707070]">
+                  <p className="text-xs text-slate-500 mt-0.5">
                     Verified readers subscribed to morning dispatches.
                   </p>
                 </div>
 
                 <button
                   onClick={exportSubscribersCSV}
-                  className="px-4 py-2 bg-[#111111] hover:bg-[#C61D1F] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors flex items-center space-x-2 cursor-pointer shadow-sm"
+                  className="px-4 py-2 bg-slate-900 hover:bg-[#C61D1F] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors flex items-center space-x-2 cursor-pointer shadow-xs"
                 >
-                  <Download className="w-4 h-4" />
+                  <Download className="w-3.5 h-3.5" />
                   <span>Export CSV</span>
                 </button>
               </div>
@@ -1668,19 +1798,19 @@ function AdminDashboardContent() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-[#E5E6E8] bg-[#FAFAFA] text-[11px] font-extrabold uppercase text-[#707070] tracking-wider">
-                      <th className="py-4 px-6">Subscriber Email</th>
-                      <th className="py-4 px-6">Subscribed Date</th>
-                      <th className="py-4 px-6 text-right">Verification</th>
+                    <tr className="border-b border-slate-200/80 bg-slate-50/80 text-[11px] font-extrabold uppercase text-slate-500 tracking-wider">
+                      <th className="py-3.5 px-6">Subscriber Email</th>
+                      <th className="py-3.5 px-6">Subscribed Date</th>
+                      <th className="py-3.5 px-6 text-right">Verification</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#E5E6E8] text-xs">
+                  <tbody className="divide-y divide-slate-100 text-xs">
                     {subscribers.map((sub, i) => (
-                      <tr key={i} className="hover:bg-gray-50/70">
-                        <td className="py-3.5 px-6 font-semibold text-[#111111]">{sub.email}</td>
-                        <td className="py-3.5 px-6 text-[#707070]">{sub.subscribedAt}</td>
+                      <tr key={i} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3.5 px-6 font-semibold text-slate-900">{sub.email}</td>
+                        <td className="py-3.5 px-6 text-slate-500">{sub.subscribedAt}</td>
                         <td className="py-3.5 px-6 text-right">
-                          <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase px-2 py-0.5 rounded-sm">
+                          <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase px-2 py-0.5 rounded-md">
                             Verified
                           </span>
                         </td>
@@ -1695,18 +1825,18 @@ function AdminDashboardContent() {
         </main>
       </div>
 
-      {/* 3. MODALS (Retaining full smooth scroll UX with pinned header & footer) */}
+      {/* 3. MODALS */}
       
       {/* Story Publishing / Edit Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-gray-200 overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
             
             {/* Pinned Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#E5E6E8] shrink-0 bg-white">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 shrink-0 bg-white">
               <div className="flex items-center space-x-2.5">
                 <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
-                <h3 className="text-base sm:text-lg font-extrabold text-[#000000] uppercase tracking-wide">
+                <h3 className="text-base sm:text-lg font-extrabold text-slate-900 uppercase tracking-wide">
                   {editingArticle ? "Edit Story Dispatch" : "Publish New Story Dispatch"}
                 </h3>
               </div>
@@ -1716,7 +1846,7 @@ function AdminDashboardContent() {
                   setShowCreateModal(false);
                   setEditingArticle(null);
                 }}
-                className="text-gray-400 hover:text-black p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                className="text-slate-400 hover:text-slate-900 p-1.5 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1726,24 +1856,24 @@ function AdminDashboardContent() {
             <form id="story-dispatch-form" onSubmit={handleCreateSubmit} className="overflow-y-auto flex-1 p-6 space-y-5 text-xs overscroll-contain">
               
               <div>
-                <label className="block font-bold text-[#000000] uppercase mb-1.5">Headline *</label>
+                <label className="block font-bold text-slate-900 uppercase mb-1.5">Headline *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Kano Agritech Hub Secures $1.5M Seed Round"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-sm focus:outline-hidden"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-sm focus:outline-hidden"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block font-bold text-[#000000] uppercase mb-1.5">Beat / Desk (All 11 Desks)</label>
+                  <label className="block font-bold text-slate-900 uppercase mb-1.5">Beat / Desk (All 11 Desks)</label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden bg-white"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden bg-white"
                   >
                     {CATEGORIES.map((cat) => (
                       <option key={cat.id} value={cat.name}>
@@ -1754,27 +1884,27 @@ function AdminDashboardContent() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-[#000000] uppercase mb-1.5">Author Byline</label>
+                  <label className="block font-bold text-slate-900 uppercase mb-1.5">Author Byline</label>
                   <input
                     type="text"
                     value={formData.authorName}
                     onChange={(e) => setFormData({ ...formData, authorName: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-[#000000] uppercase mb-1.5">Read Time</label>
+                  <label className="block font-bold text-slate-900 uppercase mb-1.5">Read Time</label>
                   <input
                     type="text"
                     value={formData.readTime}
                     onChange={(e) => setFormData({ ...formData, readTime: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden"
                   />
                 </div>
               </div>
 
-              {/* Dynamic Cover Image Uploader with Cloudinary & Preset Stock */}
+              {/* Dynamic Cover Image Uploader */}
               <ImageUploader
                 label="Story Cover Image (Upload from device or select editorial stock)"
                 value={formData.coverImage}
@@ -1782,18 +1912,18 @@ function AdminDashboardContent() {
               />
 
               <div>
-                <label className="block font-bold text-[#000000] uppercase mb-1.5">Lead Excerpt</label>
+                <label className="block font-bold text-slate-900 uppercase mb-1.5">Lead Excerpt</label>
                 <textarea
                   rows={2}
                   placeholder="Short 2-line summary for front page cards and search snippets..."
                   value={formData.excerpt}
                   onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden resize-none"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden resize-none"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-[#000000] uppercase mb-2">Story Manuscript Body (WYSIWYG Rich Editor) *</label>
+                <label className="block font-bold text-slate-900 uppercase mb-2">Story Manuscript Body (WYSIWYG Rich Editor) *</label>
                 <RichEditor
                   value={formData.content}
                   onChange={(html) => setFormData({ ...formData, content: html })}
@@ -1803,47 +1933,47 @@ function AdminDashboardContent() {
               </div>
 
               {/* Publication Flags */}
-              <div className="pt-3 border-t border-[#E5E6E8]">
-                <span className="block font-bold text-[#000000] uppercase mb-2">Editorial Display Placements</span>
+              <div className="pt-3 border-t border-slate-200/80">
+                <span className="block font-bold text-slate-900 uppercase mb-2">Editorial Display Placements</span>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <label className="flex items-center space-x-2 cursor-pointer bg-gray-50 p-2.5 rounded-xl border border-gray-200 hover:border-gray-400 transition-colors">
+                  <label className="flex items-center space-x-2 cursor-pointer bg-slate-50 p-2.5 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors">
                     <input
                       type="checkbox"
                       checked={formData.isFeatured}
                       onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
                       className="rounded text-[#C61D1F] focus:ring-[#C61D1F]"
                     />
-                    <span className="font-semibold text-gray-700">Hero Headline</span>
+                    <span className="font-semibold text-slate-800">Hero Headline</span>
                   </label>
 
-                  <label className="flex items-center space-x-2 cursor-pointer bg-gray-50 p-2.5 rounded-xl border border-gray-200 hover:border-gray-400 transition-colors">
+                  <label className="flex items-center space-x-2 cursor-pointer bg-slate-50 p-2.5 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors">
                     <input
                       type="checkbox"
                       checked={formData.isLatest}
                       onChange={(e) => setFormData({ ...formData, isLatest: e.target.checked })}
                       className="rounded text-[#C61D1F] focus:ring-[#C61D1F]"
                     />
-                    <span className="font-semibold text-gray-700">Latest Breaking</span>
+                    <span className="font-semibold text-slate-800">Latest Breaking</span>
                   </label>
 
-                  <label className="flex items-center space-x-2 cursor-pointer bg-gray-50 p-2.5 rounded-xl border border-gray-200 hover:border-gray-400 transition-colors">
+                  <label className="flex items-center space-x-2 cursor-pointer bg-slate-50 p-2.5 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors">
                     <input
                       type="checkbox"
                       checked={formData.isTrending}
                       onChange={(e) => setFormData({ ...formData, isTrending: e.target.checked })}
                       className="rounded text-[#C61D1F] focus:ring-[#C61D1F]"
                     />
-                    <span className="font-semibold text-gray-700">Trending Velocity</span>
+                    <span className="font-semibold text-slate-800">Trending Velocity</span>
                   </label>
 
-                  <label className="flex items-center space-x-2 cursor-pointer bg-gray-50 p-2.5 rounded-xl border border-gray-200 hover:border-gray-400 transition-colors">
+                  <label className="flex items-center space-x-2 cursor-pointer bg-slate-50 p-2.5 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors">
                     <input
                       type="checkbox"
                       checked={formData.isEditorsPick}
                       onChange={(e) => setFormData({ ...formData, isEditorsPick: e.target.checked })}
                       className="rounded text-[#C61D1F] focus:ring-[#C61D1F]"
                     />
-                    <span className="font-semibold text-gray-700">Editor's Pick</span>
+                    <span className="font-semibold text-slate-800">Editor's Pick</span>
                   </label>
                 </div>
               </div>
@@ -1851,8 +1981,8 @@ function AdminDashboardContent() {
             </form>
 
             {/* Pinned Sticky Footer */}
-            <div className="px-6 py-4 border-t border-[#E5E6E8] shrink-0 bg-[#F8F9FA] flex items-center justify-between">
-              <span className="text-[11px] text-[#707070]">
+            <div className="px-6 py-4 border-t border-slate-200/80 shrink-0 bg-slate-50 flex items-center justify-between">
+              <span className="text-[11px] text-slate-500">
                 {editingArticle ? "Editing: " + editingArticle.title.slice(0, 30) + "..." : "Live Publishing Clearance"}
               </span>
               <div className="flex items-center space-x-3">
@@ -1862,14 +1992,14 @@ function AdminDashboardContent() {
                     setShowCreateModal(false);
                     setEditingArticle(null);
                   }}
-                  className="px-4 py-2 border border-[#DFDFDF] hover:border-black rounded-xl text-xs font-bold uppercase transition-colors cursor-pointer bg-white"
+                  className="px-4 py-2 border border-slate-200 hover:border-slate-800 rounded-xl text-xs font-bold uppercase transition-colors cursor-pointer bg-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   form="story-dispatch-form"
-                  className="px-6 py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-md cursor-pointer"
+                  className="px-6 py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
                 >
                   {editingArticle ? "Save Changes" : "Publish Dispatch"}
                 </button>
@@ -1882,20 +2012,20 @@ function AdminDashboardContent() {
 
       {/* Add Newsroom Team Member Modal */}
       {showTeamModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-gray-200 overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
             
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#E5E6E8] shrink-0 bg-white">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 shrink-0 bg-white">
               <div className="flex items-center space-x-2.5">
                 <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
-                <h3 className="text-base font-extrabold text-[#000000] uppercase tracking-wide">
+                <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wide">
                   Add Newsroom Staff Member
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowTeamModal(false)}
-                className="text-gray-400 hover:text-black p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                className="text-slate-400 hover:text-slate-900 p-1.5 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1903,36 +2033,36 @@ function AdminDashboardContent() {
 
             <form id="team-member-form" onSubmit={handleAddTeamMember} className="overflow-y-auto flex-1 p-6 space-y-4 text-xs overscroll-contain">
               <div>
-                <label className="block font-bold text-[#000000] uppercase mb-1.5">Full Name *</label>
+                <label className="block font-bold text-slate-900 uppercase mb-1.5">Full Name *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Zainab Aliyu"
                   value={newMemberForm.name}
                   onChange={(e) => setNewMemberForm({ ...newMemberForm, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-sm focus:outline-hidden"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-sm focus:outline-hidden"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-[#000000] uppercase mb-1.5">Corporate / Journalist Email *</label>
+                <label className="block font-bold text-slate-900 uppercase mb-1.5">Corporate / Journalist Email *</label>
                 <input
                   type="email"
                   required
                   placeholder="e.g. zainab.aliyu@thezango.org"
                   value={newMemberForm.email}
                   onChange={(e) => setNewMemberForm({ ...newMemberForm, email: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-sm focus:outline-hidden"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-sm focus:outline-hidden"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold text-[#000000] uppercase mb-1.5">Newsroom Role *</label>
+                  <label className="block font-bold text-slate-900 uppercase mb-1.5">Newsroom Role *</label>
                   <select
                     value={newMemberForm.role}
                     onChange={(e) => setNewMemberForm({ ...newMemberForm, role: e.target.value as NewsroomRole })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden bg-white"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden bg-white"
                   >
                     <option value="writer">Staff Writer (Submit Manuscripts)</option>
                     <option value="editor">Desk Editor (Review & Publish)</option>
@@ -1941,11 +2071,11 @@ function AdminDashboardContent() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-[#000000] uppercase mb-1.5">Assigned Desk / Beat *</label>
+                  <label className="block font-bold text-slate-900 uppercase mb-1.5">Assigned Desk / Beat *</label>
                   <select
                     value={newMemberForm.desk}
                     onChange={(e) => setNewMemberForm({ ...newMemberForm, desk: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden bg-white"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden bg-white"
                   >
                     {CATEGORIES.map((c) => (
                       <option key={c.id} value={c.name}>{c.name}</option>
@@ -1964,31 +2094,31 @@ function AdminDashboardContent() {
               </div>
 
               <div>
-                <label className="block font-bold text-[#000000] uppercase mb-1.5">Journalist Bio</label>
+                <label className="block font-bold text-slate-900 uppercase mb-1.5">Journalist Bio</label>
                 <textarea
                   rows={3}
                   placeholder="Brief editorial background, focus areas, and geographic beat coverage..."
                   value={newMemberForm.bio}
                   onChange={(e) => setNewMemberForm({ ...newMemberForm, bio: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-xs focus:outline-hidden resize-none"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden resize-none"
                 />
               </div>
             </form>
 
-            <div className="px-6 py-4 border-t border-[#E5E6E8] shrink-0 bg-[#F8F9FA] flex items-center justify-between">
-              <span className="text-[11px] text-[#707070]">Newsroom Staff Clearance</span>
+            <div className="px-6 py-4 border-t border-slate-200/80 shrink-0 bg-slate-50 flex items-center justify-between">
+              <span className="text-[11px] text-slate-500">Newsroom Staff Clearance</span>
               <div className="flex items-center space-x-3">
                 <button
                   type="button"
                   onClick={() => setShowTeamModal(false)}
-                  className="px-4 py-2 border border-[#DFDFDF] hover:border-black rounded-xl text-xs font-bold uppercase transition-colors cursor-pointer bg-white"
+                  className="px-4 py-2 border border-slate-200 hover:border-slate-800 rounded-xl text-xs font-bold uppercase transition-colors cursor-pointer bg-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   form="team-member-form"
-                  className="px-6 py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-md cursor-pointer"
+                  className="px-6 py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
                 >
                   Confirm & Add Staff
                 </button>
@@ -2001,35 +2131,35 @@ function AdminDashboardContent() {
 
       {/* Request Editorial Revision Modal */}
       {revisionModalSub && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-200 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center space-x-2">
                 <span className="w-2.5 h-5 bg-amber-500 rounded-xs inline-block" />
-                <h3 className="text-sm font-extrabold text-gray-900 uppercase">
+                <h3 className="text-sm font-extrabold text-slate-900 uppercase">
                   Request Editorial Revision
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setRevisionModalSub(null)}
-                className="text-gray-400 hover:text-black p-1 rounded-lg"
+                className="text-slate-400 hover:text-slate-900 p-1 rounded-xl"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 space-y-1">
-              <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Manuscript Pitch:</span>
-              <p className="text-xs font-bold text-gray-900 line-clamp-1">{revisionModalSub.title}</p>
-              <div className="text-[11px] text-gray-500">
-                Author: <span className="font-semibold text-black">{revisionModalSub.authorName}</span> ({revisionModalSub.authorEmail || "Correspondent"})
+            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/60 space-y-1">
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Manuscript Pitch:</span>
+              <p className="text-xs font-bold text-slate-900 line-clamp-1">{revisionModalSub.title}</p>
+              <div className="text-[11px] text-slate-500">
+                Author: <span className="font-semibold text-slate-900">{revisionModalSub.authorName}</span> ({revisionModalSub.authorEmail || "Correspondent"})
               </div>
             </div>
 
             <form onSubmit={handleRequestRevision} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">
+                <label className="block text-xs font-bold uppercase text-slate-700 mb-1.5">
                   Editorial Feedback & Change Instructions *
                 </label>
                 <textarea
@@ -2038,7 +2168,7 @@ function AdminDashboardContent() {
                   placeholder="Explain exactly what the writer needs to improve or verify (e.g. 'Please verify source citations for the Kano export statistics in paragraph 2 and include a quote from the ministry spokesperson')..."
                   value={revisionNotes}
                   onChange={(e) => setRevisionNotes(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:border-amber-500 text-xs focus:outline-hidden resize-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 text-xs focus:outline-hidden resize-none"
                 />
               </div>
 
@@ -2046,13 +2176,13 @@ function AdminDashboardContent() {
                 <button
                   type="button"
                   onClick={() => setRevisionModalSub(null)}
-                  className="px-4 py-2 border border-gray-200 hover:border-black rounded-xl text-xs font-bold uppercase transition-colors"
+                  className="px-4 py-2 border border-slate-200 hover:border-slate-800 rounded-xl text-xs font-bold uppercase transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center space-x-1.5 cursor-pointer"
+                  className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>Send to Writer</span>
@@ -2071,7 +2201,7 @@ export default function AdminDashboardPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center p-8 text-sm text-[#707070]">
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8 text-sm text-slate-500">
           Loading Chief Editor CMS...
         </div>
       }
