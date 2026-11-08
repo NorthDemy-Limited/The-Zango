@@ -64,6 +64,8 @@ export default function RichEditor({
         heading: {
           levels: [1, 2, 3],
         },
+        link: false,
+        underline: false,
       }),
       Underline,
       Link.configure({
@@ -156,6 +158,42 @@ export default function RichEditor({
       return;
     }
     editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+  };
+
+  const editorFileInputRef = React.useRef<HTMLInputElement>(null);
+  const [isUploadingInline, setIsUploadingInline] = useState(false);
+
+  const handleInlineImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Image size exceeds 10MB limit.");
+      return;
+    }
+
+    setIsUploadingInline(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        editor?.chain().focus().setImage({ src: data.url }).run();
+      } else {
+        alert(data.message || "Failed to upload image.");
+      }
+    } catch (err) {
+      console.error("Inline image upload failed:", err);
+      alert("Error uploading image.");
+    } finally {
+      setIsUploadingInline(false);
+      if (e.target) e.target.value = "";
+    }
   };
 
   const insertImagePrompt = () => {
@@ -479,6 +517,27 @@ export default function RichEditor({
             <Unlink className="w-4 h-4" />
           </button>
         )}
+
+        <button
+          type="button"
+          onClick={() => editorFileInputRef.current?.click()}
+          disabled={isUploadingInline}
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-[#444] cursor-pointer"
+          title="Upload & Insert Inline Image"
+        >
+          {isUploadingInline ? (
+            <div className="w-4 h-4 border-2 border-[#C61D1F] border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <UploadCloud className="w-4 h-4 text-blue-600" />
+          )}
+        </button>
+        <input
+          type="file"
+          ref={editorFileInputRef}
+          onChange={handleInlineImageUpload}
+          accept="image/*"
+          className="hidden"
+        />
 
         <button
           type="button"

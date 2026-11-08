@@ -4,6 +4,15 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  async redirects() {
+    return [
+      {
+        source: "/admin",
+        destination: "/dashboard/admin",
+        permanent: true,
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {
