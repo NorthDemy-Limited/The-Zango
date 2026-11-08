@@ -131,6 +131,9 @@ export default function RichEditor({
     immediatelyRender: false,
   });
 
+  const editorFileInputRef = React.useRef<HTMLInputElement>(null);
+  const [isUploadingInline, setIsUploadingInline] = useState(false);
+
   // Sync internal content if parent value changes externally (e.g. opening an edit modal)
   useEffect(() => {
     if (editor && value !== undefined && editor.getHTML() !== value) {
@@ -159,9 +162,6 @@ export default function RichEditor({
     }
     editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
   };
-
-  const editorFileInputRef = React.useRef<HTMLInputElement>(null);
-  const [isUploadingInline, setIsUploadingInline] = useState(false);
 
   const handleInlineImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
