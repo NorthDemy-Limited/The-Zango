@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { auth, isFirebaseConfigured } from "@/lib/firebase/config";
+import { signInWithEmailAndPassword, signOut as firebaseSignOut } from "firebase/auth";
 
 export type UserRole = "admin" | "editor" | "writer";
 
@@ -72,29 +74,39 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("thezango_session_user");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && parsed.email) return parsed;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return PRESET_USERS.admin;
+  });
+  const [isLoading] = useState(false);
   const router = useRouter();
 
-  // Restore session from localStorage on mount
+  // Listen to external window storage events for multi-tab sync
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("thezango_session_user");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed && parsed.email) {
-          setUser(parsed);
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "thezango_session_user" && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed && parsed.email) {
+            setUser(parsed);
+          }
+        } catch {
+          // ignore
         }
-      } else {
-        // Default to Chief Admin in initial development/preview mode
-        setUser(PRESET_USERS.admin);
-        localStorage.setItem("thezango_session_user", JSON.stringify(PRESET_USERS.admin));
       }
-    } catch (e) {
-      setUser(PRESET_USERS.admin);
-    } finally {
-      setIsLoading(false);
-    }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   const login = async (roleOrEmail: string, password?: string) => {
@@ -108,8 +120,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: true };
     }
 
-    // 2. Email matching
+    // 2. Email matching with local preset or Firebase Auth
     const found = Object.values(PRESET_USERS).find((u) => u.email.toLowerCase() === clean);
+
+    // If Firebase Auth is configured and credentials are supplied, attempt Firebase sign-in
+    if (isFirebaseConfigured && auth && clean.includes("@") && password) {
+      try {
+        const userCred = await signInWithEmailAndPassword(auth, clean, password);
+        if (userCred.user) {
+          const authUser: AuthUser = found || {
+            id: userCred.user.uid,
+            name: userCred.user.displayName || clean.split("@")[0].replace(".", " ").toUpperCase(),
+            email: userCred.user.email || clean,
+            role: clean.includes("admin") ? "admin" : clean.includes("editor") ? "editor" : "writer",
+            desk: clean.includes("editor") ? "Business & Capital Markets" : "Technology & Digital Economy",
+            avatar: "/assets/social-image-1.png",
+            badge: clean.includes("admin") ? "Chief Admin" : clean.includes("editor") ? "Desk Editor" : "Staff Writer",
+          };
+          setUser(authUser);
+          localStorage.setItem("thezango_session_user", JSON.stringify(authUser));
+          return { success: true };
+        }
+      } catch (fbErr: unknown) {
+        console.warn("Firebase Auth sign-in attempted, checking local credentials fallback:", fbErr);
+      }
+    }
+
     if (found) {
       if (password && password.length < 4) {
         return { success: false, error: "Password must be at least 4 characters." };
@@ -139,6 +175,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
+    if (isFirebaseConfigured && auth) {
+      firebaseSignOut(auth).catch(() => {});
+    }
     setUser(null);
     localStorage.removeItem("thezango_session_user");
     router.push("/login");
