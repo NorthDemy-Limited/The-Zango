@@ -1036,8 +1036,8 @@ function EditorDashboardContent() {
                           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-blue-50 text-blue-700">
                             {sub.category}
                           </span>
-                          <span className="text-[11px] text-slate-400">
-                            Submitted: {new Date(sub.submittedAt).toLocaleDateString()}
+                          <span className="text-[11px] text-slate-400" suppressHydrationWarning>
+                            Submitted: {new Date(sub.submittedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                           </span>
                         </div>
                         <span
