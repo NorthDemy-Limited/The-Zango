@@ -1,55 +1,81 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, Suspense } from "react";
+import React, { useState, useMemo, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { 
   PenTool, 
   Clock, 
   CheckCircle2, 
   Send, 
-  Save, 
-  Eye, 
   FileText, 
-  ArrowLeft,
-  Sparkles,
-  BookOpen,
-  Trash2,
-  LayoutDashboard,
-  Bell,
-  LogOut,
-  ShieldCheck,
+  Trash2, 
+  Bell, 
+  LogOut, 
+  Search, 
+  BarChart3, 
+  X, 
+  Plus,
+  Menu,
+  ExternalLink,
+  AlertCircle,
   KeyRound,
-  Search,
-  BarChart3,
-  Flame,
-  Check,
-  X,
-  Plus
+  TrendingUp,
+  Inbox,
+  RefreshCw,
+  Sparkles
 } from "lucide-react";
 import { ARTICLES, CATEGORIES } from "@/data/mock-articles";
-import { createSubmission, getSubmissions, updateSubmission } from "@/lib/firebase/db";
-import { Submission } from "@/types";
-import { useAuth, UserRole } from "@/context/auth-context";
-import { useRouter } from "next/navigation";
+import { 
+  createSubmission, 
+  getSubmissions, 
+  updateSubmission, 
+  rejectSubmission, 
+  getArticles 
+} from "@/lib/firebase/db";
+import { Submission, Article, Category } from "@/types";
+import { useAuth } from "@/context/auth-context";
 import ImageUploader from "@/components/image-uploader";
 import RichEditor from "@/components/rich-editor";
 
 function AuthorStudioContent() {
   const router = useRouter();
-  const { user, role, logout, switchRole, updateUser, isAuthenticated, isLoading } = useAuth();
+  const { user, logout, updateUser, isAuthenticated, isLoading } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<"composer" | "stories" | "stats" | "settings">("composer");
+  const [activeTab, setActiveTab] = useState<"composer" | "submissions" | "stories" | "stats" | "settings">("composer");
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [submissionFilter, setSubmissionFilter] = useState<"all" | "pending" | "needs_revision" | "approved">("all");
+
+  // Form State
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("Technology");
   const [coverImage, setCoverImage] = useState("/assets/hero-featured.jpg");
   const [excerpt, setExcerpt] = useState("");
   const [content, setContent] = useState("");
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [lastAutoSaved, setLastAutoSaved] = useState<string | null>(null);
-  const [mySubmissions, setMySubmissions] = useState<Submission[]>([]);
+  const [editingSubmissionId, setEditingSubmissionId] = useState<string | null>(null);
+  const [editingRevisionNotes, setEditingRevisionNotes] = useState<string | null>(null);
 
-  // Writer Profile Settings state
+  // Status & Data State
+  const [statusMessage, setStatusMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
+  const [lastAutoSaved, setLastAutoSaved] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mySubmissions, setMySubmissions] = useState<Submission[]>([]);
+  const [myArticles, setMyArticles] = useState<Article[]>([]);
+  const [desksList, setDesksList] = useState<Category[]>(CATEGORIES);
+  const [statsData, setStatsData] = useState<{
+    totalSubmitted: number;
+    publishedStories: number;
+    pendingReview: number;
+    needsRevision: number;
+    approved: number;
+    totalReads: number;
+    acceptanceRate: string;
+    avgWordCount: number;
+  } | null>(null);
+
+  // Writer Profile Settings state (derived state with override to eliminate cascading renders)
   const [profileNameOverride, setProfileNameOverride] = useState<string | null>(null);
   const [profileAvatarOverride, setProfileAvatarOverride] = useState<string | null>(null);
   const [profileBioOverride, setProfileBioOverride] = useState<string | null>(null);
@@ -65,39 +91,10 @@ function AuthorStudioContent() {
   const setProfileBio = (val: string) => setProfileBioOverride(val);
   const setProfileDesk = (val: string) => setProfileDeskOverride(val);
 
-  const handleSaveProfile = () => {
-    updateUser({
-      name: profileName,
-      avatar: profileAvatar,
-      bio: profileBio,
-      desk: profileDesk,
-    });
-    setStatusMessage("Staff Writer profile, avatar, and bio saved successfully!");
-    setTimeout(() => setStatusMessage(null), 4000);
+  const triggerToast = (text: string, type: "success" | "error" | "info" = "success") => {
+    setStatusMessage({ text, type });
+    setTimeout(() => setStatusMessage(null), 4500);
   };
-
-  const loadSubmissions = async () => {
-    const all = await getSubmissions();
-    const mine = all.filter(
-      (s) =>
-        (user?.email && s.authorEmail?.toLowerCase() === user.email.toLowerCase()) ||
-        s.authorName?.toLowerCase() === (user?.name || "").toLowerCase()
-    );
-    setMySubmissions(mine);
-  };
-
-  useEffect(() => {
-    let active = true;
-    const fetchAuthorSubmissions = async () => {
-      await loadSubmissions();
-    };
-    if (active) {
-      void fetchAuthorSubmissions();
-    }
-    return () => {
-      active = false;
-    };
-  }, [user]);
 
   // Require auth
   useEffect(() => {
@@ -106,13 +103,94 @@ function AuthorStudioContent() {
     }
   }, [isAuthenticated, isLoading, router]);
 
+  // Load Writer Submissions, Published Articles, and Stats via API routes (with local fallback)
+  const loadWriterData = useCallback(async () => {
+    const authorEmail = user?.email || "fatima.sanusi@thezango.org";
+    const authorName = user?.name || "Fatima Sanusi";
+
+    try {
+      const [subsRes, artsRes, statsRes, desksRes] = await Promise.all([
+        fetch(`/api/writer/submissions?authorEmail=${encodeURIComponent(authorEmail)}&authorName=${encodeURIComponent(authorName)}`)
+          .then((r) => r.json())
+          .catch(() => null),
+        fetch(`/api/writer/articles?authorName=${encodeURIComponent(authorName)}`)
+          .then((r) => r.json())
+          .catch(() => null),
+        fetch(`/api/writer/stats?authorEmail=${encodeURIComponent(authorEmail)}&authorName=${encodeURIComponent(authorName)}`)
+          .then((r) => r.json())
+          .catch(() => null),
+        fetch("/api/admin/desks")
+          .then((r) => r.json())
+          .catch(() => null),
+      ]);
+
+      if (desksRes?.success && desksRes.desks) {
+        setDesksList(desksRes.desks);
+      }
+
+      if (subsRes?.success && subsRes.submissions) {
+        setMySubmissions(subsRes.submissions);
+      } else {
+        const allSubs = await getSubmissions();
+        const mine = allSubs.filter(
+          (s) =>
+            (user?.email && s.authorEmail?.toLowerCase() === user.email.toLowerCase()) ||
+            s.authorName?.toLowerCase() === authorName.toLowerCase()
+        );
+        setMySubmissions(mine);
+      }
+
+      if (artsRes?.success && artsRes.articles) {
+        setMyArticles(artsRes.articles);
+      } else {
+        const allArts = await getArticles();
+        const mine = allArts.filter(
+          (a) => a.author.name.toLowerCase().includes(authorName.toLowerCase()) || a.isFeatured
+        );
+        setMyArticles(mine.length > 0 ? mine : ARTICLES.filter((a) => a.author.name === authorName || a.isFeatured));
+      }
+
+      if (statsRes?.success && statsRes.stats) {
+        setStatsData(statsRes.stats);
+      }
+    } catch (e) {
+      console.warn("Writer loadWriterData fallback to local db:", e);
+      const allSubs = await getSubmissions();
+      const mineSubs = allSubs.filter(
+        (s) =>
+          (user?.email && s.authorEmail?.toLowerCase() === user.email.toLowerCase()) ||
+          s.authorName?.toLowerCase() === authorName.toLowerCase()
+      );
+      setMySubmissions(mineSubs);
+
+      const allArts = await getArticles();
+      const mineArts = allArts.filter(
+        (a) => a.author.name.toLowerCase().includes(authorName.toLowerCase()) || a.isFeatured
+      );
+      setMyArticles(mineArts.length > 0 ? mineArts : ARTICLES.filter((a) => a.author.name === authorName || a.isFeatured));
+    }
+  }, [user]);
+
+  useEffect(() => {
+    let active = true;
+    const fetchData = async () => {
+      await loadWriterData();
+    };
+    if (active) {
+      void fetchData();
+    }
+    return () => {
+      active = false;
+    };
+  }, [loadWriterData]);
+
   // Restore draft from localStorage on mount
   useEffect(() => {
     let active = true;
-    const restoreDraft = async () => {
+    const restoreDraft = () => {
       try {
         const saved = typeof window !== "undefined" ? localStorage.getItem("thezango_writer_draft") : null;
-        if (saved && active) {
+        if (saved && active && !editingSubmissionId) {
           const draft = JSON.parse(saved);
           if (draft.title) setTitle(draft.title);
           if (draft.category) setCategory(draft.category);
@@ -125,15 +203,17 @@ function AuthorStudioContent() {
         // ignore
       }
     };
-    void restoreDraft();
+    restoreDraft();
     return () => {
       active = false;
     };
-  }, []);
+  }, [editingSubmissionId]);
 
-  // Auto-save draft changes to localStorage
+  // Auto-save draft changes to localStorage (only when not editing an active submitted revision)
   useEffect(() => {
     if (!title && !content) return;
+    if (editingSubmissionId) return;
+
     const timeout = setTimeout(() => {
       try {
         const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -149,17 +229,13 @@ function AuthorStudioContent() {
           })
         );
         setLastAutoSaved(now);
-      } catch (e) {
+      } catch {
         // ignore
       }
     }, 1500);
 
     return () => clearTimeout(timeout);
-  }, [title, category, coverImage, excerpt, content]);
-
-  const myStories = useMemo(() => {
-    return ARTICLES.filter((a) => a.author.name === (user?.name || "Fatima Sanusi") || a.isFeatured);
-  }, [user]);
+  }, [title, category, coverImage, excerpt, content, editingSubmissionId]);
 
   const wordCount = useMemo(() => {
     const textOnly = content.replace(/<[^>]*>/g, " ").trim();
@@ -173,14 +249,16 @@ function AuthorStudioContent() {
   }, [wordCount]);
 
   const handleClearDraft = () => {
-    if (confirm("Are you sure you want to discard your draft? This cannot be undone.")) {
+    if (confirm("Are you sure you want to discard this draft? This cannot be undone.")) {
       localStorage.removeItem("thezango_writer_draft");
       setTitle("");
       setExcerpt("");
       setContent("");
+      setCoverImage("/assets/hero-featured.jpg");
       setLastAutoSaved(null);
-      setStatusMessage("Draft discarded.");
-      setTimeout(() => setStatusMessage(null), 3000);
+      setEditingSubmissionId(null);
+      setEditingRevisionNotes(null);
+      triggerToast("Draft discarded successfully.", "info");
     }
   };
 
@@ -200,44 +278,103 @@ function AuthorStudioContent() {
         })
       );
       setLastAutoSaved(now);
-      setStatusMessage("Story saved to browser storage!");
-      setTimeout(() => setStatusMessage(null), 4000);
-    } catch (e) {
-      // ignore
+      triggerToast("Story draft saved to browser storage!", "success");
+    } catch {
+      triggerToast("Could not save draft locally.", "error");
     }
   };
 
-  const handleSubmitReview = async (e: React.FormEvent) => {
+  const handleSubmitPitch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !content.trim()) {
-      alert("Please provide both a headline and story content before submitting.");
+      triggerToast("Please provide both a headline and story manuscript content.", "error");
       return;
     }
 
-    try {
-      await createSubmission({
-        title,
-        excerpt: excerpt || "Submitted by contributing writer...",
-        content,
-        category,
-        authorName: user?.name || "Fatima Sanusi",
-        authorEmail: user?.email || "fatima.sanusi@thezango.org",
-        wordCount,
-        readTime: estimatedReadTime,
-        coverImage,
-      });
+    setIsSubmitting(true);
 
-      setStatusMessage("Manuscript pitched to editorial desk for review!");
-      localStorage.removeItem("thezango_writer_draft");
+    try {
+      if (editingSubmissionId) {
+        // Re-submitting an existing submission that requested revision
+        const res = await fetch(`/api/writer/submissions/${editingSubmissionId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "resubmit",
+            title: title.trim(),
+            category,
+            coverImage,
+            excerpt: excerpt.trim() || content.replace(/<[^>]*>/g, " ").slice(0, 150) + "...",
+            content,
+            wordCount,
+            readTime: estimatedReadTime,
+          }),
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          triggerToast("Revised manuscript re-submitted to editorial review queue!", "success");
+        } else {
+          // Local fallback
+          await updateSubmission(editingSubmissionId, {
+            title: title.trim(),
+            category,
+            coverImage,
+            excerpt: excerpt.trim() || content.replace(/<[^>]*>/g, " ").slice(0, 150) + "...",
+            content,
+            wordCount,
+            readTime: estimatedReadTime,
+            status: "pending",
+          });
+          triggerToast("Revised manuscript re-submitted to editorial review queue!", "success");
+        }
+
+        setEditingSubmissionId(null);
+        setEditingRevisionNotes(null);
+      } else {
+        // Submitting a brand new manuscript pitch
+        const payload = {
+          title: title.trim(),
+          excerpt: excerpt.trim() || content.replace(/<[^>]*>/g, " ").slice(0, 150) + "...",
+          content,
+          category,
+          authorName: user?.name || "Fatima Sanusi",
+          authorEmail: user?.email || "fatima.sanusi@thezango.org",
+          coverImage,
+          wordCount,
+          readTime: estimatedReadTime,
+        };
+
+        const res = await fetch("/api/writer/submissions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          triggerToast("Manuscript pitch delivered to editorial desk review queue!", "success");
+        } else {
+          // Local fallback
+          await createSubmission(payload);
+          triggerToast("Manuscript pitch delivered to editorial desk review queue!", "success");
+        }
+
+        localStorage.removeItem("thezango_writer_draft");
+      }
+
       setTitle("");
       setExcerpt("");
       setContent("");
+      setCoverImage("/assets/hero-featured.jpg");
       setLastAutoSaved(null);
-      await loadSubmissions();
-      setTimeout(() => setStatusMessage(null), 5000);
+      await loadWriterData();
+      setActiveTab("submissions");
     } catch (err) {
-      console.warn("Could not submit article:", err);
-      setStatusMessage("Failed to submit. Please try again.");
+      console.error("Submission failed:", err);
+      triggerToast("Failed to submit manuscript. Please try again.", "error");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -247,59 +384,167 @@ function AuthorStudioContent() {
     setCoverImage(sub.coverImage || "/assets/hero-featured.jpg");
     setExcerpt(sub.excerpt);
     setContent(sub.content);
+    setEditingSubmissionId(sub.id);
+    setEditingRevisionNotes(sub.feedbackNotes || null);
     setActiveTab("composer");
-    setStatusMessage(`Loaded "${sub.title}" into composer for editing!`);
+    triggerToast(`Loaded "${sub.title}" into composer for editing!`, "info");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  const handleCancelEditing = () => {
+    setEditingSubmissionId(null);
+    setEditingRevisionNotes(null);
+    setTitle("");
+    setExcerpt("");
+    setContent("");
+    setCoverImage("/assets/hero-featured.jpg");
+    triggerToast("Exited revision edit mode.", "info");
+  };
+
+  const handleWithdrawSubmission = async (id: string, subTitle: string) => {
+    if (!confirm(`Are you sure you want to withdraw the pitch "${subTitle}"?`)) return;
+
+    try {
+      const res = await fetch(`/api/writer/submissions/${id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        triggerToast(`Manuscript "${subTitle.slice(0, 30)}..." withdrawn from queue.`, "info");
+      } else {
+        await rejectSubmission(id);
+        triggerToast(`Manuscript "${subTitle.slice(0, 30)}..." withdrawn.`, "info");
+      }
+      await loadWriterData();
+    } catch (e) {
+      console.error("Withdraw failed:", e);
+      await rejectSubmission(id);
+      await loadWriterData();
+      triggerToast(`Manuscript withdrawn.`, "info");
+    }
+  };
+
+  const handleSaveProfile = () => {
+    updateUser({
+      name: profileName,
+      avatar: profileAvatar,
+      bio: profileBio,
+      desk: profileDesk,
+    });
+    triggerToast("Staff Writer profile, avatar, and bio saved successfully!", "success");
+  };
+
+  // Counts & filtering
+  const pendingSubmissions = useMemo(() => {
+    return mySubmissions.filter((s) => s.status === "pending");
+  }, [mySubmissions]);
+
+  const revisionSubmissions = useMemo(() => {
+    return mySubmissions.filter((s) => s.status === "needs_revision");
+  }, [mySubmissions]);
+
+  const filteredSubmissions = useMemo(() => {
+    let list = mySubmissions;
+    if (submissionFilter !== "all") {
+      list = list.filter((s) => s.status === submissionFilter);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter((s) =>
+        s.title.toLowerCase().includes(q) ||
+        s.category.toLowerCase().includes(q) ||
+        s.excerpt.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [mySubmissions, submissionFilter, searchQuery]);
+
+  const filteredArticles = useMemo(() => {
+    let list = myArticles;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter((a) =>
+        a.title.toLowerCase().includes(q) ||
+        a.category.toLowerCase().includes(q) ||
+        a.excerpt.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [myArticles, searchQuery]);
+
+  const totalReadsCount = statsData?.totalReads ?? myArticles.reduce((acc, a) => acc + (a.views || 0), 0);
+  const avgWords = statsData?.avgWordCount ?? 940;
+  const acceptanceVelocity = statsData?.acceptanceRate ?? "94%";
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] flex flex-col font-sans">
       
       {/* 1. TOP NAVBAR */}
-      <header className="bg-white border-b border-[#E5E6E8] sticky top-0 z-40 shadow-2xs h-18">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-2xs h-18">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
           
-          <div className="flex items-center space-x-6">
-            <Link href="/" className="flex items-center space-x-2.5">
-              <div className="relative w-36 h-9">
-                <Image src="/assets/logo.png" alt="The Zango" fill sizes="150px" className="object-contain" priority />
+          {/* Brand Logo & Search */}
+          <div className="flex items-center space-x-3 sm:space-x-6">
+            {/* Mobile menu toggle */}
+            <button
+              onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+              className="md:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              title="Toggle Writer Sidebar"
+            >
+              {mobileSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+
+            <Link href="/" className="flex items-center space-x-2.5 group">
+              <div className="relative w-32 sm:w-36 h-9">
+                <Image
+                  src="/assets/logo.png"
+                  alt="The Zango"
+                  fill
+                  sizes="150px"
+                  className="object-contain"
+                  priority
+                />
               </div>
             </Link>
 
-            <div className="hidden sm:flex items-center space-x-2 text-xs font-extrabold text-[#111111] uppercase tracking-wider pl-4 border-l border-gray-200">
+            <div className="hidden sm:flex items-center space-x-2 text-xs font-extrabold text-[#111111] uppercase tracking-wider pl-4 border-l border-slate-200">
               <span className="w-2 h-4 bg-emerald-600 rounded-xs" />
               <span>Writer & Contributor Studio</span>
             </div>
           </div>
 
+          {/* Search bar & Live clearance badge */}
           <div className="flex items-center space-x-3 sm:space-x-4">
-            
-            <div className="flex items-center space-x-2.5 pl-2">
-              <div className="relative w-9 h-9 rounded-full overflow-hidden border-2 border-emerald-600 shrink-0">
-                <Image
-                  src={user?.avatar || "/assets/social-image-4.png"}
-                  alt={user?.name || "Fatima Sanusi"}
-                  fill
-                  sizes="36px"
-                  className="object-cover"
-                />
-              </div>
-              <div className="hidden lg:block text-left">
-                <div className="font-extrabold text-xs text-[#111111] leading-tight">
-                  {user?.name || "Fatima Sanusi"}
-                </div>
-                <div className="text-[10px] font-bold uppercase text-emerald-600 tracking-wider">
-                  STAFF WRITER
-                </div>
-              </div>
+            <div className="hidden lg:flex items-center relative w-60 xl:w-72">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search pitches or stories..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 focus:border-emerald-600 text-xs focus:outline-hidden bg-slate-50 focus:bg-white transition-all"
+              />
             </div>
 
-            <button
-              onClick={logout}
-              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
-              title="Sign Out"
+            {/* Live Clearance Badge */}
+            <div className="hidden sm:inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-100">
+              <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+              <span>Writer Clearance Active</span>
+            </div>
+
+            {/* Notification Bell */}
+            <button 
+              onClick={() => {
+                setActiveTab("submissions");
+                if (revisionSubmissions.length > 0) setSubmissionFilter("needs_revision");
+              }}
+              className="relative p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              title="Pitch Review Notifications"
             >
-              <LogOut className="w-4 h-4" />
+              <Bell className="w-4 h-4" />
+              {revisionSubmissions.length > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-white animate-pulse" />
+              )}
             </button>
           </div>
 
@@ -307,72 +552,222 @@ function AuthorStudioContent() {
       </header>
 
       {/* 2. MAIN BODY */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1 flex flex-col md:flex-row items-start gap-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full flex-1 flex flex-col md:flex-row items-start gap-6">
         
-        {/* LEFT ROUNDED SIDEBAR (Writer Scope) */}
-        <aside className="w-full md:w-60 lg:w-64 shrink-0 bg-white rounded-3xl p-3 border border-[#E5E6E8] shadow-2xs space-y-1">
-          
-          <button
-            onClick={() => setActiveTab("composer")}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "composer"
-                ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
-                : "text-[#535252] hover:bg-gray-100 hover:text-black"
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <PenTool className="w-4 h-4 shrink-0" />
-              <span>Draft Story</span>
-            </div>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("stories")}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "stories"
-                ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
-                : "text-[#535252] hover:bg-gray-100 hover:text-black"
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <FileText className="w-4 h-4 shrink-0" />
-              <span>My Stories</span>
-            </div>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-              activeTab === "stories" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
-            }`}>
-              {myStories.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("stats")}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "stats"
-                ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
-                : "text-[#535252] hover:bg-gray-100 hover:text-black"
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <BarChart3 className="w-4 h-4 shrink-0" />
-              <span>My Readership</span>
-            </div>
-          </button>
-
-          <div className="pt-4 border-t border-gray-100">
-            <button
-              onClick={() => setActiveTab("settings")}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === "settings"
-                  ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
-                  : "text-[#535252] hover:bg-gray-100 hover:text-black"
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <KeyRound className="w-4 h-4 shrink-0" />
-                <span>Account Settings</span>
+        {/* LEFT MODERN STICKY SIDEBAR (Writer Scope) */}
+        <aside
+          className={`w-full md:w-64 lg:w-72 shrink-0 bg-white rounded-3xl p-3.5 border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] flex flex-col justify-between md:sticky md:top-24 md:max-h-[calc(100vh-7rem)] overflow-y-auto space-y-4 transition-all ${
+            mobileSidebarOpen ? "block" : "hidden md:flex"
+          }`}
+        >
+          <div className="space-y-4">
+            
+            {/* Beat Clearance Status Pill */}
+            <div className="p-3 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 flex items-center justify-between">
+              <div className="flex items-center space-x-2 min-w-0">
+                <span className="relative flex h-2 w-2 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+                </span>
+                <div className="min-w-0">
+                  <div className="text-[11px] font-extrabold text-emerald-950 truncate">
+                    {profileDesk}
+                  </div>
+                  <div className="text-[9px] font-semibold text-emerald-600 uppercase tracking-wider">
+                    Assigned Writer Beat
+                  </div>
+                </div>
               </div>
+              <span className="text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-600 text-white shrink-0">
+                Author
+              </span>
+            </div>
+
+            {/* Quick Action Button: New Pitch */}
+            <button
+              onClick={() => {
+                setEditingSubmissionId(null);
+                setEditingRevisionNotes(null);
+                setActiveTab("composer");
+                setMobileSidebarOpen(false);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="w-full px-3.5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-2xl text-xs font-extrabold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ New Manuscript Pitch</span>
             </button>
+
+            {/* Group 1: EDITORIAL WORKSPACE */}
+            <div className="space-y-1">
+              <span className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
+                Editorial Workspace
+              </span>
+
+              {/* Sidebar Item 1: Composer */}
+              <button
+                onClick={() => {
+                  setActiveTab("composer");
+                  setMobileSidebarOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === "composer"
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <PenTool className="w-4 h-4 shrink-0" />
+                  <span>Draft Manuscript</span>
+                </div>
+                {editingSubmissionId && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-400 text-amber-950 animate-pulse">
+                    Editing
+                  </span>
+                )}
+              </button>
+
+              {/* Sidebar Item 2: My Pitches & Manuscripts */}
+              <button
+                onClick={() => {
+                  setActiveTab("submissions");
+                  setMobileSidebarOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === "submissions"
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <Inbox className="w-4 h-4 shrink-0" />
+                  <span>My Pitches</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  {revisionSubmissions.length > 0 && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-extrabold bg-amber-100 text-amber-900 border border-amber-200">
+                      ⚠️ {revisionSubmissions.length}
+                    </span>
+                  )}
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                      activeTab === "submissions"
+                        ? "bg-white/20 text-white"
+                        : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {mySubmissions.length}
+                  </span>
+                </div>
+              </button>
+
+              {/* Sidebar Item 3: Published Stories */}
+              <button
+                onClick={() => {
+                  setActiveTab("stories");
+                  setMobileSidebarOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === "stories"
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <FileText className="w-4 h-4 shrink-0" />
+                  <span>Published Bylines</span>
+                </div>
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                    activeTab === "stories" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {myArticles.length}
+                </span>
+              </button>
+            </div>
+
+            {/* Group 2: PERFORMANCE & REACH */}
+            <div className="space-y-1 pt-2 border-t border-slate-100">
+              <span className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
+                Performance & Reach
+              </span>
+
+              <button
+                onClick={() => {
+                  setActiveTab("stats");
+                  setMobileSidebarOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === "stats"
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <BarChart3 className="w-4 h-4 shrink-0" />
+                  <span>Readership Analytics</span>
+                </div>
+              </button>
+            </div>
+
+            {/* Group 3: WRITER IDENTITY & CONFIGURATION */}
+            <div className="space-y-1 pt-2 border-t border-slate-100">
+              <span className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
+                Writer Configuration
+              </span>
+
+              <button
+                onClick={() => {
+                  setActiveTab("settings");
+                  setMobileSidebarOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === "settings"
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <KeyRound className="w-4 h-4 shrink-0" />
+                  <span>Byline & Profile</span>
+                </div>
+              </button>
+            </div>
+
+          </div>
+
+          {/* PINNED BOTTOM: Modern User Profile Card & Signout Positioning */}
+          <div className="pt-3 border-t border-slate-100 mt-auto space-y-2">
+            <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 border border-slate-100">
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <div className="relative w-8 h-8 rounded-full overflow-hidden border-2 border-emerald-600 shrink-0">
+                  <Image
+                    src={profileAvatar}
+                    alt={profileName}
+                    fill
+                    sizes="32px"
+                    className="object-cover"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-extrabold text-xs text-slate-900 truncate">
+                    {profileName}
+                  </div>
+                  <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider truncate">
+                    Staff Writer
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={logout}
+                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer shrink-0"
+                title="Sign Out"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
         </aside>
@@ -380,13 +775,27 @@ function AuthorStudioContent() {
         {/* RIGHT WORKSPACE */}
         <main className="flex-1 w-full space-y-6">
 
+          {/* Notification Toast */}
           {statusMessage && (
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-xs animate-in fade-in">
+            <div className={`p-4 rounded-2xl border text-xs font-semibold flex items-center justify-between shadow-xs animate-in fade-in transition-all ${
+              statusMessage.type === "error"
+                ? "bg-red-50 border-red-200 text-red-800"
+                : statusMessage.type === "info"
+                ? "bg-blue-50 border-blue-200 text-blue-800"
+                : "bg-emerald-50 border-emerald-200 text-emerald-800"
+            }`}>
               <div className="flex items-center space-x-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>{statusMessage}</span>
+                {statusMessage.type === "error" ? (
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                )}
+                <span>{statusMessage.text}</span>
               </div>
-              <button onClick={() => setStatusMessage(null)} className="text-emerald-700 hover:text-emerald-900">
+              <button 
+                onClick={() => setStatusMessage(null)} 
+                className="p-1 rounded-lg hover:bg-black/5 cursor-pointer"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -394,253 +803,598 @@ function AuthorStudioContent() {
 
           {/* TAB 1: COMPOSER (WYSIWYG Rich Editor) */}
           {activeTab === "composer" && (
-            <div className="bg-white rounded-3xl border border-[#E5E6E8] p-6 sm:p-8 shadow-2xs space-y-6">
+            <div className="space-y-6">
               
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#E5E6E8] gap-3">
+              {/* Revision Notice Banner if editing a pitch needing revision */}
+              {editingSubmissionId && editingRevisionNotes && (
+                <div className="bg-amber-50 border border-amber-200 rounded-3xl p-5 shadow-2xs space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2 text-amber-900 font-extrabold text-xs uppercase tracking-wider">
+                      <AlertCircle className="w-4 h-4 text-amber-600" />
+                      <span>Editorial Desk Revision Notes</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCancelEditing}
+                      className="text-xs text-amber-800 hover:text-amber-950 font-bold underline cursor-pointer"
+                    >
+                      Cancel & Exit Revision Mode
+                    </button>
+                  </div>
+                  <p className="text-xs text-amber-950 italic bg-white/70 p-3 rounded-xl border border-amber-100">
+                    &ldquo;{editingRevisionNotes}&rdquo;
+                  </p>
+                  <p className="text-[11px] text-amber-800">
+                    Make your revisions below. Clicking &ldquo;Re-submit Revised Manuscript&rdquo; will automatically deliver this updated dispatch back to the editor&apos;s review queue.
+                  </p>
+                </div>
+              )}
+
+              {/* Main Composer Card */}
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-6">
+                
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="w-2.5 h-5 bg-emerald-600 rounded-xs inline-block" />
+                      <h3 className="text-base font-extrabold text-[#111111] uppercase tracking-wide">
+                        {editingSubmissionId ? "Revise Story Manuscript" : "Draft Story Manuscript"}
+                      </h3>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Compose investigative reports and pitches for Northern Nigeria newsroom desks.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center space-x-3 text-xs font-semibold text-slate-500">
+                    {lastAutoSaved && !editingSubmissionId && (
+                      <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-[11px] font-bold border border-emerald-100">
+                        Saved {lastAutoSaved}
+                      </span>
+                    )}
+                    <span className="bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200 text-slate-700 font-bold text-[11px]">
+                      {wordCount} words
+                    </span>
+                    <span className="text-slate-400">•</span>
+                    <span className="bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200 text-slate-700 font-bold text-[11px]">
+                      {estimatedReadTime}
+                    </span>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSubmitPitch} className="space-y-5">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                      Headline *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Sahel Solar Corridors: How Off-Grid Power Is Reshaping Rural Commerce in Jigawa..."
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:border-emerald-600 text-sm font-semibold focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                        Beat / Desk
+                      </label>
+                      <select
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-600 text-xs focus:outline-hidden bg-white cursor-pointer font-medium"
+                      >
+                        {desksList.map((cat) => (
+                          <option key={cat.id} value={cat.name}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                        Lead Excerpt
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Brief 1-2 sentence lead summary for front page teasers..."
+                        value={excerpt}
+                        onChange={(e) => setExcerpt(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-600 text-xs focus:outline-hidden bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <ImageUploader
+                    label="Story Cover Image (Upload high-res photo or select from archive)"
+                    value={coverImage}
+                    onChange={(url) => setCoverImage(url)}
+                  />
+
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                        Manuscript Body (WYSIWYG Rich Editor) *
+                      </label>
+                      <span className="text-[11px] text-slate-400">
+                        Supports bolding, blockquotes, embeds, headers, and media
+                      </span>
+                    </div>
+                    <RichEditor
+                      value={content}
+                      onChange={(html) => setContent(html)}
+                      placeholder="Compose your news dispatch, interview transcripts, or investigative findings..."
+                      height={400}
+                    />
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center space-x-3">
+                      {!editingSubmissionId && (
+                        <button
+                          type="button"
+                          onClick={handleSaveDraft}
+                          className="px-4 py-2 rounded-xl border border-slate-300 hover:border-slate-800 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer bg-white"
+                        >
+                          Save Local Draft
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={editingSubmissionId ? handleCancelEditing : handleClearDraft}
+                        className="p-2 text-slate-400 hover:text-red-600 rounded-xl transition-colors cursor-pointer hover:bg-red-50"
+                        title={editingSubmissionId ? "Cancel editing" : "Discard draft"}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-extrabold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center space-x-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {isSubmitting ? (
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Send className="w-3.5 h-3.5" />
+                      )}
+                      <span>
+                        {editingSubmissionId ? "Re-submit Revised Manuscript" : "Pitch to Editorial Queue"}
+                      </span>
+                    </button>
+                  </div>
+                </form>
+
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: MY PITCHES & MANUSCRIPTS */}
+          {activeTab === "submissions" && (
+            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-6">
+              
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
                 <div>
                   <div className="flex items-center space-x-2">
                     <span className="w-2.5 h-5 bg-emerald-600 rounded-xs inline-block" />
                     <h3 className="text-base font-extrabold text-[#111111] uppercase tracking-wide">
-                      Draft Story Manuscript
+                      My Pitched Manuscripts ({mySubmissions.length})
                     </h3>
                   </div>
-                  <p className="text-xs text-[#707070] mt-0.5">
-                    Compose investigative reports and pitches for Northern Nigeria newsroom desks.
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Track desk clearance status, editorial revision requests, and clearance feedback.
                   </p>
                 </div>
 
-                <div className="flex items-center space-x-3 text-xs font-semibold text-gray-500">
-                  {lastAutoSaved && (
-                    <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-[11px] font-bold">
-                      Saved {lastAutoSaved}
-                    </span>
-                  )}
-                  <span>{wordCount} words</span>
-                  <span>•</span>
-                  <span>{estimatedReadTime}</span>
-                </div>
-              </div>
-
-              <form onSubmit={handleSubmitReview} className="space-y-5">
-                <div>
-                  <label className="block text-xs font-bold uppercase text-gray-900 mb-1.5">Headline *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Enter dispatch headline..."
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-emerald-600 text-sm font-semibold focus:outline-hidden"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-gray-900 mb-1.5">Beat / Desk</label>
-                    <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:border-emerald-600 text-xs focus:outline-hidden bg-white"
-                    >
-                      <option value="Technology">Technology & Innovation</option>
-                      <option value="Business">Business & Capital Markets</option>
-                      <option value="Features">Longform Features</option>
-                      <option value="News">Breaking News</option>
-                      <option value="Politics">Politics & Governance</option>
-                      <option value="Lifestyle">Sahelian Culture & Arts</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-gray-900 mb-1.5">Lead Excerpt</label>
-                    <input
-                      type="text"
-                      placeholder="Brief 1-2 sentence lead summary..."
-                      value={excerpt}
-                      onChange={(e) => setExcerpt(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:border-emerald-600 text-xs focus:outline-hidden"
-                    />
-                  </div>
-                </div>
-
-                <ImageUploader
-                  label="Story Cover Image (Upload from device or select editorial stock)"
-                  value={coverImage}
-                  onChange={(url) => setCoverImage(url)}
-                />
-
-                <div>
-                  <label className="block text-xs font-bold uppercase text-gray-900 mb-2">
-                    Manuscript Body (WYSIWYG Rich Editor) *
-                  </label>
-                  <RichEditor
-                    value={content}
-                    onChange={(html) => setContent(html)}
-                    placeholder="Compose story with formatting, images, tables, and video/tweet embeds..."
-                    height={380}
-                  />
-                </div>
-
-                <div className="pt-4 border-t border-[#E5E6E8] flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center space-x-3">
-                    <button
-                      type="button"
-                      onClick={handleSaveDraft}
-                      className="px-4 py-2 rounded-xl border border-gray-300 hover:border-black text-xs font-bold uppercase transition-colors cursor-pointer"
-                    >
-                      Save Local Draft
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleClearDraft}
-                      className="p-2 text-gray-400 hover:text-red-600 rounded-lg transition-colors cursor-pointer"
-                      title="Discard draft"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-
+                {/* Filter Pills */}
+                <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 sm:pb-0">
                   <button
-                    type="submit"
-                    className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center space-x-2 cursor-pointer"
+                    onClick={() => setSubmissionFilter("all")}
+                    className={`px-3 py-1 rounded-full text-xs font-bold transition-colors cursor-pointer ${
+                      submissionFilter === "all"
+                        ? "bg-slate-900 text-white"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
                   >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Submit to Review Queue</span>
+                    All ({mySubmissions.length})
+                  </button>
+                  <button
+                    onClick={() => setSubmissionFilter("pending")}
+                    className={`px-3 py-1 rounded-full text-xs font-bold transition-colors cursor-pointer ${
+                      submissionFilter === "pending"
+                        ? "bg-blue-600 text-white"
+                        : "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                    }`}
+                  >
+                    In Review ({pendingSubmissions.length})
+                  </button>
+                  <button
+                    onClick={() => setSubmissionFilter("needs_revision")}
+                    className={`px-3 py-1 rounded-full text-xs font-bold transition-colors cursor-pointer ${
+                      submissionFilter === "needs_revision"
+                        ? "bg-amber-600 text-white"
+                        : "bg-amber-50 text-amber-800 hover:bg-amber-100"
+                    }`}
+                  >
+                    Revisions ({revisionSubmissions.length})
+                  </button>
+                  <button
+                    onClick={() => setSubmissionFilter("approved")}
+                    className={`px-3 py-1 rounded-full text-xs font-bold transition-colors cursor-pointer ${
+                      submissionFilter === "approved"
+                        ? "bg-emerald-600 text-white"
+                        : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                    }`}
+                  >
+                    Approved
                   </button>
                 </div>
-              </form>
-
-            </div>
-          )}
-
-          {/* TAB 2: MY STORIES & PITCHES */}
-          {activeTab === "stories" && (
-            <div className="space-y-6">
-              {/* Active Manuscript Pitches */}
-              <div className="bg-white rounded-3xl border border-[#E5E6E8] p-6 shadow-2xs space-y-4">
-                <div className="pb-3 border-b border-gray-100 flex items-center justify-between">
-                  <h3 className="font-extrabold text-sm text-gray-900 uppercase tracking-wide">
-                    Pitched Manuscripts & Review Status ({mySubmissions.length})
-                  </h3>
-                  <span className="text-xs text-gray-400">Live Newsroom Queue</span>
-                </div>
-
-                {mySubmissions.length === 0 ? (
-                  <p className="text-xs text-gray-500 py-4 text-center">
-                    No active pitches currently in review. Submit your draft above to pitch the editors!
-                  </p>
-                ) : (
-                  <div className="divide-y divide-gray-100">
-                    {mySubmissions.map((sub) => (
-                      <div key={sub.id} className="py-4 space-y-3">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                          <div>
-                            <span className="text-[10px] font-bold text-gray-400 uppercase">{sub.category} • {sub.submittedAt}</span>
-                            <h4 className="font-bold text-sm text-gray-900">{sub.title}</h4>
-                          </div>
-
-                          <div className="flex items-center space-x-2 shrink-0">
-                            {sub.status === "needs_revision" ? (
-                              <span className="px-2.5 py-1 bg-amber-100 text-amber-900 rounded-full text-[10px] font-extrabold uppercase border border-amber-300">
-                                ⚠️ Revision Requested
-                              </span>
-                            ) : sub.status === "approved" ? (
-                              <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-extrabold uppercase border border-emerald-300">
-                                ✓ Approved & Published
-                              </span>
-                            ) : (
-                              <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full text-[10px] font-extrabold uppercase border border-blue-200">
-                                ⏳ In Desk Review
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* If Editor Sent Feedback Notes */}
-                        {sub.status === "needs_revision" && (
-                          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div className="space-y-1">
-                              <span className="font-black text-[10px] uppercase tracking-wider text-amber-800 block">
-                                Editor-in-Chief Feedback:
-                              </span>
-                              <p className="italic">{sub.feedbackNotes || "Please polish grammar and check quotes before re-submitting."}</p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleEditSubmission(sub)}
-                              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shrink-0 shadow-sm cursor-pointer"
-                            >
-                              Edit & Re-submit →
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
-              {/* Published Bylines */}
-              <div className="bg-white rounded-3xl border border-[#E5E6E8] p-6 shadow-2xs space-y-4">
-                <div className="pb-3 border-b border-gray-100 flex items-center justify-between">
-                  <h3 className="font-extrabold text-sm text-gray-900 uppercase tracking-wide">
-                    Live Published Bylines ({myStories.length})
-                  </h3>
-                  <span className="text-xs text-gray-400">Total reach: 18.4K reads</span>
+              {filteredSubmissions.length === 0 ? (
+                <div className="text-center py-12 px-4 rounded-2xl border-2 border-dashed border-slate-200">
+                  <Inbox className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                  <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">No manuscripts found</p>
+                  <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                    {submissionFilter !== "all"
+                      ? `No pitches currently categorized under "${submissionFilter}".`
+                      : "You have not submitted any manuscripts to the desk review queue yet."}
+                  </p>
+                  <button
+                    onClick={() => {
+                      setActiveTab("composer");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer inline-flex items-center space-x-1.5"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Pitch First Story</span>
+                  </button>
                 </div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredSubmissions.map((sub) => (
+                    <div
+                      key={sub.id}
+                      className="p-5 rounded-2xl border border-slate-200/90 hover:border-slate-300 transition-all bg-white shadow-2xs space-y-3"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                        <div className="space-y-1 max-w-3xl">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 tracking-wider">
+                              {sub.category}
+                            </span>
+                            <span 
+                              suppressHydrationWarning 
+                              className="text-[11px] text-slate-400 font-medium"
+                            >
+                              Submitted {sub.submittedAt}
+                            </span>
+                            <span className="text-slate-300">•</span>
+                            <span className="text-[11px] text-slate-500 font-medium">
+                              {sub.wordCount} words ({sub.readTime})
+                            </span>
+                          </div>
 
-                <div className="divide-y divide-gray-100">
-                  {myStories.map((story) => (
-                    <div key={story.id} className="py-4 flex items-center justify-between gap-4">
-                      <div className="flex items-center space-x-3.5">
-                        <div className="relative w-14 h-11 rounded-lg overflow-hidden shrink-0 border border-gray-100">
-                          <Image src={story.coverImage} alt={story.title} fill sizes="56px" className="object-cover" />
+                          <h4 className="font-bold text-sm sm:text-base text-slate-900 leading-snug">
+                            {sub.title}
+                          </h4>
+
+                          <p className="text-xs text-slate-500 line-clamp-2">
+                            {sub.excerpt}
+                          </p>
                         </div>
-                        <div>
-                          <Link href={`/article/${story.slug}`} className="font-bold text-xs text-gray-900 hover:text-emerald-600 line-clamp-1">
-                            {story.title}
-                          </Link>
-                          <span className="text-[11px] text-gray-500">{story.category} • {story.publishedAt}</span>
+
+                        {/* Status Badge */}
+                        <div className="shrink-0 flex items-center space-x-2">
+                          {sub.status === "needs_revision" ? (
+                            <span className="px-3 py-1 bg-amber-50 text-amber-900 rounded-full text-[11px] font-extrabold uppercase border border-amber-300 flex items-center space-x-1.5 shadow-2xs">
+                              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                              <span>Revision Requested</span>
+                            </span>
+                          ) : sub.status === "approved" ? (
+                            <span className="px-3 py-1 bg-emerald-50 text-emerald-800 rounded-full text-[11px] font-extrabold uppercase border border-emerald-300 flex items-center space-x-1.5 shadow-2xs">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Approved & Published</span>
+                            </span>
+                          ) : (
+                            <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-[11px] font-extrabold uppercase border border-blue-200 flex items-center space-x-1.5 shadow-2xs">
+                              <Clock className="w-3.5 h-3.5 text-blue-500" />
+                              <span>In Desk Review</span>
+                            </span>
+                          )}
                         </div>
                       </div>
 
-                      <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full shrink-0">
-                        Live on Site
-                      </span>
+                      {/* Editorial Feedback Notes if revision requested */}
+                      {sub.status === "needs_revision" && (
+                        <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 text-xs text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="space-y-1">
+                            <span className="font-extrabold text-[10px] uppercase tracking-wider text-amber-900 block">
+                              Desk Editor Feedback:
+                            </span>
+                            <p className="italic text-amber-900 font-medium">
+                              &ldquo;{sub.feedbackNotes || "Please polish quotes, check source attribution, and clarify the policy implications before re-submitting."}&rdquo;
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleEditSubmission(sub)}
+                            className="px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all shrink-0 shadow-sm cursor-pointer flex items-center space-x-1.5"
+                          >
+                            <span>Edit & Re-submit</span>
+                            <span>→</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Actions Footer */}
+                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                        <div className="flex items-center space-x-3">
+                          <button
+                            onClick={() => handleEditSubmission(sub)}
+                            className="text-slate-600 hover:text-emerald-700 font-bold transition-colors cursor-pointer"
+                          >
+                            Open in Composer
+                          </button>
+                          {sub.status === "pending" && (
+                            <span className="text-slate-400 text-[11px]">
+                              Awaiting senior desk editor clearance
+                            </span>
+                          )}
+                        </div>
+
+                        {sub.status !== "approved" && (
+                          <button
+                            onClick={() => handleWithdrawSubmission(sub.id, sub.title)}
+                            className="text-slate-400 hover:text-red-600 transition-colors cursor-pointer text-[11px] font-semibold"
+                          >
+                            Withdraw Pitch
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
-              </div>
+              )}
+
             </div>
           )}
 
-          {/* TAB 3: STATS */}
+          {/* TAB 3: PUBLISHED BYLINES */}
+          {activeTab === "stories" && (
+            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-6">
+              
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="w-2.5 h-5 bg-emerald-600 rounded-xs inline-block" />
+                    <h3 className="text-base font-extrabold text-[#111111] uppercase tracking-wide">
+                      Live Published Bylines ({filteredArticles.length})
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Articles published live on The Zango under your author byline.
+                  </p>
+                </div>
+
+                <div className="flex items-center space-x-2 text-xs font-bold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                  <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Total Reach: {totalReadsCount.toLocaleString()} reads</span>
+                </div>
+              </div>
+
+              {filteredArticles.length === 0 ? (
+                <div className="text-center py-12 px-4 rounded-2xl border-2 border-dashed border-slate-200">
+                  <FileText className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                  <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">No published stories found</p>
+                  <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                    Once the editorial desk approves your pitched manuscripts, your live stories will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {filteredArticles.map((story) => (
+                    <div key={story.id} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center space-x-4 min-w-0">
+                        <div className="relative w-16 h-12 rounded-xl overflow-hidden shrink-0 border border-slate-100 bg-slate-100">
+                          <Image 
+                            src={story.coverImage || "/assets/hero-featured.jpg"} 
+                            alt={story.title} 
+                            fill 
+                            sizes="64px" 
+                            className="object-cover" 
+                          />
+                        </div>
+                        <div className="min-w-0 space-y-0.5">
+                          <Link 
+                            href={`/article/${story.slug}`} 
+                            className="font-bold text-sm text-slate-900 hover:text-emerald-600 transition-colors line-clamp-1"
+                          >
+                            {story.title}
+                          </Link>
+                          <div className="flex items-center space-x-2 text-[11px] text-slate-400">
+                            <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.2 rounded-sm">
+                              {story.category}
+                            </span>
+                            <span>•</span>
+                            <span suppressHydrationWarning>{story.publishedAt}</span>
+                            <span>•</span>
+                            <span>{story.readTime}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-3 shrink-0 self-end sm:self-center">
+                        <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
+                          {(story.views || 1240).toLocaleString()} reads
+                        </span>
+                        <Link
+                          href={`/article/${story.slug}`}
+                          className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors cursor-pointer"
+                          title="View live article on site"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+            </div>
+          )}
+
+          {/* TAB 4: READERSHIP ANALYTICS */}
           {activeTab === "stats" && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-white p-6 rounded-3xl border border-[#E5E6E8] shadow-2xs">
-                <span className="text-xs font-bold uppercase text-gray-500">Published Bylines</span>
-                <span className="text-3xl font-extrabold text-gray-900 block mt-2">{myStories.length}</span>
+            <div className="space-y-6">
+              
+              {/* Top 4 KPI Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-1">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                    Published Bylines
+                  </span>
+                  <span className="text-3xl font-black text-slate-900 block">
+                    {myArticles.length}
+                  </span>
+                  <span className="text-[11px] text-emerald-600 font-semibold block">
+                    Live across Northern newsrooms
+                  </span>
+                </div>
+
+                <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-1">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                    Total Readership Reach
+                  </span>
+                  <span className="text-3xl font-black text-emerald-600 block">
+                    {totalReadsCount.toLocaleString()}
+                  </span>
+                  <span className="text-[11px] text-slate-400 font-semibold block">
+                    Verified unique story opens
+                  </span>
+                </div>
+
+                <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-1">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                    Desk Acceptance Rate
+                  </span>
+                  <span className="text-3xl font-black text-blue-600 block">
+                    {acceptanceVelocity}
+                  </span>
+                  <span className="text-[11px] text-slate-400 font-semibold block">
+                    Pitch clearance velocity
+                  </span>
+                </div>
+
+                <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-1">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                    Average Word Count
+                  </span>
+                  <span className="text-3xl font-black text-purple-600 block">
+                    {avgWords}
+                  </span>
+                  <span className="text-[11px] text-slate-400 font-semibold block">
+                    Standard deep investigative length
+                  </span>
+                </div>
               </div>
-              <div className="bg-white p-6 rounded-3xl border border-[#E5E6E8] shadow-2xs">
-                <span className="text-xs font-bold uppercase text-gray-500">Total Readership</span>
-                <span className="text-3xl font-extrabold text-emerald-600 block mt-2">18,400</span>
-              </div>
-              <div className="bg-white p-6 rounded-3xl border border-[#E5E6E8] shadow-2xs">
-                <span className="text-xs font-bold uppercase text-gray-500">Average Word Count</span>
-                <span className="text-3xl font-extrabold text-blue-600 block mt-2">940</span>
+
+              {/* Lower Detailed Breakdown Cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* Top Stories Leaderboard */}
+                <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200/80 p-6 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <h3 className="font-extrabold text-sm text-slate-900 uppercase tracking-wide">
+                      Top Readership Leaderboard
+                    </h3>
+                    <span className="text-xs text-slate-400 font-medium">Ranked by reader engagement</span>
+                  </div>
+
+                  <div className="divide-y divide-slate-100">
+                    {myArticles.slice(0, 5).map((article, index) => (
+                      <div key={article.id} className="py-3 flex items-center justify-between gap-3">
+                        <div className="flex items-center space-x-3 min-w-0">
+                          <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-600 font-extrabold text-xs flex items-center justify-center shrink-0">
+                            {index + 1}
+                          </span>
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-xs text-slate-900 truncate">
+                              {article.title}
+                            </h4>
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              {article.category} • {article.readTime}
+                            </span>
+                          </div>
+                        </div>
+
+                        <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full shrink-0">
+                          {(article.views || 1420).toLocaleString()} reads
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sahelian Editorial Standards Checklist */}
+                <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-4">
+                  <div className="flex items-center space-x-2 pb-3 border-b border-slate-100">
+                    <Sparkles className="w-4 h-4 text-emerald-600" />
+                    <h3 className="font-extrabold text-sm text-slate-900 uppercase tracking-wide">
+                      Newsroom Standards
+                    </h3>
+                  </div>
+
+                  <div className="space-y-3 text-xs text-slate-600">
+                    <div className="flex items-start space-x-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-slate-900 block">Dual Source Verification</span>
+                        <p className="text-[11px] text-slate-500">Every investigative claim requires at least two independent primary citations.</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-slate-900 block">Sahelian Socio-Economic Context</span>
+                        <p className="text-[11px] text-slate-500">Highlight community-level impact across Northern states and regional trade hubs.</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-slate-900 block">Unbiased Attributions</span>
+                        <p className="text-[11px] text-slate-500">Present government, private enterprise, and civil society perspectives equitably.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
           )}
 
-          {/* TAB 4: SETTINGS */}
+          {/* TAB 5: SETTINGS */}
           {activeTab === "settings" && (
-            <div className="bg-white rounded-3xl border border-[#E5E6E8] p-6 sm:p-8 shadow-2xs space-y-6">
-              <div className="pb-4 border-b border-[#E5E6E8]">
-                <h3 className="text-base font-extrabold text-[#111111] uppercase tracking-wide">
-                  Staff Writer Profile & Identity
-                </h3>
-                <p className="text-xs text-[#707070] mt-1">
-                  Manage your journalist byline, assigned beat, profile picture, and author biography.
+            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-6">
+              
+              <div className="pb-4 border-b border-slate-100">
+                <div className="flex items-center space-x-2">
+                  <span className="w-2.5 h-5 bg-emerald-600 rounded-xs inline-block" />
+                  <h3 className="text-base font-extrabold text-[#111111] uppercase tracking-wide">
+                    Staff Writer Profile & Identity
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Manage your journalist byline, assigned beat, profile picture, and author biography shown on articles.
                 </p>
               </div>
 
@@ -656,62 +1410,73 @@ function AuthorStudioContent() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Official Byline Name</label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                      Official Byline Name
+                    </label>
                     <input
                       type="text"
                       value={profileName}
                       onChange={(e) => setProfileName(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:border-emerald-600 focus:outline-hidden"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:border-emerald-600 focus:outline-hidden font-medium"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Corporate Email</label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                      Corporate Email
+                    </label>
                     <input
                       type="email"
                       value={user?.email || "fatima.sanusi@thezango.org"}
                       disabled
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed font-medium"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed font-medium"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Assigned Beat / Desk</label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                      Assigned Beat / Desk
+                    </label>
                     <select
                       value={profileDesk}
                       onChange={(e) => setProfileDesk(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:border-emerald-600 focus:outline-hidden bg-white"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:border-emerald-600 focus:outline-hidden bg-white cursor-pointer font-medium"
                     >
-                      {CATEGORIES.map((cat) => (
-                        <option key={cat.id} value={cat.name}>{cat.name}</option>
+                      {desksList.map((cat) => (
+                        <option key={cat.id} value={cat.name}>
+                          {cat.name}
+                        </option>
                       ))}
                       <option value="Executive & Investigation">Executive & Investigation</option>
+                      <option value="Technology & Digital Economy">Technology & Digital Economy</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Journalist Biography (Shown to Readers)</label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                      Journalist Biography (Shown to Readers)
+                    </label>
                     <textarea
-                      rows={3}
+                      rows={4}
                       value={profileBio}
                       onChange={(e) => setProfileBio(e.target.value)}
                       placeholder="Brief background on your reporting focus across Northern Nigeria..."
-                      className="w-full px-3.5 py-2 rounded-xl border border-gray-200 focus:border-emerald-600 text-xs focus:outline-hidden resize-none"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-600 text-xs focus:outline-hidden resize-none font-normal"
                     />
-                    <p className="text-[11px] text-gray-400 mt-1">
+                    <p className="text-[11px] text-slate-400 mt-1">
                       This biography and photo will appear under &ldquo;About the Author&rdquo; on all stories published under your byline.
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-[#E5E6E8] flex justify-end">
+              <div className="pt-4 border-t border-slate-100 flex justify-end">
                 <button
                   type="button"
                   onClick={handleSaveProfile}
-                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
+                  className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-md hover:shadow-lg cursor-pointer"
                 >
                   Save Profile Changes
                 </button>
