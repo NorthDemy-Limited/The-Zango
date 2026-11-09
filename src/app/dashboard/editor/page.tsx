@@ -20,7 +20,6 @@ import {
   LogOut,
   Send,
   KeyRound,
-  ShieldAlert,
   Menu,
   Star,
   TrendingUp,
@@ -45,7 +44,7 @@ import RichEditor from "@/components/rich-editor";
 
 function EditorDashboardContent() {
   const router = useRouter();
-  const { user, role, logout, switchRole, updateUser, isAuthenticated, isLoading } = useAuth();
+  const { user, logout, updateUser, isAuthenticated, isLoading } = useAuth();
 
   const [articles, setArticles] = useState<Article[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -509,17 +508,6 @@ function EditorDashboardContent() {
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-blue-600" />
               )}
             </button>
-
-            {/* Quick Role switcher if not editor */}
-            {role !== "editor" && (
-              <button
-                type="button"
-                onClick={() => switchRole("editor")}
-                className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-bold border border-blue-200 transition-colors cursor-pointer"
-              >
-                Switch to Editor
-              </button>
-            )}
           </div>
 
         </div>
@@ -762,24 +750,6 @@ function EditorDashboardContent() {
                   <LogOut className="w-4 h-4" />
                 </button>
               </div>
-
-              {/* Cross-portal quick navigation links */}
-              <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[10px] font-semibold text-slate-500">
-                <Link
-                  href="/dashboard/author"
-                  className="hover:text-blue-600 transition-colors flex items-center space-x-1"
-                >
-                  <span>Writer Studio</span>
-                  <span>→</span>
-                </Link>
-                <Link
-                  href="/dashboard/admin"
-                  className="hover:text-[#C61D1F] transition-colors flex items-center space-x-1"
-                >
-                  <span>Chief Admin</span>
-                  <span>→</span>
-                </Link>
-              </div>
             </div>
           </div>
 
@@ -802,36 +772,6 @@ function EditorDashboardContent() {
               >
                 <X className="w-4 h-4" />
               </button>
-            </div>
-          )}
-
-          {/* Role Banner if not editor */}
-          {role === "writer" && (
-            <div className="p-5 rounded-3xl bg-blue-50 border border-blue-200 text-blue-900 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
-              <div className="flex items-start space-x-3">
-                <ShieldAlert className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-extrabold text-xs uppercase tracking-wider text-blue-900">Staff Writer Session Active</h4>
-                  <p className="text-xs text-blue-700 mt-0.5">
-                    You are currently previewing as {user?.name || "Staff Writer"}. Switch clearance to Desk Editor to approve manuscripts and manage placement.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => switchRole("editor")}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                >
-                  👑 Switch to Desk Editor
-                </button>
-                <Link
-                  href="/dashboard/author"
-                  className="px-4 py-2 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-xs transition-colors shrink-0 text-center"
-                >
-                  Writer Studio →
-                </Link>
-              </div>
             </div>
           )}
 
@@ -1049,13 +989,9 @@ function EditorDashboardContent() {
                     </div>
                   </div>
 
-                  <div className="pt-3 border-t border-slate-100">
-                    <Link
-                      href="/about"
-                      className="text-xs font-bold text-blue-600 hover:underline block text-center"
-                    >
-                      Read full Editorial Charter →
-                    </Link>
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-center space-x-1.5 text-xs text-slate-400">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>The Zango Editorial Verification Protocol</span>
                   </div>
                 </div>
 
@@ -1361,9 +1297,16 @@ function EditorDashboardContent() {
                     Sahelian investigative reporting and newsroom beats across Northern Nigeria.
                   </p>
                   <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <Link href={`/category/${desk.slug}`} className="font-bold text-blue-600 hover:underline">
-                      View Desk Feed →
-                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedCategory(desk.name);
+                        setActiveTab("dispatches");
+                      }}
+                      className="font-bold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                    >
+                      Filter Desk Dispatches →
+                    </button>
                   </div>
                 </div>
               ))}
