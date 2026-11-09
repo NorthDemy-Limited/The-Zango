@@ -13,7 +13,33 @@ let localSubscribersStore: Subscriber[] = [
   { email: "bello.invest@savannah.vc", subscribedAt: "2026-07-24" },
 ];
 
-function mapSupabaseToArticle(row: any): Article {
+interface SupabaseArticleRow {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  cover_image: string;
+  category: string;
+  tags?: string[];
+  published_at: string;
+  read_time?: string;
+  is_featured?: boolean;
+  is_latest?: boolean;
+  is_trending?: boolean;
+  is_popular?: boolean;
+  is_editors_pick?: boolean;
+  popular_rank?: number;
+  views?: number;
+  author_id?: string;
+  author_name?: string;
+  author_slug?: string;
+  author_role?: string;
+  author_avatar?: string;
+  author_bio?: string;
+}
+
+function mapSupabaseToArticle(row: SupabaseArticleRow): Article {
   return {
     id: row.id,
     slug: row.slug,
@@ -43,8 +69,8 @@ function mapSupabaseToArticle(row: any): Article {
   };
 }
 
-function mapArticleToSupabase(article: Partial<Article>): any {
-  const row: any = {};
+function mapArticleToSupabase(article: Partial<Article>): Record<string, unknown> {
+  const row: Record<string, unknown> = {};
   if (article.id !== undefined) row.id = article.id;
   if (article.slug !== undefined) row.slug = article.slug;
   if (article.title !== undefined) row.title = article.title;
@@ -191,7 +217,7 @@ export async function getSubscribers(): Promise<Subscriber[]> {
         .select("email, subscribed_at")
         .order("created_at", { ascending: false });
       if (!error && data && data.length > 0) {
-        return data.map((d: any) => ({
+        return data.map((d: { email: string; subscribed_at: string }) => ({
           email: d.email,
           subscribedAt: d.subscribed_at,
         }));
@@ -263,7 +289,7 @@ export async function updateArticle(id: string, updates: Partial<Article>): Prom
 
   if (isFirebaseConfigured && db) {
     try {
-      await updateDoc(doc(db, "articles", id), updates as any);
+      await updateDoc(doc(db, "articles", id), updates as Record<string, unknown>);
     } catch (err) {
       console.warn("Could not update article in Firestore:", err);
     }
@@ -329,6 +355,22 @@ let localSubmissionsStore: Submission[] = [
   },
 ];
 
+interface SupabaseSubmissionRow {
+  id: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  category: string;
+  author_name: string;
+  author_email?: string;
+  submitted_at: string;
+  word_count?: number;
+  read_time: string;
+  cover_image?: string;
+  status: "pending" | "approved" | "rejected" | "needs_revision";
+  feedback_notes?: string;
+}
+
 export async function getSubmissions(): Promise<Submission[]> {
   if (isSupabaseConfigured && supabase) {
     try {
@@ -337,7 +379,7 @@ export async function getSubmissions(): Promise<Submission[]> {
         .select("*")
         .order("created_at", { ascending: false });
       if (!error && data && data.length > 0) {
-        return data.map((d: any) => ({
+        return data.map((d: SupabaseSubmissionRow) => ({
           id: d.id,
           title: d.title,
           excerpt: d.excerpt,
@@ -355,6 +397,19 @@ export async function getSubmissions(): Promise<Submission[]> {
       }
     } catch (err) {
       console.warn("Could not fetch submissions from Supabase:", err);
+    }
+  }
+
+  // 2. Check Firebase Firestore
+  if (isFirebaseConfigured && db) {
+    try {
+      const q = query(collection(db, "submissions"), orderBy("submittedAt", "desc"));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        return querySnapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Submission));
+      }
+    } catch (err) {
+      console.warn("Could not fetch submissions from Firestore, using local store:", err);
     }
   }
 
@@ -394,6 +449,16 @@ export async function createSubmission(
     }
   }
 
+  // Persist to Firebase Firestore
+  if (isFirebaseConfigured && db) {
+    try {
+      const docRef = await addDoc(collection(db, "submissions"), newSubmission);
+      newSubmission.id = docRef.id;
+    } catch (err) {
+      console.warn("Could not add submission to Firestore:", err);
+    }
+  }
+
   localSubmissionsStore = [newSubmission, ...localSubmissionsStore];
   return newSubmission;
 }
@@ -409,6 +474,15 @@ export async function approveSubmission(id: string): Promise<Article | null> {
       await supabase.from("submissions").update({ status: "approved" }).eq("id", id);
     } catch (err) {
       console.warn("Could not approve submission in Supabase:", err);
+    }
+  }
+
+  if (isFirebaseConfigured && db) {
+    try {
+      const docRef = doc(db, "submissions", id);
+      await updateDoc(docRef, { status: "approved" });
+    } catch (err) {
+      console.warn("Could not approve submission in Firestore:", err);
     }
   }
 
@@ -462,6 +536,15 @@ export async function requestRevisionSubmission(id: string, feedbackNotes: strin
     }
   }
 
+  if (isFirebaseConfigured && db) {
+    try {
+      const docRef = doc(db, "submissions", id);
+      await updateDoc(docRef, { status: "needs_revision", feedbackNotes });
+    } catch (err) {
+      console.warn("Could not update submission revision status in Firestore:", err);
+    }
+  }
+
   return true;
 }
 
@@ -472,7 +555,7 @@ export async function updateSubmission(id: string, updates: Partial<Submission>)
 
   if (isSupabaseConfigured && supabase) {
     try {
-      const dbUpdates: any = {};
+      const dbUpdates: Record<string, unknown> = {};
       if (updates.title) dbUpdates.title = updates.title;
       if (updates.excerpt) dbUpdates.excerpt = updates.excerpt;
       if (updates.content) dbUpdates.content = updates.content;
@@ -483,6 +566,15 @@ export async function updateSubmission(id: string, updates: Partial<Submission>)
       await supabase.from("submissions").update(dbUpdates).eq("id", id);
     } catch (err) {
       console.warn("Could not update submission in Supabase:", err);
+    }
+  }
+
+  if (isFirebaseConfigured && db) {
+    try {
+      const docRef = doc(db, "submissions", id);
+      await updateDoc(docRef, updates);
+    } catch (err) {
+      console.warn("Could not update submission in Firestore:", err);
     }
   }
 
@@ -499,6 +591,15 @@ export async function rejectSubmission(id: string): Promise<boolean> {
       await supabase.from("submissions").update({ status: "rejected" }).eq("id", id);
     } catch (err) {
       console.warn("Could not reject submission in Supabase:", err);
+    }
+  }
+
+  if (isFirebaseConfigured && db) {
+    try {
+      const docRef = doc(db, "submissions", id);
+      await updateDoc(docRef, { status: "rejected" });
+    } catch (err) {
+      console.warn("Could not reject submission in Firestore:", err);
     }
   }
 
@@ -588,6 +689,20 @@ let localTeamMembersStore: NewsroomMember[] = [
   },
 ];
 
+interface SupabaseTeamMemberRow {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  desk: string;
+  avatar?: string;
+  bio?: string;
+  status: string;
+  articles_count?: number;
+  joined_at?: string;
+  created_at?: string;
+}
+
 export async function getTeamMembers(): Promise<NewsroomMember[]> {
   if (isSupabaseConfigured && supabase) {
     try {
@@ -596,7 +711,7 @@ export async function getTeamMembers(): Promise<NewsroomMember[]> {
         .select("*")
         .order("created_at", { ascending: true });
       if (!error && data && data.length > 0) {
-        return data.map((d: any) => ({
+        return data.map((d: SupabaseTeamMemberRow) => ({
           id: d.id,
           name: d.name,
           email: d.email,
@@ -606,11 +721,24 @@ export async function getTeamMembers(): Promise<NewsroomMember[]> {
           bio: d.bio,
           status: d.status as "active" | "inactive",
           articlesCount: d.articles_count || 0,
-          joinedAt: d.joined_at || d.created_at,
+          joinedAt: d.joined_at || d.created_at || "2024-01-01",
         }));
       }
     } catch (err) {
       console.warn("Could not fetch team members from Supabase:", err);
+    }
+  }
+
+  // 2. Check Firebase Firestore
+  if (isFirebaseConfigured && db) {
+    try {
+      const q = query(collection(db, "team_members"), orderBy("joinedAt", "asc"));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        return querySnapshot.docs.map((d) => ({ id: d.id, ...d.data() } as NewsroomMember));
+      }
+    } catch (err) {
+      console.warn("Could not fetch team members from Firestore, using local store:", err);
     }
   }
 
@@ -648,6 +776,16 @@ export async function createTeamMember(
     }
   }
 
+  // Persist to Firebase Firestore
+  if (isFirebaseConfigured && db) {
+    try {
+      const docRef = await addDoc(collection(db, "team_members"), newMember);
+      newMember.id = docRef.id;
+    } catch (err) {
+      console.warn("Could not add team member to Firestore:", err);
+    }
+  }
+
   localTeamMembersStore = [newMember, ...localTeamMembersStore];
   return newMember;
 }
@@ -664,6 +802,16 @@ export async function updateTeamMemberRole(id: string, role: NewsroomRole): Prom
       console.warn("Could not update team member role in Supabase:", err);
     }
   }
+
+  if (isFirebaseConfigured && db) {
+    try {
+      const docRef = doc(db, "team_members", id);
+      await updateDoc(docRef, { role });
+    } catch (err) {
+      console.warn("Could not update team member role in Firestore:", err);
+    }
+  }
+
   return true;
 }
 
@@ -679,6 +827,16 @@ export async function updateTeamMemberStatus(id: string, status: "active" | "ina
       console.warn("Could not update team member status in Supabase:", err);
     }
   }
+
+  if (isFirebaseConfigured && db) {
+    try {
+      const docRef = doc(db, "team_members", id);
+      await updateDoc(docRef, { status });
+    } catch (err) {
+      console.warn("Could not update team member status in Firestore:", err);
+    }
+  }
+
   return true;
 }
 
@@ -692,5 +850,15 @@ export async function deleteTeamMember(id: string): Promise<boolean> {
       console.warn("Could not delete team member in Supabase:", err);
     }
   }
+
+  if (isFirebaseConfigured && db) {
+    try {
+      const docRef = doc(db, "team_members", id);
+      await deleteDoc(docRef);
+    } catch (err) {
+      console.warn("Could not delete team member in Firestore:", err);
+    }
+  }
+
   return true;
 }
