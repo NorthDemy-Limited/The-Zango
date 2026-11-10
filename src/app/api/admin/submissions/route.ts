@@ -44,7 +44,18 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { title, excerpt, content, category, authorName, authorEmail, coverImage } = body;
+    const {
+      title,
+      excerpt,
+      content,
+      category,
+      authorName,
+      authorEmail,
+      coverImage,
+      tags,
+      isBreaking,
+      scheduledAt,
+    } = body;
 
     if (!title || !content) {
       return NextResponse.json(
@@ -67,6 +78,9 @@ export async function POST(request: Request) {
       coverImage: coverImage || "/assets/hero-featured.jpg",
       wordCount: words,
       readTime: computedReadTime,
+      tags: Array.isArray(tags) ? tags : [],
+      isBreaking: !!isBreaking,
+      scheduledAt: scheduledAt || undefined,
     });
 
     return NextResponse.json(

@@ -83,13 +83,51 @@ function EditorDashboardContent() {
     coverImage: "/assets/hero-featured.jpg",
     excerpt: "",
     content: "",
+    tags: [] as string[],
     authorName: "Aisha Dahiru",
     readTime: "4 min read",
     isFeatured: false,
     isTrending: false,
     isEditorsPick: false,
     isLatest: false,
+    isBreaking: false,
+    scheduledAt: "",
   });
+  const [tagInput, setTagInput] = useState("");
+  const [reviewFilter, setReviewFilter] = useState<"all" | "pending" | "needs_revision" | "approved">("all");
+
+  const formatSubmittedDate = (dateStr: string) => {
+    if (!dateStr) return "Recently";
+    const parsed = Date.parse(dateStr);
+    if (isNaN(parsed)) return dateStr;
+    return new Date(parsed).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const resetFormData = (categoryOverride?: string) => {
+    setFormData({
+      title: "",
+      slug: "",
+      category: categoryOverride || user?.desk?.split(" ")[0] || "Business",
+      coverImage: "/assets/hero-featured.jpg",
+      excerpt: "",
+      content: "",
+      tags: [],
+      authorName: user?.name || "Aisha Dahiru",
+      readTime: "4 min read",
+      isFeatured: false,
+      isTrending: false,
+      isEditorsPick: false,
+      isLatest: false,
+      isBreaking: false,
+      scheduledAt: "",
+    });
+    setTagInput("");
+    setSlugAvailability(null);
+  };
 
   // Slug Availability State
   const [slugAvailability, setSlugAvailability] = useState<{
@@ -236,12 +274,15 @@ function EditorDashboardContent() {
       coverImage: article.coverImage,
       excerpt: article.excerpt,
       content: article.content,
+      tags: article.tags || [],
       authorName: article.author.name,
       readTime: article.readTime,
       isFeatured: !!article.isFeatured,
       isTrending: !!article.isTrending,
       isEditorsPick: !!article.isEditorsPick,
       isLatest: !!article.isLatest,
+      isBreaking: !!article.isBreaking,
+      scheduledAt: article.scheduledAt || "",
     });
     setSlugAvailability(null);
     setShowCreateModal(true);
@@ -265,11 +306,14 @@ function EditorDashboardContent() {
       coverImage: formData.coverImage || "/assets/hero-featured.jpg",
       excerpt: formData.excerpt?.trim() || "Editorial dispatch from The Zango Bureau...",
       content: formData.content || formData.title,
+      tags: formData.tags,
       readTime: formData.readTime || "4 min read",
       isFeatured: formData.isFeatured,
       isTrending: formData.isTrending,
       isEditorsPick: formData.isEditorsPick,
       isLatest: formData.isLatest,
+      isBreaking: formData.isBreaking,
+      scheduledAt: formData.scheduledAt || undefined,
       author: {
         id: "author-editor",
         name: profileName,
@@ -385,12 +429,15 @@ function EditorDashboardContent() {
       coverImage: sub.coverImage || "/assets/hero-featured.jpg",
       excerpt: sub.excerpt,
       content: sub.content,
+      tags: sub.tags || [],
       authorName: sub.authorName,
       readTime: sub.readTime,
-      isFeatured: false,
+      isFeatured: !!sub.isFeatured,
       isTrending: false,
       isEditorsPick: false,
       isLatest: true,
+      isBreaking: !!sub.isBreaking,
+      scheduledAt: sub.scheduledAt || "",
     });
     setSlugAvailability(null);
     setShowCreateModal(true);
@@ -549,21 +596,7 @@ function EditorDashboardContent() {
             <button
               onClick={() => {
                 setEditingArticle(null);
-                setFormData({
-                  title: "",
-                  slug: "",
-                  category: user?.desk?.split(" ")[0] || "Business",
-                  coverImage: "/assets/hero-featured.jpg",
-                  excerpt: "",
-                  content: "",
-                  authorName: user?.name || "Aisha Dahiru",
-                  readTime: "4 min read",
-                  isFeatured: false,
-                  isTrending: false,
-                  isEditorsPick: false,
-                  isLatest: false,
-                });
-                setSlugAvailability(null);
+                resetFormData();
                 setShowCreateModal(true);
               }}
               className="w-full px-3.5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl text-xs font-extrabold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer"
@@ -800,21 +833,7 @@ function EditorDashboardContent() {
                       type="button"
                       onClick={() => {
                         setEditingArticle(null);
-                        setFormData({
-                          title: "",
-                          slug: "",
-                          category: user?.desk?.split(" ")[0] || "Business",
-                          coverImage: "/assets/hero-featured.jpg",
-                          excerpt: "",
-                          content: "",
-                          authorName: user?.name || "Aisha Dahiru",
-                          readTime: "4 min read",
-                          isFeatured: false,
-                          isTrending: false,
-                          isEditorsPick: false,
-                          isLatest: false,
-                        });
-                        setSlugAvailability(null);
+                        resetFormData();
                         setShowCreateModal(true);
                       }}
                       className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-extrabold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center space-x-2 cursor-pointer"
@@ -1004,29 +1023,88 @@ function EditorDashboardContent() {
           {activeTab === "reviewQueue" && (
             <div className="space-y-6 animate-in fade-in duration-200">
               
-              <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <h3 className="font-extrabold text-slate-900 text-base">Editorial Pitch Review Queue</h3>
                   <p className="text-xs text-slate-500">Review pitches and draft submissions from staff writers</p>
                 </div>
-                <div className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl">
-                  {pendingSubmissions.length} Awaiting Clearance
+                
+                {/* Filter Pills */}
+                <div className="flex flex-wrap items-center gap-1.5 bg-slate-50 p-1 rounded-2xl border border-slate-200/80">
+                  <button
+                    type="button"
+                    onClick={() => setReviewFilter("all")}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      reviewFilter === "all"
+                        ? "bg-blue-600 text-white shadow-2xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    All ({submissions.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReviewFilter("pending")}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      reviewFilter === "pending"
+                        ? "bg-blue-600 text-white shadow-2xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    Pending ({submissions.filter((s) => s.status === "pending").length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReviewFilter("needs_revision")}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      reviewFilter === "needs_revision"
+                        ? "bg-blue-600 text-white shadow-2xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    In Revision ({submissions.filter((s) => s.status === "needs_revision").length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReviewFilter("approved")}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      reviewFilter === "approved"
+                        ? "bg-blue-600 text-white shadow-2xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    Approved ({submissions.filter((s) => s.status === "approved").length})
+                  </button>
                 </div>
               </div>
 
-              {pendingSubmissions.length === 0 ? (
+              {submissions.filter((s) => {
+                if (reviewFilter === "all") return true;
+                if (reviewFilter === "pending") return s.status === "pending";
+                if (reviewFilter === "needs_revision") return s.status === "needs_revision";
+                if (reviewFilter === "approved") return s.status === "approved";
+                return true;
+              }).length === 0 ? (
                 <div className="bg-white rounded-3xl border border-slate-200/80 p-12 text-center shadow-2xs space-y-3">
                   <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 mx-auto flex items-center justify-center">
                     <CheckCircle2 className="w-6 h-6" />
                   </div>
-                  <h4 className="font-extrabold text-sm text-slate-900">Editorial Review Queue is Clean</h4>
+                  <h4 className="font-extrabold text-sm text-slate-900">
+                    {reviewFilter === "all" ? "Review Queue is Empty" : `No ${reviewFilter.replace("_", " ")} submissions`}
+                  </h4>
                   <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                    All incoming pitches and manuscript drafts have been cleared for live publication.
+                    Incoming manuscript drafts from newsroom contributors will appear here for verification and editorial clearance.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {pendingSubmissions.map((sub) => (
+                  {submissions.filter((s) => {
+                    if (reviewFilter === "all") return true;
+                    if (reviewFilter === "pending") return s.status === "pending";
+                    if (reviewFilter === "needs_revision") return s.status === "needs_revision";
+                    if (reviewFilter === "approved") return s.status === "approved";
+                    return true;
+                  }).map((sub) => (
                     <div
                       key={sub.id}
                       className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-2xs space-y-4 transition-all hover:shadow-md"
@@ -1036,23 +1114,43 @@ function EditorDashboardContent() {
                           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-blue-50 text-blue-700">
                             {sub.category}
                           </span>
-                          <span className="text-[11px] text-slate-400" suppressHydrationWarning>
-                            Submitted: {new Date(sub.submittedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          <span className="text-[11px] text-slate-400">
+                            Submitted: {formatSubmittedDate(sub.submittedAt)}
+                          </span>
+                          <span className="text-[11px] text-slate-400 font-medium">
+                            • {sub.wordCount || 0} words • {sub.readTime}
                           </span>
                         </div>
                         <span
                           className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
                             sub.status === "needs_revision"
                               ? "bg-amber-100 text-amber-900"
+                              : sub.status === "approved"
+                              ? "bg-emerald-100 text-emerald-900"
                               : "bg-blue-100 text-blue-900"
                           }`}
                         >
-                          {sub.status === "needs_revision" ? "Needs Revision" : "Pending Review"}
+                          {sub.status === "needs_revision"
+                            ? "Needs Revision"
+                            : sub.status === "approved"
+                            ? "Approved & Published"
+                            : "Pending Review"}
                         </span>
                       </div>
 
                       <h4 className="text-base font-extrabold text-slate-900">{sub.title}</h4>
                       <p className="text-xs text-slate-600 leading-relaxed">{sub.excerpt}</p>
+
+                      {/* Tag Chips */}
+                      {sub.tags && sub.tags.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {sub.tags.map((tag) => (
+                            <span key={tag} className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
 
                       {sub.feedbackNotes && (
                         <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
@@ -1081,33 +1179,49 @@ function EditorDashboardContent() {
                             <span>Preview & Edit Copy</span>
                           </button>
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setRevisionModalSub(sub);
-                              setRevisionNotes(sub.feedbackNotes || "");
-                            }}
-                            className="px-3 py-1.5 border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center space-x-1.5 shadow-2xs"
-                            title="Send editorial revision notes back to writer"
-                          >
-                            <Send className="w-3.5 h-3.5 text-amber-700" />
-                            <span>Request Edit</span>
-                          </button>
+                          {sub.status !== "approved" && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setRevisionModalSub(sub);
+                                  setRevisionNotes(sub.feedbackNotes || "");
+                                }}
+                                className="px-3 py-1.5 border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center space-x-1.5 shadow-2xs"
+                                title="Send editorial revision notes back to writer"
+                              >
+                                <Send className="w-3.5 h-3.5 text-amber-700" />
+                                <span>Request Edit</span>
+                              </button>
 
-                          <button
-                            type="button"
-                            onClick={() => handleRejectSubmission(sub.id, sub.title)}
-                            className="px-3 py-1.5 border border-slate-200 hover:border-red-600 hover:text-red-600 rounded-xl text-xs font-bold transition-colors cursor-pointer"
-                          >
-                            Reject
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleApproveSubmission(sub.id, sub.title)}
-                            className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
-                          >
-                            Approve & Publish Live
-                          </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRejectSubmission(sub.id, sub.title)}
+                                className="px-3 py-1.5 border border-slate-200 hover:border-red-600 hover:text-red-600 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                              >
+                                Reject
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleApproveSubmission(sub.id, sub.title)}
+                                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
+                              >
+                                Approve & Publish Live
+                              </button>
+                            </>
+                          )}
+
+                          {sub.status === "approved" && (
+                            <Link
+                              href={`/article/${sub.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`}
+                              target="_blank"
+                              className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm inline-flex items-center space-x-1.5"
+                            >
+                              <span>View Published Story</span>
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </Link>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1149,21 +1263,7 @@ function EditorDashboardContent() {
                   type="button"
                   onClick={() => {
                     setEditingArticle(null);
-                    setFormData({
-                      title: "",
-                      slug: "",
-                      category: user?.desk?.split(" ")[0] || "Business",
-                      coverImage: "/assets/hero-featured.jpg",
-                      excerpt: "",
-                      content: "",
-                      authorName: user?.name || "Aisha Dahiru",
-                      readTime: "4 min read",
-                      isFeatured: false,
-                      isTrending: false,
-                      isEditorsPick: false,
-                      isLatest: false,
-                    });
-                    setSlugAvailability(null);
+                    resetFormData();
                     setShowCreateModal(true);
                   }}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center space-x-1.5 cursor-pointer shrink-0"
@@ -1537,8 +1637,49 @@ function EditorDashboardContent() {
                 />
               </div>
 
-              {/* Placement Flags */}
-              <div className="pt-3 border-t border-slate-100">
+              {/* Story Tags & Keywords */}
+              <div>
+                <label className="block font-bold text-slate-900 uppercase mb-1.5">Story Tags & Keywords</label>
+                <div className="flex flex-wrap items-center gap-1.5 p-2.5 rounded-xl border border-slate-200 bg-white focus-within:border-blue-600 transition-colors">
+                  {formData.tags?.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-800 text-[11px] font-bold border border-blue-100"
+                    >
+                      <span>#{tag}</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData({ ...formData, tags: formData.tags.filter((t) => t !== tag) })
+                        }
+                        className="text-blue-600 hover:text-red-600 ml-1 cursor-pointer"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                  <input
+                    type="text"
+                    placeholder="Add tag and press Enter or comma..."
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === ",") {
+                        e.preventDefault();
+                        const val = tagInput.trim().replace(/^#/, "");
+                        if (val && !formData.tags.includes(val)) {
+                          setFormData({ ...formData, tags: [...formData.tags, val] });
+                        }
+                        setTagInput("");
+                      }
+                    }}
+                    className="flex-1 min-w-[140px] text-xs focus:outline-hidden bg-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Placement Flags & Editorial Overrides */}
+              <div className="pt-3 border-t border-slate-100 space-y-3">
                 <span className="block font-bold text-slate-900 uppercase mb-2">Homepage & Portal Placement</span>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <label className="flex items-center space-x-2 text-xs cursor-pointer">
@@ -1578,6 +1719,23 @@ function EditorDashboardContent() {
                     <span className="font-semibold text-slate-800">Latest Ticker</span>
                   </label>
                 </div>
+
+                {/* Breaking News Dispatch Banner Toggle */}
+                <label className="flex items-center space-x-3 p-3 rounded-2xl border border-red-200 bg-red-50/50 hover:bg-red-50 cursor-pointer transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={formData.isBreaking}
+                    onChange={(e) => setFormData({ ...formData, isBreaking: e.target.checked })}
+                    className="w-4 h-4 text-red-600 rounded-sm border-red-300 focus:ring-red-500"
+                  />
+                  <div className="text-xs">
+                    <span className="font-extrabold text-red-900 block flex items-center space-x-1.5">
+                      <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse inline-block" />
+                      <span>Breaking News Dispatch</span>
+                    </span>
+                    <span className="text-[11px] text-red-700">Display in top broadcast ticker banner across the site</span>
+                  </div>
+                </label>
               </div>
 
             </form>

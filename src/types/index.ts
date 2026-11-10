@@ -37,6 +37,8 @@ export interface Article {
   isTrending?: boolean;
   isPopular?: boolean;
   isEditorsPick?: boolean;
+  isBreaking?: boolean;
+  scheduledAt?: string;
   popularRank?: number;
   views?: number;
   commentsCount?: number;
@@ -79,6 +81,7 @@ export interface Submission {
   excerpt: string;
   content: string;
   category: string;
+  tags?: string[];
   authorName: string;
   authorEmail?: string;
   submittedAt: string;
@@ -87,4 +90,7 @@ export interface Submission {
   coverImage?: string;
   status: "pending" | "approved" | "rejected" | "needs_revision";
   feedbackNotes?: string;
+  isBreaking?: boolean;
+  isFeatured?: boolean;
+  scheduledAt?: string;
 }
