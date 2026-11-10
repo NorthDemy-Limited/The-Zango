@@ -1,8 +1,22 @@
 import { db, isFirebaseConfigured } from "./config";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy, terminate } from "firebase/firestore";
+import { collection, getDocs, getDoc, addDoc, doc, updateDoc, deleteDoc, query, orderBy, where, limit, terminate } from "firebase/firestore";
 import { Article, Subscriber, Submission, NewsroomMember, NewsroomRole } from "@/types";
 import { ARTICLES } from "@/data/mock-articles";
+
+function sanitizeForFirestore<T extends Record<string, unknown>>(data: T): Record<string, unknown> {
+  const clean: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(data)) {
+    if (val !== undefined) {
+      if (val !== null && typeof val === "object" && !Array.isArray(val)) {
+        clean[key] = sanitizeForFirestore(val as Record<string, unknown>);
+      } else {
+        clean[key] = val;
+      }
+    }
+  }
+  return clean;
+}
 
 let isFirestoreAvailable = true;
 
@@ -141,7 +155,11 @@ export async function getArticles(): Promise<Article[]> {
       const q = query(collection(db, "articles"), orderBy("publishedAt", "desc"));
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
-        return querySnapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Article));
+        const fsArticles = querySnapshot.docs.map((d) => ({ ...d.data(), id: d.id } as Article));
+        // Include any in-memory store articles that are not yet indexed in Firestore
+        const fsSlugs = new Set(fsArticles.map((a) => a.slug.toLowerCase()));
+        const missing = localArticlesStore.filter((a) => !fsSlugs.has(a.slug.toLowerCase()));
+        return [...fsArticles, ...missing];
       }
     } catch (err: unknown) {
       const msg = (err as { message?: string })?.message || String(err || "");
@@ -164,12 +182,15 @@ export async function getArticles(): Promise<Article[]> {
 }
 
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
+  const slugLower = slug.toLowerCase();
+
+  // 1. Supabase lookup
   if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase
         .from("articles")
         .select("*")
-        .eq("slug", slug.toLowerCase())
+        .eq("slug", slugLower)
         .single();
       if (!error && data) {
         return mapSupabaseToArticle(data);
@@ -179,10 +200,26 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
     }
   }
 
-  const articles = await getArticles();
-  const found = articles.find((a) => a.slug.toLowerCase() === slug.toLowerCase());
-  if (found) return found;
-  return ARTICLES.find((a) => a.slug.toLowerCase() === slug.toLowerCase()) || null;
+  // 2. Query Firebase Firestore by slug directly
+  if (isFirebaseConfigured && db && isFirestoreAvailable) {
+    try {
+      const q = query(collection(db, "articles"), where("slug", "==", slugLower), limit(1));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const docSnap = querySnapshot.docs[0];
+        return { id: docSnap.id, ...docSnap.data() } as Article;
+      }
+    } catch (err) {
+      console.warn("Could not query article by slug from Firestore:", err);
+    }
+  }
+
+  // 3. Check in-memory localArticlesStore
+  const localFound = localArticlesStore.find((a) => a.slug.toLowerCase() === slugLower);
+  if (localFound) return localFound;
+
+  // 4. Fallback to static mock articles
+  return ARTICLES.find((a) => a.slug.toLowerCase() === slugLower) || null;
 }
 
 export async function createArticle(articleData: Omit<Article, "id">): Promise<Article> {
@@ -201,10 +238,11 @@ export async function createArticle(articleData: Omit<Article, "id">): Promise<A
     }
   }
 
-  // Persist to Firebase
+  // Persist to Firebase Firestore (sanitizing undefined fields)
   if (isFirebaseConfigured && db) {
     try {
-      const docRef = await addDoc(collection(db, "articles"), newArticle);
+      const sanitized = sanitizeForFirestore(newArticle as unknown as Record<string, unknown>);
+      const docRef = await addDoc(collection(db, "articles"), sanitized);
       newArticle.id = docRef.id;
     } catch (err) {
       console.warn("Could not add article to Firestore:", err);
@@ -315,7 +353,8 @@ export async function updateArticle(id: string, updates: Partial<Article>): Prom
 
   if (isFirebaseConfigured && db) {
     try {
-      await updateDoc(doc(db, "articles", id), updates as Record<string, unknown>);
+      const sanitized = sanitizeForFirestore(updates as unknown as Record<string, unknown>);
+      await updateDoc(doc(db, "articles", id), sanitized);
     } catch (err) {
       console.warn("Could not update article in Firestore:", err);
     }
@@ -429,10 +468,18 @@ export async function getSubmissions(): Promise<Submission[]> {
   // 2. Check Firebase Firestore
   if (isFirebaseConfigured && db) {
     try {
-      const q = query(collection(db, "submissions"), orderBy("submittedAt", "desc"));
+      const q = query(collection(db, "submissions"));
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
-        return querySnapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Submission));
+        const firestoreSubs = querySnapshot.docs.map((d) => ({ ...d.data(), id: d.id } as Submission));
+        firestoreSubs.sort((a, b) => {
+          const timeA = Date.parse(a.submittedAt) || 0;
+          const timeB = Date.parse(b.submittedAt) || 0;
+          return timeB - timeA;
+        });
+        const fsIds = new Set(firestoreSubs.map((s) => s.id));
+        const merged = [...firestoreSubs, ...localSubmissionsStore.filter((s) => !fsIds.has(s.id))];
+        return merged;
       }
     } catch (err) {
       console.warn("Could not fetch submissions from Firestore, using local store:", err);
@@ -448,8 +495,9 @@ export async function createSubmission(
   const newSubmission: Submission = {
     ...subData,
     id: `sub-${Date.now()}`,
-    submittedAt: "Just now",
+    submittedAt: new Date().toISOString(),
     status: "pending",
+    tags: subData.tags || [],
   };
 
   if (isSupabaseConfigured && supabase) {
@@ -475,10 +523,11 @@ export async function createSubmission(
     }
   }
 
-  // Persist to Firebase Firestore
+  // Persist to Firebase Firestore (sanitizing undefined fields)
   if (isFirebaseConfigured && db) {
     try {
-      const docRef = await addDoc(collection(db, "submissions"), newSubmission);
+      const sanitized = sanitizeForFirestore(newSubmission as unknown as Record<string, unknown>);
+      const docRef = await addDoc(collection(db, "submissions"), sanitized);
       newSubmission.id = docRef.id;
     } catch (err) {
       console.warn("Could not add submission to Firestore:", err);
@@ -490,7 +539,20 @@ export async function createSubmission(
 }
 
 export async function approveSubmission(id: string): Promise<Article | null> {
-  const submission = localSubmissionsStore.find((s) => s.id === id);
+  let submission = localSubmissionsStore.find((s) => s.id === id);
+
+  if (!submission && isFirebaseConfigured && db) {
+    try {
+      const snap = await getDoc(doc(db, "submissions", id));
+      if (snap.exists()) {
+        submission = { ...snap.data(), id: snap.id } as Submission;
+        localSubmissionsStore = [submission, ...localSubmissionsStore];
+      }
+    } catch (e) {
+      console.warn("Could not find submission by id in Firestore:", e);
+    }
+  }
+
   if (!submission) return null;
 
   submission.status = "approved";
@@ -528,9 +590,13 @@ export async function approveSubmission(id: string): Promise<Article | null> {
     coverImage: submission.coverImage || "/assets/hero-featured.jpg",
     excerpt: submission.excerpt,
     content: submission.content,
+    tags: submission.tags || [],
     publishedAt: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
     readTime: submission.readTime,
     isLatest: true,
+    isBreaking: submission.isBreaking || false,
+    isFeatured: submission.isFeatured || false,
+    scheduledAt: submission.scheduledAt,
     views: 0,
     author: {
       id: member ? member.id : "author-contributor",
@@ -546,7 +612,18 @@ export async function approveSubmission(id: string): Promise<Article | null> {
 }
 
 export async function requestRevisionSubmission(id: string, feedbackNotes: string): Promise<boolean> {
-  const submission = localSubmissionsStore.find((s) => s.id === id);
+  let submission = localSubmissionsStore.find((s) => s.id === id);
+  if (!submission && isFirebaseConfigured && db) {
+    try {
+      const snap = await getDoc(doc(db, "submissions", id));
+      if (snap.exists()) {
+        submission = { ...snap.data(), id: snap.id } as Submission;
+        localSubmissionsStore = [submission, ...localSubmissionsStore];
+      }
+    } catch {
+      // ignore
+    }
+  }
   if (!submission) return false;
   submission.status = "needs_revision";
   submission.feedbackNotes = feedbackNotes;
@@ -575,7 +652,19 @@ export async function requestRevisionSubmission(id: string, feedbackNotes: strin
 }
 
 export async function updateSubmission(id: string, updates: Partial<Submission>): Promise<Submission | null> {
-  const index = localSubmissionsStore.findIndex((s) => s.id === id);
+  let index = localSubmissionsStore.findIndex((s) => s.id === id);
+  if (index === -1 && isFirebaseConfigured && db) {
+    try {
+      const snap = await getDoc(doc(db, "submissions", id));
+      if (snap.exists()) {
+        const sub = { ...snap.data(), id: snap.id } as Submission;
+        localSubmissionsStore = [sub, ...localSubmissionsStore];
+        index = 0;
+      }
+    } catch {
+      // ignore
+    }
+  }
   if (index === -1) return null;
   localSubmissionsStore[index] = { ...localSubmissionsStore[index], ...updates };
 
@@ -598,7 +687,8 @@ export async function updateSubmission(id: string, updates: Partial<Submission>)
   if (isFirebaseConfigured && db) {
     try {
       const docRef = doc(db, "submissions", id);
-      await updateDoc(docRef, updates);
+      const sanitized = sanitizeForFirestore(updates as Record<string, unknown>);
+      await updateDoc(docRef, sanitized);
     } catch (err) {
       console.warn("Could not update submission in Firestore:", err);
     }
@@ -608,7 +698,18 @@ export async function updateSubmission(id: string, updates: Partial<Submission>)
 }
 
 export async function rejectSubmission(id: string): Promise<boolean> {
-  const submission = localSubmissionsStore.find((s) => s.id === id);
+  let submission = localSubmissionsStore.find((s) => s.id === id);
+  if (!submission && isFirebaseConfigured && db) {
+    try {
+      const snap = await getDoc(doc(db, "submissions", id));
+      if (snap.exists()) {
+        submission = { ...snap.data(), id: snap.id } as Submission;
+        localSubmissionsStore = [submission, ...localSubmissionsStore];
+      }
+    } catch {
+      // ignore
+    }
+  }
   if (!submission) return false;
   submission.status = "rejected";
 

@@ -54,8 +54,15 @@ function AuthorStudioContent() {
   const [coverImage, setCoverImage] = useState("/assets/hero-featured.jpg");
   const [excerpt, setExcerpt] = useState("");
   const [content, setContent] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
   const [editingSubmissionId, setEditingSubmissionId] = useState<string | null>(null);
   const [editingRevisionNotes, setEditingRevisionNotes] = useState<string | null>(null);
+  const [submittedSuccessModal, setSubmittedSuccessModal] = useState<{
+    id: string;
+    title: string;
+    category: string;
+  } | null>(null);
 
   // Status & Data State
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
@@ -197,6 +204,7 @@ function AuthorStudioContent() {
           if (draft.coverImage) setCoverImage(draft.coverImage);
           if (draft.excerpt) setExcerpt(draft.excerpt);
           if (draft.content) setContent(draft.content);
+          if (draft.tags && Array.isArray(draft.tags)) setTags(draft.tags);
           setLastAutoSaved(draft.savedAt || "Previous session");
         }
       } catch {
@@ -225,6 +233,7 @@ function AuthorStudioContent() {
             coverImage,
             excerpt,
             content,
+            tags,
             savedAt: now,
           })
         );
@@ -235,7 +244,7 @@ function AuthorStudioContent() {
     }, 1500);
 
     return () => clearTimeout(timeout);
-  }, [title, category, coverImage, excerpt, content, editingSubmissionId]);
+  }, [title, category, coverImage, excerpt, content, tags, editingSubmissionId]);
 
   const wordCount = useMemo(() => {
     const textOnly = content.replace(/<[^>]*>/g, " ").trim();
@@ -243,10 +252,44 @@ function AuthorStudioContent() {
     return textOnly.split(/\s+/).length;
   }, [content]);
 
+  const charCount = useMemo(() => {
+    const textOnly = content.replace(/<[^>]*>/g, " ").trim();
+    return textOnly.length;
+  }, [content]);
+
+  const computedSlug = useMemo(() => {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .trim()
+      .replace(/\s+/g, "-");
+  }, [title]);
+
   const estimatedReadTime = useMemo(() => {
     const minutes = Math.ceil(wordCount / 200);
     return `${minutes || 1} min read`;
   }, [wordCount]);
+
+  const handleAddTag = (val: string) => {
+    const clean = val.trim().replace(/^#/, "").replace(/,/g, "");
+    if (clean && !tags.includes(clean)) {
+      setTags((prev) => [...prev, clean]);
+    }
+    setTagInput("");
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags((prev) => prev.filter((t) => t !== tagToRemove));
+  };
+
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      handleAddTag(tagInput);
+    } else if (e.key === "Backspace" && !tagInput && tags.length > 0) {
+      setTags((prev) => prev.slice(0, -1));
+    }
+  };
 
   const handleClearDraft = () => {
     if (confirm("Are you sure you want to discard this draft? This cannot be undone.")) {
@@ -255,6 +298,8 @@ function AuthorStudioContent() {
       setExcerpt("");
       setContent("");
       setCoverImage("/assets/hero-featured.jpg");
+      setTags([]);
+      setTagInput("");
       setLastAutoSaved(null);
       setEditingSubmissionId(null);
       setEditingRevisionNotes(null);
@@ -274,6 +319,7 @@ function AuthorStudioContent() {
           coverImage,
           excerpt,
           content,
+          tags,
           savedAt: now,
         })
       );
@@ -288,6 +334,16 @@ function AuthorStudioContent() {
     e.preventDefault();
     if (!title.trim() || !content.trim()) {
       triggerToast("Please provide both a headline and story manuscript content.", "error");
+      return;
+    }
+
+    if (title.trim().length < 10) {
+      triggerToast("Headline must be at least 10 characters long.", "error");
+      return;
+    }
+
+    if (wordCount < 40) {
+      triggerToast("Manuscript body must have at least 40 words before pitching to editors.", "error");
       return;
     }
 
@@ -306,6 +362,7 @@ function AuthorStudioContent() {
             coverImage,
             excerpt: excerpt.trim() || content.replace(/<[^>]*>/g, " ").slice(0, 150) + "...",
             content,
+            tags,
             wordCount,
             readTime: estimatedReadTime,
           }),
@@ -322,12 +379,19 @@ function AuthorStudioContent() {
             coverImage,
             excerpt: excerpt.trim() || content.replace(/<[^>]*>/g, " ").slice(0, 150) + "...",
             content,
+            tags,
             wordCount,
             readTime: estimatedReadTime,
             status: "pending",
           });
           triggerToast("Revised manuscript re-submitted to editorial review queue!", "success");
         }
+
+        setSubmittedSuccessModal({
+          id: editingSubmissionId,
+          title: title.trim(),
+          category,
+        });
 
         setEditingSubmissionId(null);
         setEditingRevisionNotes(null);
@@ -341,6 +405,7 @@ function AuthorStudioContent() {
           authorName: user?.name || "Fatima Sanusi",
           authorEmail: user?.email || "fatima.sanusi@thezango.org",
           coverImage,
+          tags,
           wordCount,
           readTime: estimatedReadTime,
         };
@@ -352,6 +417,8 @@ function AuthorStudioContent() {
         });
 
         const data = await res.json();
+        const createdSubId = data.submission?.id || `sub-${Date.now()}`;
+
         if (data.success) {
           triggerToast("Manuscript pitch delivered to editorial desk review queue!", "success");
         } else {
@@ -360,16 +427,23 @@ function AuthorStudioContent() {
           triggerToast("Manuscript pitch delivered to editorial desk review queue!", "success");
         }
 
+        setSubmittedSuccessModal({
+          id: createdSubId,
+          title: title.trim(),
+          category,
+        });
+
         localStorage.removeItem("thezango_writer_draft");
       }
 
       setTitle("");
       setExcerpt("");
       setContent("");
+      setTags([]);
+      setTagInput("");
       setCoverImage("/assets/hero-featured.jpg");
       setLastAutoSaved(null);
       await loadWriterData();
-      setActiveTab("submissions");
     } catch (err) {
       console.error("Submission failed:", err);
       triggerToast("Failed to submit manuscript. Please try again.", "error");
@@ -384,6 +458,7 @@ function AuthorStudioContent() {
     setCoverImage(sub.coverImage || "/assets/hero-featured.jpg");
     setExcerpt(sub.excerpt);
     setContent(sub.content);
+    setTags(sub.tags || []);
     setEditingSubmissionId(sub.id);
     setEditingRevisionNotes(sub.feedbackNotes || null);
     setActiveTab("composer");
@@ -397,6 +472,8 @@ function AuthorStudioContent() {
     setTitle("");
     setExcerpt("");
     setContent("");
+    setTags([]);
+    setTagInput("");
     setCoverImage("/assets/hero-featured.jpg");
     triggerToast("Exited revision edit mode.", "info");
   };
@@ -857,6 +934,10 @@ function AuthorStudioContent() {
                     </span>
                     <span className="text-slate-400">•</span>
                     <span className="bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200 text-slate-700 font-bold text-[11px]">
+                      {charCount} chars
+                    </span>
+                    <span className="text-slate-400">•</span>
+                    <span className="bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200 text-slate-700 font-bold text-[11px]">
                       {estimatedReadTime}
                     </span>
                   </div>
@@ -875,6 +956,14 @@ function AuthorStudioContent() {
                       onChange={(e) => setTitle(e.target.value)}
                       className="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:border-emerald-600 text-sm font-semibold focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all"
                     />
+                    {title.trim() && (
+                      <div className="flex items-center space-x-1.5 text-[11px] text-slate-500 font-mono mt-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/60">
+                        <span className="text-slate-400 font-sans font-bold">Public URL Preview:</span>
+                        <span className="text-emerald-700 font-semibold truncate">
+                          thezango.org/article/{computedSlug || "story-slug"}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -906,6 +995,57 @@ function AuthorStudioContent() {
                         onChange={(e) => setExcerpt(e.target.value)}
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-600 text-xs focus:outline-hidden bg-white"
                       />
+                    </div>
+                  </div>
+
+                  {/* Story Tags & Keywords Input */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                        Story Tags & Keywords
+                      </label>
+                      <span className="text-[11px] text-slate-400">
+                        Press Enter or comma to add
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 p-2.5 rounded-2xl border border-slate-200 bg-white focus-within:border-emerald-600 transition-colors">
+                      {tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-100"
+                        >
+                          <span>#{tag}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTag(tag)}
+                            className="text-emerald-600 hover:text-red-600 ml-1 cursor-pointer"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                      <input
+                        type="text"
+                        placeholder={tags.length === 0 ? "Type tag (e.g. CleanEnergy, Kano, Agribusiness) and press Enter..." : "Add another tag..."}
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        onKeyDown={handleTagKeyDown}
+                        className="flex-1 min-w-[140px] text-xs font-medium focus:outline-hidden bg-transparent"
+                      />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 mr-1">Suggested:</span>
+                      {["CleanEnergy", "Agriculture", "NorthernTech", "Fintech", "SahelTrade", "Governance"].map((sug) => (
+                        <button
+                          key={sug}
+                          type="button"
+                          onClick={() => handleAddTag(sug)}
+                          disabled={tags.includes(sug)}
+                          className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-600 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                        >
+                          +{sug}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
@@ -1486,6 +1626,63 @@ function AuthorStudioContent() {
 
         </main>
       </div>
+
+      {/* SUBMISSION SUCCESS MODAL */}
+      {submittedSuccessModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-100 text-center animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 rounded-full bg-emerald-50 border-4 border-emerald-100 text-emerald-600 mx-auto flex items-center justify-center shadow-inner">
+              <CheckCircle2 className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">
+                Manuscript In Review
+              </span>
+              <h3 className="text-lg font-black text-slate-900">
+                Pitched to Editorial Desk!
+              </h3>
+              <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
+                Your dispatch has been queued for Desk Editor review and fact-checking.
+              </p>
+            </div>
+
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-left space-y-2">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-slate-400 font-semibold">Reference ID:</span>
+                <span className="font-mono font-bold text-slate-700">{submittedSuccessModal.id}</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-slate-400 font-semibold">Desk:</span>
+                <span className="font-bold text-slate-800">{submittedSuccessModal.category}</span>
+              </div>
+              <div className="text-xs font-bold text-slate-900 line-clamp-2 pt-1 border-t border-slate-200/60">
+                &ldquo;{submittedSuccessModal.title}&rdquo;
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSubmittedSuccessModal(null);
+                  setActiveTab("submissions");
+                }}
+                className="w-full sm:flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold uppercase tracking-wider transition-colors cursor-pointer shadow-sm"
+              >
+                Track in My Pitches
+              </button>
+              <button
+                type="button"
+                onClick={() => setSubmittedSuccessModal(null)}
+                className="w-full sm:w-auto py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+              >
+                Draft Another Story
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
