@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
     "@firebase/app",
     "@firebase/firestore",
     "@firebase/auth",
+    "@firebase/storage",
   ],
   async redirects() {
     return [
@@ -32,6 +33,10 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "pbs.twimg.com",
+      },
+      {
+        protocol: "https",
+        hostname: "firebasestorage.googleapis.com",
       },
     ],
   },
