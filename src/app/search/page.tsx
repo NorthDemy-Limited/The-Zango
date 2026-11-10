@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Search, ArrowRight, Calendar, User, Tag } from "lucide-react";
+import { Search, ArrowRight, User } from "lucide-react";
 import { ARTICLES } from "@/data/mock-articles";
 import { Article } from "@/types";
 
@@ -24,7 +24,7 @@ function SearchContent() {
             setAllArticles(data.articles);
           }
         }
-      } catch (err) {
+      } catch {
         // Fallback to initial mock articles
       }
     }

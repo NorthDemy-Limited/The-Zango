@@ -50,8 +50,9 @@ export async function GET(request: Request) {
       slug: cleanSlug,
       message: `Slug "${cleanSlug}" is available for publication`,
     });
-  } catch (error: any) {
-    if (error?.digest?.startsWith?.("NEXT_")) throw error;
+  } catch (error: unknown) {
+    const err = error as { digest?: string };
+    if (err?.digest?.startsWith?.("NEXT_")) throw error;
     console.error("Check slug error:", error);
     return NextResponse.json(
       { success: false, message: "Failed to validate slug availability" },

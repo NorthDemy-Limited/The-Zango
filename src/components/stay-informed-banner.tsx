@@ -33,7 +33,7 @@ export default function StayInformedBanner() {
       } else {
         setErrorMessage(data.message || "Failed to subscribe. Please try again.");
       }
-    } catch (err) {
+    } catch {
       setErrorMessage("Network issue. Please try again later.");
     } finally {
       setLoading(false);

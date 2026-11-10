@@ -47,8 +47,9 @@ export async function GET() {
         totalDesks: CATEGORIES.length,
       },
     });
-  } catch (error: any) {
-    if (error?.digest?.startsWith?.("NEXT_")) throw error;
+  } catch (error: unknown) {
+    const err = error as { digest?: string };
+    if (err?.digest?.startsWith?.("NEXT_")) throw error;
     console.error("Failed to fetch admin metrics:", error);
     return NextResponse.json(
       { success: false, message: "Failed to fetch platform metrics" },

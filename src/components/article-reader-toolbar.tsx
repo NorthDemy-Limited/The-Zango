@@ -12,7 +12,15 @@ interface ArticleReaderToolbarProps {
 export default function ArticleReaderToolbar({ title, slug }: ArticleReaderToolbarProps) {
   const [copied, setCopied] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const saved = JSON.parse(localStorage.getItem("thezango_bookmarks") || "[]");
+      return Array.isArray(saved) && saved.includes(slug);
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     // Scroll progress handler
@@ -27,16 +35,8 @@ export default function ArticleReaderToolbar({ title, slug }: ArticleReaderToolb
 
     window.addEventListener("scroll", handleScroll, { passive: true });
 
-    // Check if bookmarked in localStorage
-    try {
-      const saved = JSON.parse(localStorage.getItem("thezango_bookmarks") || "[]");
-      setIsBookmarked(saved.includes(slug));
-    } catch (e) {
-      // ignore
-    }
-
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [slug]);
+  }, []);
 
   const toggleBookmark = () => {
     try {
@@ -50,7 +50,7 @@ export default function ArticleReaderToolbar({ title, slug }: ArticleReaderToolb
         setIsBookmarked(true);
       }
       localStorage.setItem("thezango_bookmarks", JSON.stringify(updated));
-    } catch (e) {
+    } catch {
       // ignore
     }
   };
@@ -64,7 +64,7 @@ export default function ArticleReaderToolbar({ title, slug }: ArticleReaderToolb
           url,
         });
         return;
-      } catch (err) {
+      } catch {
         // Fallback to copy
       }
     }

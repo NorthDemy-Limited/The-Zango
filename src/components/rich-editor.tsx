@@ -16,9 +16,6 @@ import {
   Italic,
   Underline as UnderlineIcon,
   Strikethrough,
-  Heading1,
-  Heading2,
-  Heading3,
   AlignLeft,
   AlignCenter,
   AlignRight,
@@ -34,8 +31,6 @@ import {
   Image as ImageIcon,
   Video,
   Table as TableIcon,
-  Code,
-  Sparkles,
   Maximize2,
   Minimize2,
   UploadCloud

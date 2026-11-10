@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
     // If Cloudinary credentials are provided, upload to Cloudinary
     if (isCloudinaryConfigured) {
-      const uploadResult = await new Promise<any>((resolve, reject) => {
+      const uploadResult = await new Promise<Record<string, unknown>>((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           {
             folder: "the-zango/editorial",
@@ -28,7 +28,8 @@ export async function POST(request: Request) {
           },
           (error, result) => {
             if (error) reject(error);
-            else resolve(result);
+            else if (result) resolve(result as unknown as Record<string, unknown>);
+            else reject(new Error("No result returned from Cloudinary"));
           }
         );
         stream.end(buffer);
@@ -36,8 +37,8 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
-        url: uploadResult.secure_url,
-        public_id: uploadResult.public_id,
+        url: uploadResult.secure_url as string,
+        public_id: uploadResult.public_id as string,
         provider: "cloudinary",
       });
     }
@@ -54,10 +55,11 @@ export async function POST(request: Request) {
       provider: "local-fallback",
       message: "Uploaded locally (set Cloudinary env variables for production CDN storage)",
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Upload handler error:", error);
+    const msg = (error as { message?: string })?.message || "Failed to upload image";
     return NextResponse.json(
-      { success: false, message: error?.message || "Failed to upload image" },
+      { success: false, message: msg },
       { status: 500 }
     );
   }

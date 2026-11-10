@@ -4,6 +4,8 @@ import Image from "next/image";
 import { getArticles } from "@/lib/firebase/db";
 import { Flame, ArrowLeft, ArrowRight } from "lucide-react";
 
+export const instant = false;
+
 export default async function TrendingPage() {
   const articles = await getArticles();
   const trendingArticles = articles.filter(

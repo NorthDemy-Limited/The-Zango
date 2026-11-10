@@ -1,15 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import { AuthProvider } from "@/context/auth-context";
 
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+const jakarta = localFont({
+  src: "../../public/fonts/PlusJakartaSans-VariableFont_wght.ttf",
   variable: "--font-jakarta",
   display: "swap",
+  weight: "400 800",
 });
 
 export const viewport: Viewport = {
@@ -65,9 +65,11 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
     >
       <body className="min-h-screen flex flex-col bg-white text-[#111111] antialiased">
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <AuthProvider>
+          <Navbar />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );

@@ -56,7 +56,7 @@ export async function GET() {
       totalDesks: computedCategories.length,
       totalStories: articles.length,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { success: false, message: "Failed to fetch real-time categories" },
       { status: 500 }

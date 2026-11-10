@@ -4,6 +4,12 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  serverExternalPackages: [
+    "firebase",
+    "@firebase/app",
+    "@firebase/firestore",
+    "@firebase/auth",
+  ],
   async redirects() {
     return [
       {
