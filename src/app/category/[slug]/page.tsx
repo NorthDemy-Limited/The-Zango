@@ -1,10 +1,9 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { notFound } from "next/navigation";
 import { CATEGORIES } from "@/data/mock-articles";
 import { getArticles } from "@/lib/firebase/db";
-import { ArrowRight, ArrowLeft, Tag, Radio, Layers } from "lucide-react";
+import { ArrowRight, ArrowLeft, Tag, Layers } from "lucide-react";
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
@@ -38,8 +37,6 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   const articles = allArticles.filter(
     (a) => a.category.toLowerCase() === normalizedSlug || (normalizedSlug === "news" && a.isLatest)
   );
-
-  const isLiveDesk = category.isLive || category.status === "breaking" || category.status === "live";
 
   return (
     <div className="py-8 lg:py-12 bg-white min-h-screen">

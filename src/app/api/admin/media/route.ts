@@ -44,8 +44,9 @@ export async function GET() {
       count: allMedia.length,
       media: allMedia,
     });
-  } catch (error: any) {
-    if (error?.digest?.startsWith?.("NEXT_")) throw error;
+  } catch (error: unknown) {
+    const err = error as { digest?: string };
+    if (err?.digest?.startsWith?.("NEXT_")) throw error;
     console.error("Get media error:", error);
     return NextResponse.json(
       { success: false, message: "Failed to fetch editorial media library" },

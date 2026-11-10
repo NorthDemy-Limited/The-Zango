@@ -5,50 +5,32 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { 
-  BarChart3, 
   FileText, 
   Users, 
   Plus, 
   Trash2, 
   Edit3,
-  Star, 
-  TrendingUp, 
   CheckCircle2, 
   Download, 
   ExternalLink,
-  ShieldCheck, 
   Search, 
-  Sparkles, 
-  ArrowLeft, 
-  Flame, 
-  Clock, 
   Layers, 
   Inbox, 
-  Check, 
   X, 
-  Eye, 
-  Filter, 
-  RefreshCw, 
-  UserCheck, 
   UserPlus, 
   ShieldAlert, 
   KeyRound,
   LayoutDashboard,
   Bell,
-  Moon,
   LogOut,
-  ChevronRight,
   BookOpen,
   ArrowRight,
   Send,
-  Lock,
-  Tag,
   Mail,
-  Sliders,
   CheckCircle,
   AlertCircle
 } from "lucide-react";
-import { useAuth, UserRole } from "@/context/auth-context";
+import { useAuth } from "@/context/auth-context";
 import { Article, Subscriber, Submission, NewsroomMember, NewsroomRole, Category } from "@/types";
 import { 
   getArticles, 
@@ -66,8 +48,7 @@ import {
   getSubmissions, 
   approveSubmission, 
   rejectSubmission,
-  requestRevisionSubmission,
-  updateSubmission
+  requestRevisionSubmission
 } from "@/lib/firebase/db";
 import { CATEGORIES } from "@/data/mock-articles";
 import ImageUploader from "@/components/image-uploader";

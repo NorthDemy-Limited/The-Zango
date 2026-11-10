@@ -14,9 +14,7 @@ import {
   Landmark, 
   Film, 
   HeartPulse, 
-  GraduationCap,
-  Radio,
-  RefreshCw
+  GraduationCap
 } from "lucide-react";
 import { CATEGORIES } from "@/data/mock-articles";
 import { Category } from "@/types";
@@ -24,7 +22,6 @@ import { Category } from "@/types";
 export default function CategoryGrid() {
   const [categories, setCategories] = useState<Category[]>(CATEGORIES);
   const [showAll, setShowAll] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<string>("Just now");
 
   const iconMap: Record<string, React.ElementType> = {
@@ -41,29 +38,32 @@ export default function CategoryGrid() {
     education: GraduationCap,
   };
 
-  const fetchLiveCategories = async () => {
-    try {
-      setIsRefreshing(true);
-      const res = await fetch("/api/categories");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.categories) {
-          setCategories(data.categories);
-          setLastSyncTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
-        }
-      }
-    } catch (err) {
-      console.warn("Could not sync real-time categories:", err);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
   useEffect(() => {
-    fetchLiveCategories();
-    // Real-time synchronization interval (every 15 seconds)
-    const interval = setInterval(fetchLiveCategories, 15000);
-    return () => clearInterval(interval);
+    let active = true;
+    const syncCategories = async () => {
+      try {
+        const res = await fetch("/api/categories");
+        if (res.ok) {
+          const data = await res.json();
+          if (active && data.success && data.categories) {
+            setCategories(data.categories);
+            setLastSyncTime(
+              new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+            );
+          }
+        }
+      } catch (err) {
+        console.warn("Could not sync real-time categories:", err);
+      }
+    };
+
+    void syncCategories();
+    // Real-time synchronization interval (every 30 seconds)
+    const interval = setInterval(syncCategories, 30000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const displayedCategories = showAll ? categories : categories.slice(0, 6);

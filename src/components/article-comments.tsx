@@ -15,20 +15,23 @@ export default function ArticleComments({ articleSlug }: ArticleCommentsProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedToast, setSubmittedToast] = useState(false);
 
-  const fetchComments = async () => {
-    try {
-      const res = await fetch(`/api/comments?slug=${encodeURIComponent(articleSlug)}`);
-      const data = await res.json();
-      if (data.success && data.comments) {
-        setComments(data.comments);
-      }
-    } catch (err) {
-      console.warn("Could not fetch comments:", err);
-    }
-  };
-
   useEffect(() => {
-    fetchComments();
+    let active = true;
+    async function loadComments() {
+      try {
+        const res = await fetch(`/api/comments?slug=${encodeURIComponent(articleSlug)}`);
+        const data = await res.json();
+        if (active && data.success && data.comments) {
+          setComments(data.comments);
+        }
+      } catch (err) {
+        console.warn("Could not fetch comments:", err);
+      }
+    }
+    void loadComments();
+    return () => {
+      active = false;
+    };
   }, [articleSlug]);
 
   const handleSubmit = async (e: React.FormEvent) => {

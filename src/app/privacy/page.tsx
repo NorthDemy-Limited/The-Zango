@@ -1,5 +1,4 @@
 import React from "react";
-import Link from "next/link";
 import { Shield } from "lucide-react";
 
 export default function PrivacyPage() {

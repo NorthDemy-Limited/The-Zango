@@ -15,9 +15,10 @@ import {
   Landmark, 
   Film, 
   HeartPulse, 
-  GraduationCap,
-  Radio
+  GraduationCap
 } from "lucide-react";
+
+export const instant = false;
 
 export default async function CategoriesDirectoryPage() {
   const articles = await getArticles();

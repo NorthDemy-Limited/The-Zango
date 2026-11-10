@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { AUTHORS, ARTICLES } from "@/data/mock-articles";
+import { AUTHORS } from "@/data/mock-articles";
 import { getArticles } from "@/lib/firebase/db";
 import { MapPin, ArrowLeft, ArrowRight, BookOpen, CheckCircle2 } from "lucide-react";
 import { TwitterIcon, LinkedinIcon } from "@/components/social-icons";

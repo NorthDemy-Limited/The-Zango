@@ -25,7 +25,7 @@ export async function GET() {
         popular,
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { success: false, message: "Failed to generate home feed" },
       { status: 500 }

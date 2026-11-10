@@ -11,13 +11,13 @@ export default function DashboardIndexPage() {
   useEffect(() => {
     if (isLoading) return;
     if (!isAuthenticated) {
-      window.location.href = "/login?redirect=/dashboard/admin";
+      router.replace("/login?redirect=/dashboard/admin");
     } else if (role === "writer") {
-      window.location.href = "/dashboard/author";
+      router.replace("/dashboard/author");
     } else if (role === "editor") {
-      window.location.href = "/dashboard/editor";
+      router.replace("/dashboard/editor");
     } else {
-      window.location.href = "/dashboard/admin";
+      router.replace("/dashboard/admin");
     }
   }, [isAuthenticated, isLoading, role, router]);
 

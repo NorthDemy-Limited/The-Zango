@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { ARTICLES } from "@/data/mock-articles";
 import { getArticleBySlug, getArticles } from "@/lib/firebase/db";
 import { Calendar, Clock, ArrowLeft, Tag } from "lucide-react";
 import ArticleContent from "@/components/article-content";

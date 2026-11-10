@@ -6,6 +6,7 @@ import StayInformedBanner from "@/components/stay-informed-banner";
 import CategoryGrid from "@/components/category-grid";
 import ZangoExperience from "@/components/zango-experience";
 
+export const instant = false;
 
 export default async function HomePage() {
   const articles = await getArticles();

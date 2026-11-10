@@ -59,7 +59,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ success: true, count: articles.length, articles });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ success: false, message: "Failed to fetch articles" }, { status: 500 });
   }
 }
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ success: true, article: newArticle }, { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ success: false, message: "Failed to create article" }, { status: 500 });
   }
 }

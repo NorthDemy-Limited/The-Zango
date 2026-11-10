@@ -7,5 +7,6 @@ export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   : (null as any);
 

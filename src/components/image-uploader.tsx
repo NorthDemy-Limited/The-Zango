@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import Image from "next/image";
-import { UploadCloud, CheckCircle2, Image as ImageIcon, Loader2, X, RefreshCw } from "lucide-react";
+import { UploadCloud, CheckCircle2, Image as ImageIcon, Loader2, RefreshCw } from "lucide-react";
 
 interface ImageUploaderProps {
   value: string;
@@ -62,7 +62,7 @@ export default function ImageUploader({
       } else {
         alert(data.message || "Upload failed. Please try again.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Upload error:", err);
       alert("Network error while uploading image.");
     } finally {
