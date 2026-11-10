@@ -1,8 +1,29 @@
 import { db, isFirebaseConfigured } from "./config";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy, terminate } from "firebase/firestore";
 import { Article, Subscriber, Submission, NewsroomMember, NewsroomRole } from "@/types";
 import { ARTICLES } from "@/data/mock-articles";
+
+let isFirestoreAvailable = true;
+
+const disableFirestore = (reason?: unknown) => {
+  if (!isFirestoreAvailable) return;
+  isFirestoreAvailable = false;
+  if (db) {
+    try {
+      void terminate(db);
+    } catch {
+      // ignore
+    }
+  }
+  const msg = (reason as { message?: string })?.message || String(reason || "");
+  if (msg.includes("PERMISSION_DENIED") || msg.includes("permission-denied") || msg.includes("has not been used")) {
+    console.warn(
+      "Notice: Cloud Firestore API is not yet enabled in Firebase Console (project: the-zango). " +
+      "Falling back to local newsroom storage until database is created."
+    );
+  }
+};
 
 let localArticlesStore: Article[] = [...ARTICLES];
 let localSubscribersStore: Subscriber[] = [
@@ -115,15 +136,20 @@ export async function getArticles(): Promise<Article[]> {
   }
 
   // 2. Check Firebase Firestore
-  if (isFirebaseConfigured && db) {
+  if (isFirebaseConfigured && db && isFirestoreAvailable) {
     try {
       const q = query(collection(db, "articles"), orderBy("publishedAt", "desc"));
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
         return querySnapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Article));
       }
-    } catch (err) {
-      console.warn("Could not fetch articles from Firestore, using local store:", err);
+    } catch (err: unknown) {
+      const msg = (err as { message?: string })?.message || String(err || "");
+      if (msg.includes("PERMISSION_DENIED") || msg.includes("permission-denied") || msg.includes("has not been used")) {
+        disableFirestore(err);
+      } else {
+        console.warn("Could not fetch articles from Firestore, using local store:", err);
+      }
     }
   }
 
