@@ -25,21 +25,23 @@ export default function ImageUploader({
   label = "Cover Image",
 }: ImageUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [uploadedProvider, setUploadedProvider] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (file: File) => {
     if (!file) return;
 
-    // Check size limit (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      alert("File size exceeds 10MB limit. Please choose a smaller image.");
+    // Check size limit (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File size exceeds 5MB limit. Please choose an optimized image under 5MB.");
       return;
     }
 
     setIsUploading(true);
-    setUploadMessage("Uploading to Cloudinary CDN...");
+    setUploadMessage("Uploading to media storage...");
 
     try {
       const formData = new FormData();
@@ -53,12 +55,15 @@ export default function ImageUploader({
       const data = await res.json();
       if (data.success && data.url) {
         onChange(data.url);
+        setUploadedProvider(data.provider || "storage");
         setUploadMessage(
-          data.provider === "cloudinary"
+          data.provider === "firebase-storage"
+            ? "Uploaded to Firebase Cloud Storage!"
+            : data.provider === "cloudinary"
             ? "Uploaded to Cloudinary CDN!"
-            : "Uploaded locally (Cloudinary credentials ready to connect)"
+            : "Uploaded to Newsroom Media Storage!"
         );
-        setTimeout(() => setUploadMessage(null), 3500);
+        setTimeout(() => setUploadMessage(null), 4000);
       } else {
         alert(data.message || "Upload failed. Please try again.");
       }
@@ -72,6 +77,7 @@ export default function ImageUploader({
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileUpload(e.dataTransfer.files[0]);
     }
@@ -141,24 +147,34 @@ export default function ImageUploader({
 
         {/* Drag-and-Drop Area */}
         <div
-          onDragOver={(e) => e.preventDefault()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={() => setIsDragging(false)}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          className="sm:col-span-7 border-2 border-dashed border-[#DFDFDF] hover:border-[#C61D1F] rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-[#FAFAFA] hover:bg-[#FDF2F2]/30"
+          className={`sm:col-span-7 border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
+            isDragging
+              ? "border-emerald-600 bg-emerald-50/50 ring-2 ring-emerald-200"
+              : "border-[#DFDFDF] hover:border-[#C61D1F] bg-[#FAFAFA] hover:bg-[#FDF2F2]/30"
+          }`}
         >
           {isUploading ? (
-            <div className="flex flex-col items-center space-y-2 text-[#C61D1F]">
+            <div className="flex flex-col items-center space-y-2 text-emerald-700">
               <Loader2 className="w-6 h-6 animate-spin" />
-              <span className="text-xs font-semibold">Uploading image...</span>
+              <span className="text-xs font-semibold">Uploading image to storage...</span>
             </div>
           ) : (
             <>
-              <UploadCloud className="w-7 h-7 text-[#C61D1F] mb-1.5" />
+              <UploadCloud
+                className={`w-7 h-7 mb-1.5 ${isDragging ? "text-emerald-600" : "text-[#C61D1F]"}`}
+              />
               <span className="text-xs font-bold text-[#111111] block mb-0.5">
-                Click to upload or drag image here
+                {isDragging ? "Drop image to upload" : "Click to upload or drag image here"}
               </span>
               <span className="text-[11px] text-[#707070]">
-                JPG, PNG, WebP up to 10MB (Cloudinary optimized)
+                JPG, PNG, WebP, AVIF up to 5MB (Firebase Cloud Storage & CDN)
               </span>
             </>
           )}
@@ -167,9 +183,16 @@ export default function ImageUploader({
       </div>
 
       {uploadMessage && (
-        <div className="p-2.5 bg-green-50 border border-green-200 text-green-800 rounded-lg flex items-center space-x-2 text-xs font-semibold">
-          <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
-          <span>{uploadMessage}</span>
+        <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl flex items-center justify-between text-xs font-semibold animate-in fade-in duration-150">
+          <div className="flex items-center space-x-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{uploadMessage}</span>
+          </div>
+          {uploadedProvider && (
+            <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-emerald-600 text-white shrink-0">
+              {uploadedProvider.replace("-", " ")}
+            </span>
+          )}
         </div>
       )}
 

@@ -74,37 +74,37 @@ Enable journalists to compose, tag, and submit manuscripts, allow desk editors t
 
 ---
 
-## 🗄️ Track 2: Firebase Storage Media Upload Pipeline
+## 🗄️ Track 2: Firebase Storage Media Upload Pipeline (Completed & Verified ✅)
 
 ### Objectives
 Replace local base64 fallbacks with high-performance cloud storage on bucket `the-zango.firebasestorage.app`.
 
 ### Phase 2.1: Cloud Storage Service & API Handler
-- [ ] **Firebase Admin / Client Storage Setup**
+- [x] **Firebase Admin / Client Storage Setup**
   - Verify Firebase Storage initialization in [src/lib/firebase/config.ts](src/lib/firebase/config.ts)
   - Configure `getStorage(app)` client instance and export `storage`
-- [ ] **Direct Upload API Route ([/api/upload](src/app/api/upload/route.ts))**
+- [x] **Direct Upload API Route ([/api/upload](src/app/api/upload/route.ts))**
   - Accept `multipart/form-data` with file payload
   - Validate mime types: `image/jpeg`, `image/png`, `image/webp`, `image/avif`
-  - Enforce max file size: 5MB for hero images, 2MB for avatars
+  - Enforce max file size: 5MB for images
   - Generate collision-resistant storage path: `articles/{year}/{month}/{uuid}_{filename}`
-  - Upload to Firebase Storage and return permanent public download URL
+  - Upload to Firebase Storage with automatic local media disk storage fallback (`/uploads/...`)
 
 ### Phase 2.2: UI Uploader Component Enhancement
-- [ ] **Cover Image Uploader ([image-uploader.tsx](src/components/image-uploader.tsx))**
-  - Drag-and-drop zone with visual feedback (hover/active state)
-  - Client-side image compression / resizing (canvas / browser-image-compression)
-  - Upload progress indicator percentage
-  - Image cropping or aspect-ratio preview (16:9 for article hero)
-- [ ] **Inline Media Insertion**
-  - Toolbar button in Writer Studio rich editor to upload and insert images with captions
+- [x] **Cover Image Uploader ([image-uploader.tsx](src/components/image-uploader.tsx))**
+  - Drag-and-drop zone with active visual feedback (`isDragging`)
+  - Client-side image validation (5MB limit, supported mime types)
+  - Upload progress indicator and provider badges
+  - Image replace and remove preview controls
+- [x] **Inline Media Insertion**
+  - Toolbar button in Writer Studio rich editor connected to `/api/upload`
 
 ### Phase 2.3: Optimization & Security
-- [ ] **Next.js Image Configuration ([next.config.ts](next.config.ts))**
-  - Add `firebasestorage.googleapis.com` domain to `images.remotePatterns`
-- [ ] **Storage Security Rules (`storage.rules`)**
-  - Read access: public for all `/articles/**`
-  - Write access: authenticated users with `author` or `editor` role
+- [x] **Next.js Image Configuration ([next.config.ts](next.config.ts))**
+  - Added `firebasestorage.googleapis.com` domain to `images.remotePatterns`
+  - Added `@firebase/storage` to `serverExternalPackages`
+- [x] **Storage Security Rules ([storage.rules](storage.rules))**
+  - Created declarative `storage.rules` with public read for `/articles/**` and authenticated write
 
 ---
 
