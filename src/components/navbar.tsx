@@ -1,17 +1,39 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Search, Menu, X } from "lucide-react";
+import { Search, Menu, X, Bookmark } from "lucide-react";
 import { FacebookIcon, TwitterIcon, InstagramIcon, YoutubeIcon } from "@/components/social-icons";
+import SavedArticlesDrawer from "@/components/saved-articles-drawer";
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [bookmarkCount, setBookmarkCount] = useState(0);
+
+  useEffect(() => {
+    const updateCount = () => {
+      try {
+        const saved = JSON.parse(localStorage.getItem("thezango_bookmarks") || "[]");
+        setBookmarkCount(Array.isArray(saved) ? saved.length : 0);
+      } catch {
+        setBookmarkCount(0);
+      }
+    };
+    updateCount();
+    window.addEventListener("thezango_bookmarks_changed", updateCount);
+    const handleOpen = () => setDrawerOpen(true);
+    window.addEventListener("thezango_open_bookmarks", handleOpen);
+    return () => {
+      window.removeEventListener("thezango_bookmarks_changed", updateCount);
+      window.removeEventListener("thezango_open_bookmarks", handleOpen);
+    };
+  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,6 +124,22 @@ export default function Navbar() {
               </div>
             </form>
 
+            {/* Reading List Bookmark Button */}
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              className="relative p-2 rounded-lg text-[#535252] hover:text-[#C61D1F] hover:bg-slate-100 transition-colors cursor-pointer"
+              title="Saved Reading List"
+              aria-label="View saved reading list"
+            >
+              <Bookmark className="w-5 h-5" />
+              {bookmarkCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-[#C61D1F] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center animate-in zoom-in">
+                  {bookmarkCount > 9 ? "9+" : bookmarkCount}
+                </span>
+              )}
+            </button>
+
             {/* Vertical Separator */}
             <div className="h-6 w-px bg-[#DFDFDF]" />
 
@@ -151,8 +189,22 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="flex items-center md:hidden space-x-3">
+          {/* Mobile Right Controls: Bookmark & Burger */}
+          <div className="flex items-center md:hidden space-x-2">
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              className="relative p-2 text-[#535252] hover:text-[#C61D1F] rounded-md transition-colors cursor-pointer"
+              title="Saved Reading List"
+              aria-label="View saved reading list"
+            >
+              <Bookmark className="w-5 h-5" />
+              {bookmarkCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-[#C61D1F] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {bookmarkCount > 9 ? "9+" : bookmarkCount}
+                </span>
+              )}
+            </button>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-[#535252] hover:text-[#C61D1F] rounded-md transition-colors"
@@ -230,6 +282,9 @@ export default function Navbar() {
           </div>
         </div>
       )}
+
+      {/* Global Saved Reading List Drawer */}
+      <SavedArticlesDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </header>
   );
 }

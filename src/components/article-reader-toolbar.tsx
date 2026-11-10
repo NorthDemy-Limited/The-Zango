@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { Share2, Bookmark, Check, Copy } from "lucide-react";
-import { TwitterIcon, FacebookIcon, LinkedinIcon } from "@/components/social-icons";
+import { TwitterIcon, FacebookIcon, LinkedinIcon, WhatsAppIcon } from "@/components/social-icons";
+import SavedArticlesDrawer from "@/components/saved-articles-drawer";
 
 interface ArticleReaderToolbarProps {
   title: string;
@@ -12,6 +13,8 @@ interface ArticleReaderToolbarProps {
 export default function ArticleReaderToolbar({ title, slug }: ArticleReaderToolbarProps) {
   const [copied, setCopied] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [showSavedToast, setShowSavedToast] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     try {
@@ -45,11 +48,15 @@ export default function ArticleReaderToolbar({ title, slug }: ArticleReaderToolb
       if (saved.includes(slug)) {
         updated = saved.filter((s: string) => s !== slug);
         setIsBookmarked(false);
+        setShowSavedToast(false);
       } else {
         updated = [...saved, slug];
         setIsBookmarked(true);
+        setShowSavedToast(true);
+        setTimeout(() => setShowSavedToast(false), 4000);
       }
       localStorage.setItem("thezango_bookmarks", JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent("thezango_bookmarks_changed"));
     } catch {
       // ignore
     }
@@ -94,7 +101,7 @@ export default function ArticleReaderToolbar({ title, slug }: ArticleReaderToolb
           </span>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 relative">
           {/* Quick Web Share / Copy Link Button */}
           <button
             onClick={handleShare}
@@ -113,9 +120,21 @@ export default function ArticleReaderToolbar({ title, slug }: ArticleReaderToolb
             )}
           </button>
 
+          {/* WhatsApp Direct Share */}
+          <a
+            href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`*${title}*\n\nRead full report on The Zango:\n${articleUrl}`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-1.5 rounded-md bg-[#E8F8EE] hover:bg-[#25D366] text-[#128C7E] hover:text-white text-xs font-semibold flex items-center space-x-1.5 transition-colors"
+            title="Share via WhatsApp"
+          >
+            <WhatsAppIcon className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">WhatsApp</span>
+          </a>
+
           {/* Twitter / X */}
           <a
-            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(articleUrl)}`}
+            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(articleUrl)}&hashtags=TheZango,NorthernNigeria,News`}
             target="_blank"
             rel="noopener noreferrer"
             className="px-3 py-1.5 rounded-md bg-[#F5F5F5] hover:bg-[#C61D1F] hover:text-white text-xs font-semibold text-[#535252] flex items-center space-x-1.5 transition-colors"
@@ -153,6 +172,7 @@ export default function ArticleReaderToolbar({ title, slug }: ArticleReaderToolb
           <button
             onClick={toggleBookmark}
             aria-label="Bookmark story"
+            title={isBookmarked ? "Saved in Reading List" : "Bookmark this dispatch"}
             className={`p-1.5 rounded-md border transition-colors cursor-pointer ${isBookmarked
                 ? "bg-[#FDF2F2] border-[#C61D1F] text-[#C61D1F]"
                 : "bg-white border-[#DFDFDF] text-[#707070] hover:text-[#C61D1F]"
@@ -160,8 +180,26 @@ export default function ArticleReaderToolbar({ title, slug }: ArticleReaderToolb
           >
             <Bookmark className={`w-4 h-4 ${isBookmarked ? "fill-current" : ""}`} />
           </button>
+
+          {/* Saved Toast Notification Pill */}
+          {showSavedToast && (
+            <div className="absolute -top-10 right-0 bg-slate-900 text-white text-[11px] font-bold py-1 px-3 rounded-full shadow-lg flex items-center space-x-2 animate-in fade-in slide-in-from-bottom-2 duration-150 whitespace-nowrap z-20">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span>Saved to Reading List</span>
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(true)}
+                className="text-[#C61D1F] hover:underline ml-1 cursor-pointer"
+              >
+                View
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Embedded Saved Articles Drawer */}
+      <SavedArticlesDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </>
   );
 }

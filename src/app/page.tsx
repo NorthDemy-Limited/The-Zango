@@ -7,10 +7,12 @@ import TrendingPopular from "@/components/trending-popular";
 import StayInformedBanner from "@/components/stay-informed-banner";
 import CategoryGrid from "@/components/category-grid";
 import ZangoExperience from "@/components/zango-experience";
+import BreakingNewsTicker from "@/components/breaking-news-ticker";
 
 async function HomeFeed() {
   await connection();
   const articles = await getArticles();
+  const breakingArticles = articles.filter((a) => a.isBreaking);
   const featuredArticle = articles.find((a) => a.isFeatured) || articles[0];
   const latestNews = articles.filter((a) => a.isLatest);
   const editorsPicks =
@@ -24,6 +26,9 @@ async function HomeFeed() {
 
   return (
     <>
+      {/* 0. Live Breaking News Dispatch Ticker */}
+      <BreakingNewsTicker initialArticles={breakingArticles} />
+
       {/* 1. Hero: Featured Headline Article + Latest News Sidebar */}
       <HeroSection featuredArticle={featuredArticle} latestNews={latestNews} />
 

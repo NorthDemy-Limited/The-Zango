@@ -35,6 +35,10 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     title: article.title + " | The Zango",
     description: article.excerpt,
     authors: [{ name: article.author.name }],
+    keywords: article.tags || [article.category, "Northern Nigeria", "The Zango"],
+    alternates: {
+      canonical: `https://thezango.org/article/${slug}`,
+    },
     openGraph: {
       title: article.title,
       description: article.excerpt,
@@ -81,8 +85,50 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     .filter((a) => a.id !== article.id && (a.category.toLowerCase() === article.category.toLowerCase() || a.isLatest))
     .slice(0, 3);
 
+  const articleImageUrl = article.coverImage.startsWith("http")
+    ? article.coverImage
+    : `https://thezango.org${article.coverImage}`;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: article.title,
+    description: article.excerpt,
+    image: [articleImageUrl],
+    datePublished: article.publishedAt,
+    dateModified: article.publishedAt,
+    author: [
+      {
+        "@type": "Person",
+        name: article.author.name,
+        jobTitle: article.author.role,
+        url: `https://thezango.org/author/${article.author.slug || "the-zango-bureau"}`,
+      },
+    ],
+    publisher: {
+      "@type": "NewsMediaOrganization",
+      name: "The Zango",
+      url: "https://thezango.org",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://thezango.org/assets/logo.png",
+      },
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `https://thezango.org/article/${article.slug}`,
+    },
+    articleSection: article.category,
+    keywords: (article.tags || []).join(", "),
+  };
+
   return (
     <article className="py-8 lg:py-12 bg-white">
+      {/* Schema.org NewsArticle JSON-LD Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Breadcrumb & Navigation */}
