@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { connection } from "next/server";
 import { getArticles } from "@/lib/firebase/db";
 import HeroSection from "@/components/hero-section";
 import EditorsPicks from "@/components/editors-picks";
@@ -6,22 +8,22 @@ import StayInformedBanner from "@/components/stay-informed-banner";
 import CategoryGrid from "@/components/category-grid";
 import ZangoExperience from "@/components/zango-experience";
 
-export const instant = false;
-
-export default async function HomePage() {
+async function HomeFeed() {
+  await connection();
   const articles = await getArticles();
   const featuredArticle = articles.find((a) => a.isFeatured) || articles[0];
   const latestNews = articles.filter((a) => a.isLatest);
-  const editorsPicks = articles.filter((a) => a.isEditorsPick).length > 0
-    ? articles.filter((a) => a.isEditorsPick)
-    : articles.slice(6, 10);
+  const editorsPicks =
+    articles.filter((a) => a.isEditorsPick).length > 0
+      ? articles.filter((a) => a.isEditorsPick)
+      : articles.slice(6, 10);
   const trendingArticle = articles.find((a) => a.isTrending) || articles[2];
   const popularArticles = articles
     .filter((a) => a.isPopular)
     .sort((a, b) => (a.popularRank || 99) - (b.popularRank || 99));
 
   return (
-    <div className="space-y-2">
+    <>
       {/* 1. Hero: Featured Headline Article + Latest News Sidebar */}
       <HeroSection featuredArticle={featuredArticle} latestNews={latestNews} />
 
@@ -33,6 +35,22 @@ export default async function HomePage() {
         trendingArticle={trendingArticle}
         popularArticles={popularArticles}
       />
+    </>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <div className="space-y-2">
+      <Suspense
+        fallback={
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="h-96 rounded-2xl bg-gray-100 animate-pulse" />
+          </div>
+        }
+      >
+        <HomeFeed />
+      </Suspense>
 
       {/* 4. Stay Informed Newsletter & Follow Us Hub */}
       <StayInformedBanner />
