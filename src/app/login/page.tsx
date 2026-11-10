@@ -495,8 +495,9 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center text-xs text-slate-500">
-          Loading editorial authorization portal...
+        <div className="min-h-screen bg-[#F8F9FA] flex flex-col items-center justify-center p-8 text-center">
+          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight mb-2">Newsroom Staff Portal</h1>
+          <p className="text-xs text-slate-500">Loading editorial authorization portal...</p>
         </div>
       }
     >

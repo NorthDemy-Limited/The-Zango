@@ -2646,7 +2646,7 @@ export default function AdminDashboardPage() {
     >
       <ProtectedRoute
         allowedRoles={["admin"]}
-        workspaceName="Executive Admin & Newsroom CMS"
+        workspaceName="Chief Editor & Executive Newsroom CMS"
       >
         <AdminDashboardContent />
       </ProtectedRoute>

@@ -1700,7 +1700,7 @@ export default function AuthorDashboardPage() {
     >
       <ProtectedRoute
         allowedRoles={["author", "writer", "editor", "admin"]}
-        workspaceName="Author Studio & Writer Desk"
+        workspaceName="Writer Studio & Editorial Desk"
       >
         <AuthorStudioContent />
       </ProtectedRoute>

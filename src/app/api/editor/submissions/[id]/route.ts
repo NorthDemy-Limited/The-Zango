@@ -42,7 +42,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     const { action, feedbackNotes, ...updates } = body;
 
     // Action 1: Approve and publish live as a story dispatch
-    if (action === "approve") {
+    if (action === "approve" || body.status === "approved") {
       const article = await approveSubmission(id);
       if (!article) {
         return NextResponse.json(
@@ -54,6 +54,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         success: true,
         message: "Manuscript cleared and published as live desk story dispatch",
         article,
+        submission: { id, status: "approved" },
       });
     }
 
@@ -142,4 +143,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     );
   }
 }
+
+export const PUT = PATCH;
+
 
