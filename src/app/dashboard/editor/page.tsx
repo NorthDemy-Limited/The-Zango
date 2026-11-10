@@ -26,6 +26,7 @@ import {
   Sliders
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
+import { ProtectedRoute } from "@/components/auth/protected-route";
 import { Article, Submission, Category } from "@/types";
 import { 
   getArticles, 
@@ -1844,7 +1845,12 @@ export default function EditorDashboardPage() {
         </div>
       }
     >
-      <EditorDashboardContent />
+      <ProtectedRoute
+        allowedRoles={["editor", "admin"]}
+        workspaceName="Desk Editor & Review Queue"
+      >
+        <EditorDashboardContent />
+      </ProtectedRoute>
     </Suspense>
   );
 }

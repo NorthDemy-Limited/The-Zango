@@ -1,0 +1,158 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function getUserRole() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? getUserData().role
+        : 'reader';
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        getUserRole() == 'admin' ||
+        request.auth.token.email.matches('.*admin.*') ||
+        request.auth.token.email == 'usman.bello@thezango.org'
+      );
+    }
+
+    function isEditor() {
+      return isAdmin() || (
+        isAuthenticated() && (
+          getUserRole() == 'editor' ||
+          request.auth.token.email.matches('.*editor.*') ||
+          request.auth.token.email == 'aisha.dahiru@thezango.org'
+        )
+      );
+    }
+
+    function isAuthor() {
+      return isEditor() || (
+        isAuthenticated() && (
+          getUserRole() == 'author' ||
+          getUserRole() == 'writer' ||
+          request.auth.token.email.matches('.*writer.*') ||
+          request.auth.token.email == 'fatima.sanusi@thezango.org'
+        )
+      );
+    }
+
+    // 1. Articles Collection
+    match /articles/{articleId} {
+      // Anyone can read published articles; newsroom staff can read drafts and revisions
+      allow read: if resource.data.status == 'published' || isAuthor();
+
+      // Verified authors, editors, and admins can create articles
+      allow create: if isAuthor();
+
+      // Authors can update their own drafts; editors and admins can update any article
+      allow update: if isEditor() || (
+        isAuthor() && (
+          resource.data.author.name == request.auth.token.name ||
+          resource.data.author_email == request.auth.token.email
+        )
+      );
+
+      // Only chief editors / admins can permanently delete published stories
+      allow delete: if isAdmin();
+    }
+
+    // 2. Users Collection
+    match /users/{userId} {
+      // Authenticated users can read their own profile, staff can read profiles
+      allow read: if isOwner(userId) || isAuthor();
+
+      // Users can create their own profile document on sign-in
+      allow create: if isOwner(userId);
+
+      // Users can update their own bio/display name, but role changes require admin clearance
+      allow update: if (
+        isOwner(userId) &&
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']))
+      ) || isAdmin();
+
+      // Only admins can delete user profiles
+      allow delete: if isAdmin();
+    }
+
+    // 3. Submissions Collection (Pitches & Drafts Queue)
+    match /submissions/{submissionId} {
+      // Authors can view their own submissions; editors and admins can view all
+      allow read: if isEditor() || (
+        isAuthor() && (
+          resource.data.authorEmail == request.auth.token.email ||
+          resource.data.authorId == request.auth.uid
+        )
+      );
+
+      // Writers can create new manuscript submissions
+      allow create: if isAuthor();
+
+      // Authors can update their pending submissions; editors can approve/reject/request revision
+      allow update: if isEditor() || (
+        isAuthor() && (
+          resource.data.authorEmail == request.auth.token.email ||
+          resource.data.authorId == request.auth.uid
+        )
+      );
+
+      // Admins and editors can remove rejected submissions
+      allow delete: if isEditor();
+    }
+
+    // 4. Comments Collection
+    match /comments/{commentId} {
+      // Approved comments are public
+      allow read: if resource.data.status == 'approved' || isEditor();
+
+      // Any authenticated user can submit a comment
+      allow create: if isAuthenticated();
+
+      // Comment author can edit their own comment; editors can moderate/approve/flag
+      allow update: if isEditor() || (
+        isAuthenticated() && resource.data.userId == request.auth.uid
+      );
+
+      // Only editors or admins can delete comments
+      allow delete: if isEditor();
+    }
+
+    // 5. Subscribers Collection (Newsletter)
+    match /subscribers/{subscriberId} {
+      // Anyone can subscribe (public subscription creation)
+      allow create: if true;
+
+      // Only bureau editors and admins can read or manage subscribers list
+      allow read, update, delete: if isEditor();
+    }
+
+    // 6. Newsroom Members / Desks / Categories
+    match /team_members/{memberId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /desks/{deskId} {
+      allow read: if true;
+      allow write: if isEditor();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isEditor();
+    }
+  }
+}

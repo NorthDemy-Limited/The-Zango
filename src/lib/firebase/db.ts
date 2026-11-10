@@ -1,7 +1,7 @@
 import { db, isFirebaseConfigured } from "./config";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
-import { collection, getDocs, getDoc, addDoc, doc, updateDoc, deleteDoc, query, orderBy, where, limit, terminate } from "firebase/firestore";
-import { Article, Subscriber, Submission, NewsroomMember, NewsroomRole } from "@/types";
+import { collection, getDocs, getDoc, setDoc, addDoc, doc, updateDoc, deleteDoc, query, orderBy, where, limit, terminate } from "firebase/firestore";
+import { Article, Subscriber, Submission, NewsroomMember, NewsroomRole, UserProfile, UserRole } from "@/types";
 import { ARTICLES } from "@/data/mock-articles";
 
 function sanitizeForFirestore<T extends Record<string, unknown>>(data: T): Record<string, unknown> {
@@ -988,4 +988,119 @@ export async function deleteTeamMember(id: string): Promise<boolean> {
   }
 
   return true;
+}
+
+// ==============================================================================
+// USER PROFILES & ROLE-BASED ACCESS CONTROL (FIRESTORE)
+// ==============================================================================
+const localUserProfilesStore: Record<string, UserProfile> = {};
+
+export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+  if (localUserProfilesStore[uid]) {
+    return localUserProfilesStore[uid];
+  }
+
+  if (isFirebaseConfigured && db && isFirestoreAvailable) {
+    try {
+      const docRef = doc(db, "users", uid);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const data = snap.data() as UserProfile;
+        const profile: UserProfile = {
+          ...data,
+          uid: snap.id,
+        };
+        localUserProfilesStore[uid] = profile;
+        return profile;
+      }
+    } catch (err) {
+      console.warn("Could not fetch user profile from Firestore:", err);
+    }
+  }
+
+  return null;
+}
+
+export async function getOrCreateUserProfile(
+  user: {
+    uid: string;
+    email?: string | null;
+    displayName?: string | null;
+    photoURL?: string | null;
+  },
+  defaultRole: UserRole = "author"
+): Promise<UserProfile> {
+  const existing = await getUserProfile(user.uid);
+  if (existing) {
+    return existing;
+  }
+
+  // Derive role based on known staff email or default
+  const emailLower = (user.email || "").toLowerCase();
+  let assignedRole: UserRole = defaultRole;
+  if (emailLower.includes("usman") || emailLower.includes("admin")) {
+    assignedRole = "admin";
+  } else if (emailLower.includes("editor") || emailLower.includes("aisha") || emailLower.includes("ibrahim")) {
+    assignedRole = "editor";
+  } else if (emailLower.includes("writer") || emailLower.includes("fatima") || emailLower.includes("sanusi")) {
+    assignedRole = "author";
+  }
+
+  const now = new Date().toISOString();
+  const newProfile: UserProfile = {
+    uid: user.uid,
+    email: user.email || "",
+    displayName: user.displayName || user.email?.split("@")[0].replace(/[._-]/g, " ").toUpperCase() || "Newsroom Contributor",
+    photoURL: user.photoURL || "/assets/social-image-1.png",
+    role: assignedRole,
+    desk: assignedRole === "admin" ? "Executive & Investigation" : assignedRole === "editor" ? "Editorial Desk" : "Technology & Digital Economy",
+    bio: "",
+    created_at: now,
+    updated_at: now,
+  };
+
+  localUserProfilesStore[user.uid] = newProfile;
+
+  if (isFirebaseConfigured && db && isFirestoreAvailable) {
+    try {
+      const docRef = doc(db, "users", user.uid);
+      await setDoc(docRef, sanitizeForFirestore(newProfile as unknown as Record<string, unknown>));
+    } catch (err) {
+      console.warn("Could not save new user profile to Firestore:", err);
+    }
+  }
+
+  return newProfile;
+}
+
+export async function updateUserProfile(
+  uid: string,
+  updates: Partial<UserProfile>
+): Promise<boolean> {
+  const now = new Date().toISOString();
+  const current = localUserProfilesStore[uid];
+  if (current) {
+    localUserProfilesStore[uid] = {
+      ...current,
+      ...updates,
+      updated_at: now,
+    };
+  }
+
+  if (isFirebaseConfigured && db && isFirestoreAvailable) {
+    try {
+      const docRef = doc(db, "users", uid);
+      await updateDoc(docRef, sanitizeForFirestore({ ...updates, updated_at: now }));
+      return true;
+    } catch (err) {
+      console.warn("Could not update user profile in Firestore:", err);
+      return false;
+    }
+  }
+
+  return true;
+}
+
+export async function setUserRole(uid: string, role: UserRole): Promise<boolean> {
+  return await updateUserProfile(uid, { role });
 }

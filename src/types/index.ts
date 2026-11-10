@@ -61,6 +61,19 @@ export interface Subscriber {
 }
 
 export type NewsroomRole = "admin" | "editor" | "writer";
+export type UserRole = "reader" | "author" | "writer" | "editor" | "admin";
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  displayName: string;
+  photoURL?: string;
+  role: UserRole;
+  bio?: string;
+  desk?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface NewsroomMember {
   id: string;
