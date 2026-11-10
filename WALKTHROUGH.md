@@ -153,25 +153,25 @@ Enforce strict access controls so readers, contributors, desk editors, and admin
 Deliver a world-class reading experience with live news dispatches, social sharing, and reader engagement.
 
 ### Phase 4.1: Live Breaking News Dispatch Ticker
-- [ ] **Ticker Component ([breaking-news-ticker.tsx](src/components/breaking-news-ticker.tsx))**
+- [x] **Ticker Component ([breaking-news-ticker.tsx](src/components/breaking-news-ticker.tsx))**
   - Live Firestore subscription for articles where `is_breaking == true` and `status == 'published'`
   - Animated marquee or cycling transition with urgency pulse indicator
   - Click-through directly to the breaking article
 
 ### Phase 4.2: Reader Engagement
-- [ ] **Social Sharing ([article-reader-toolbar.tsx](src/components/article-reader-toolbar.tsx))**
+- [x] **Social Sharing ([article-reader-toolbar.tsx](src/components/article-reader-toolbar.tsx))**
   - Native Web Share API with fallbacks:
     - WhatsApp direct share with formatted title + URL
     - X (Twitter) intent with pre-filled hashtags
     - LinkedIn share intent
     - One-click copy link with success tooltip
-- [ ] **Local & Cloud Bookmarking**
+- [x] **Local & Cloud Bookmarking**
   - Fast local storage bookmarking for guest readers
-  - Dedicated "Saved Articles" drawer or reading list page
+  - Dedicated "Saved Articles" drawer or reading list page ([saved-articles-drawer.tsx](src/components/saved-articles-drawer.tsx))
 
 ### Phase 4.3: Structured Data & Metadata
-- [ ] Dynamic OpenGraph images and Twitter cards
-- [ ] Schema.org `NewsArticle` JSON-LD on article pages for Google Discover and search indexing
+- [x] Dynamic OpenGraph images and Twitter cards
+- [x] Schema.org `NewsArticle` JSON-LD on article pages for Google Discover and search indexing
 
 ---
 

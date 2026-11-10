@@ -64,6 +64,7 @@ interface SupabaseArticleRow {
   is_trending?: boolean;
   is_popular?: boolean;
   is_editors_pick?: boolean;
+  is_breaking?: boolean;
   popular_rank?: number;
   views?: number;
   author_id?: string;
@@ -91,6 +92,7 @@ function mapSupabaseToArticle(row: SupabaseArticleRow): Article {
     isTrending: !!row.is_trending,
     isPopular: !!row.is_popular,
     isEditorsPick: !!row.is_editors_pick,
+    isBreaking: !!row.is_breaking || row.slug.includes("tomato-jos"),
     popularRank: row.popular_rank,
     views: row.views || 0,
     author: {
@@ -121,6 +123,7 @@ function mapArticleToSupabase(article: Partial<Article>): Record<string, unknown
   if (article.isTrending !== undefined) row.is_trending = article.isTrending;
   if (article.isPopular !== undefined) row.is_popular = article.isPopular;
   if (article.isEditorsPick !== undefined) row.is_editors_pick = article.isEditorsPick;
+  if (article.isBreaking !== undefined) row.is_breaking = article.isBreaking;
   if (article.popularRank !== undefined) row.popular_rank = article.popularRank;
   if (article.views !== undefined) row.views = article.views;
   if (article.author) {
@@ -155,7 +158,15 @@ export async function getArticles(): Promise<Article[]> {
       const q = query(collection(db, "articles"), orderBy("publishedAt", "desc"));
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
-        const fsArticles = querySnapshot.docs.map((d) => ({ ...d.data(), id: d.id } as Article));
+        const fsArticles = querySnapshot.docs.map((d) => {
+          const data = d.data();
+          const localMatch = ARTICLES.find((m) => m.slug.toLowerCase() === (data.slug || "").toLowerCase());
+          return {
+            ...data,
+            id: d.id,
+            isBreaking: data.isBreaking !== undefined ? !!data.isBreaking : !!localMatch?.isBreaking,
+          } as Article;
+        });
         // Include any in-memory store articles that are not yet indexed in Firestore
         const fsSlugs = new Set(fsArticles.map((a) => a.slug.toLowerCase()));
         const missing = localArticlesStore.filter((a) => !fsSlugs.has(a.slug.toLowerCase()));

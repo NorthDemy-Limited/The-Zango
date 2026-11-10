@@ -170,6 +170,7 @@ Simultaneously, agricultural fintech platform Agriarche secured $3.5 million in 
     author: AUTHORS[1],
     publishedAt: "July 14, 2026",
     readTime: "4 min read",
+    isBreaking: true,
     isLatest: true,
     isPopular: true,
     popularRank: 1,
