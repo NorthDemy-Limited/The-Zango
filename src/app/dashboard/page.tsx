@@ -11,13 +11,15 @@ export default function DashboardIndexPage() {
   useEffect(() => {
     if (isLoading) return;
     if (!isAuthenticated) {
-      router.replace("/login?redirect=/dashboard/admin");
-    } else if (role === "writer") {
+      router.replace("/login?redirect=/dashboard");
+    } else if (role === "writer" || role === "author") {
       router.replace("/dashboard/author");
     } else if (role === "editor") {
       router.replace("/dashboard/editor");
-    } else {
+    } else if (role === "admin") {
       router.replace("/dashboard/admin");
+    } else {
+      router.replace("/login?unauthorized=true");
     }
   }, [isAuthenticated, isLoading, role, router]);
 

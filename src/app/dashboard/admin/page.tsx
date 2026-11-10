@@ -31,6 +31,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
+import { ProtectedRoute } from "@/components/auth/protected-route";
 import { Article, Subscriber, Submission, NewsroomMember, NewsroomRole, Category } from "@/types";
 import { 
   getArticles, 
@@ -2643,7 +2644,12 @@ export default function AdminDashboardPage() {
         </div>
       }
     >
-      <AdminDashboardContent />
+      <ProtectedRoute
+        allowedRoles={["admin"]}
+        workspaceName="Executive Admin & Newsroom CMS"
+      >
+        <AdminDashboardContent />
+      </ProtectedRoute>
     </Suspense>
   );
 }

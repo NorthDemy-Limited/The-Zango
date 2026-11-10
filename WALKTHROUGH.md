@@ -114,7 +114,7 @@ Replace local base64 fallbacks with high-performance cloud storage on bucket `th
 Enforce strict access controls so readers, contributors, desk editors, and administrators have appropriate access boundaries.
 
 ### Phase 3.1: Authentication & Role Architecture
-- [ ] **Role Schema in Firestore (`users` collection)**
+- [x] **Role Schema in Firestore (`users` collection)**
   - Schema:
     ```typescript
     interface UserProfile {
@@ -129,19 +129,19 @@ Enforce strict access controls so readers, contributors, desk editors, and admin
     }
     ```
   - Auto-create user profile on first sign-in (default role: `reader` or `author`)
-- [ ] **Auth Context & Hook ([src/context/AuthContext.tsx](src/context/AuthContext.tsx))**
+- [x] **Auth Context & Hook ([src/context/AuthContext.tsx](src/context/AuthContext.tsx))**
   - Sync Firebase `onAuthStateChanged` with Firestore user profile document
   - Provide `user`, `role`, `loading`, `signInWithEmail`, `signInWithGoogle`, `signOut`
 
 ### Phase 3.2: Protected Route Guards & Middleware
-- [ ] **Client & Server Guarding**
+- [x] **Client & Server Guarding**
   - Route `/dashboard/author` &rarr; Requires `author`, `editor`, or `admin`
   - Route `/dashboard/editor` &rarr; Requires `editor` or `admin`
   - Route `/dashboard/admin` &rarr; Requires `admin`
   - Graceful unauthorized redirect to `/login?callbackUrl=...` with informative toast
 
 ### Phase 3.3: Firestore Security Rules (`firestore.rules`)
-- [ ] Declarative security rules for `articles`, `users`, `comments`, and `subscribers`:
+- [x] Declarative security rules for `articles`, `users`, `comments`, and `subscribers`:
   - `articles`: Public read for `status == 'published'`. Authors can create/edit own drafts. Editors/admins can update any article.
   - `users`: Users can read/write their own profile; admins can manage roles.
 

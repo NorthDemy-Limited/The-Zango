@@ -36,6 +36,7 @@ import {
 } from "@/lib/firebase/db";
 import { Submission, Article, Category } from "@/types";
 import { useAuth } from "@/context/auth-context";
+import { ProtectedRoute } from "@/components/auth/protected-route";
 import ImageUploader from "@/components/image-uploader";
 import RichEditor from "@/components/rich-editor";
 
@@ -1697,7 +1698,12 @@ export default function AuthorDashboardPage() {
         </div>
       }
     >
-      <AuthorStudioContent />
+      <ProtectedRoute
+        allowedRoles={["author", "writer", "editor", "admin"]}
+        workspaceName="Author Studio & Writer Desk"
+      >
+        <AuthorStudioContent />
+      </ProtectedRoute>
     </Suspense>
   );
 }
