@@ -26,7 +26,7 @@
     "@tiptap/react": "^3.33.0",
     "@tiptap/starter-kit": "^3.33.0",
     "cloudinary": "^2.11.0",
-    "firebase": "^13.1.0",
+    "firebase": "^13.2.0",
     "lucide-react": "^1.66.0",
     "next": "16.4.3",
     "react": "19.3.0",
