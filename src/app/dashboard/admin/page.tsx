@@ -28,11 +28,15 @@ import {
   Send,
   Mail,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Store,
+  Phone,
+  Clock,
+  Eye
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
-import { Article, Subscriber, Submission, NewsroomMember, NewsroomRole, Category } from "@/types";
+import { Article, Subscriber, Submission, NewsroomMember, NewsroomRole, Category, MerchantApplication } from "@/types";
 import { 
   getArticles, 
   createArticle, 
@@ -49,7 +53,9 @@ import {
   getSubmissions, 
   approveSubmission, 
   rejectSubmission,
-  requestRevisionSubmission
+  requestRevisionSubmission,
+  getMerchantApplications,
+  updateMerchantApplicationStatus
 } from "@/lib/firebase/db";
 import { CATEGORIES } from "@/data/mock-articles";
 import ImageUploader from "@/components/image-uploader";
@@ -62,6 +68,13 @@ function AdminDashboardContent() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [merchants, setMerchants] = useState<MerchantApplication[]>([]);
+  const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
+  const [merchantFilter, setMerchantFilter] = useState<"all" | "pending" | "under_review" | "approved" | "rejected">("all");
+  const [merchantSearchQuery, setMerchantSearchQuery] = useState("");
+  const [selectedMerchant, setSelectedMerchant] = useState<MerchantApplication | null>(null);
+  const [updatingMerchantId, setUpdatingMerchantId] = useState<string | null>(null);
+  const [merchantReviewNotes, setMerchantReviewNotes] = useState("");
   const [metrics, setMetrics] = useState({
     totalArticles: 0,
     totalViews: 0,
@@ -71,7 +84,7 @@ function AdminDashboardContent() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [activeTab, setActiveTab] = useState<"overview" | "dispatches" | "reviewQueue" | "team" | "desks" | "subscribers" | "settings">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "dispatches" | "reviewQueue" | "merchants" | "team" | "desks" | "subscribers" | "settings">("overview");
   const [teamFilter, setTeamFilter] = useState<"all" | "admin" | "editor" | "writer">("all");
   const [staffSearchQuery, setStaffSearchQuery] = useState("");
   const [teamMembers, setTeamMembers] = useState<NewsroomMember[]>([]);
@@ -145,7 +158,7 @@ function AdminDashboardContent() {
 
   const loadData = async () => {
     try {
-      const [artsRes, subsRes, queueRes, metsRes, staffRes, desksRes, tagsRes] = await Promise.all([
+      const [artsRes, subsRes, queueRes, metsRes, staffRes, desksRes, tagsRes, merchantsRes] = await Promise.all([
         fetch("/api/admin/articles").then((r) => r.json()).catch(() => null),
         fetch("/api/admin/subscribers").then((r) => r.json()).catch(() => null),
         fetch("/api/admin/submissions").then((r) => r.json()).catch(() => null),
@@ -153,6 +166,7 @@ function AdminDashboardContent() {
         fetch("/api/admin/staff").then((r) => r.json()).catch(() => null),
         fetch("/api/admin/desks").then((r) => r.json()).catch(() => null),
         fetch("/api/admin/tags").then((r) => r.json()).catch(() => null),
+        fetch("/api/marketplace/merchants").then((r) => r.json()).catch(() => null),
       ]);
 
       if (desksRes?.success && desksRes.desks) setDesksList(desksRes.desks);
@@ -177,6 +191,13 @@ function AdminDashboardContent() {
       } else {
         const subsQueue = await getSubmissions();
         setSubmissions([...subsQueue]);
+      }
+
+      if (merchantsRes?.success && merchantsRes.merchants) {
+        setMerchants(merchantsRes.merchants);
+      } else {
+        const localMerchants = await getMerchantApplications();
+        setMerchants([...localMerchants]);
       }
 
       if (staffRes?.success && staffRes.members) {
@@ -209,10 +230,12 @@ function AdminDashboardContent() {
       const subsQueue = await getSubmissions();
       const mets = await getPlatformMetrics();
       const members = await getTeamMembers();
+      const localMerchants = await getMerchantApplications();
       setTeamMembers([...members]);
       setArticles([...arts]);
       setSubscribers([...subs]);
       setSubmissions([...subsQueue]);
+      setMerchants([...localMerchants]);
       setMetrics({
         totalArticles: mets.totalArticles,
         totalViews: mets.totalViews,
@@ -238,6 +261,66 @@ function AdminDashboardContent() {
   const triggerToast = (msg: string) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 4000);
+  };
+
+  const formatMerchantDate = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const handleUpdateMerchantStatus = async (
+    id: string,
+    status: "approved" | "under_review" | "rejected",
+    notes?: string
+  ) => {
+    setUpdatingMerchantId(id);
+    try {
+      const res = await fetch(`/api/marketplace/merchants/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status,
+          notes: notes || undefined,
+          reviewedBy: user?.name || "Admin",
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setMerchants((prev) =>
+          prev.map((m) => (m.id === id ? { ...m, status, notes: notes || m.notes, reviewedBy: user?.name || "Admin" } : m))
+        );
+        triggerToast(`Merchant application marked as ${status.replace("_", " ")}`);
+        if (selectedMerchant && selectedMerchant.id === id) {
+          setSelectedMerchant((prev) => prev ? { ...prev, status, notes: notes || prev.notes } : null);
+        }
+      } else {
+        await updateMerchantApplicationStatus(id, status, notes, user?.name || "Admin");
+        setMerchants((prev) =>
+          prev.map((m) => (m.id === id ? { ...m, status, notes: notes || m.notes, reviewedBy: user?.name || "Admin" } : m))
+        );
+        triggerToast(`Merchant application marked as ${status.replace("_", " ")}`);
+      }
+    } catch (err) {
+      console.error("Failed to update merchant status:", err);
+      await updateMerchantApplicationStatus(id, status, notes, user?.name || "Admin");
+      setMerchants((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, status, notes: notes || m.notes, reviewedBy: user?.name || "Admin" } : m))
+      );
+      triggerToast(`Merchant application status updated`);
+    } finally {
+      setUpdatingMerchantId(null);
+    }
   };
 
   // Real-time Slug Availability Checker
@@ -750,6 +833,27 @@ function AdminDashboardContent() {
   });
 
   const pendingSubmissions = submissions.filter((s) => s.status === "pending" || s.status === "needs_revision");
+  const pendingMerchants = merchants.filter((m) => m.status === "pending");
+  const underReviewMerchants = merchants.filter((m) => m.status === "under_review");
+  const approvedMerchants = merchants.filter((m) => m.status === "approved");
+  const totalAlerts = pendingSubmissions.length + pendingMerchants.length;
+
+  const filteredMerchants = merchants.filter((m) => {
+    const matchesFilter =
+      merchantFilter === "all" || m.status === merchantFilter;
+    const query = merchantSearchQuery.toLowerCase().trim();
+    const matchesSearch =
+      !query ||
+      m.businessName.toLowerCase().includes(query) ||
+      m.contactName.toLowerCase().includes(query) ||
+      m.email.toLowerCase().includes(query) ||
+      m.phone.toLowerCase().includes(query) ||
+      m.category.toLowerCase().includes(query) ||
+      m.location.toLowerCase().includes(query) ||
+      m.description.toLowerCase().includes(query);
+    return matchesFilter && matchesSearch;
+  });
+
   const leadFeaturedArticle = articles.find((a) => a.isFeatured) || articles[0];
 
   return (
@@ -821,17 +925,161 @@ function AdminDashboardContent() {
               <span className="hidden sm:inline">New Dispatch</span>
             </button>
 
-            {/* Notification Bell with Review Queue indicator */}
-            <button 
-              onClick={() => setActiveTab("reviewQueue")}
-              className="relative p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-              title="Editorial Review Queue"
-            >
-              <Bell className="w-4 h-4" />
-              {pendingSubmissions.length > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#C61D1F] ring-2 ring-white animate-pulse" />
+            {/* Notification Bell with Review Queue & Merchant indicator */}
+            <div className="relative">
+              <button 
+                onClick={() => setNotificationMenuOpen(!notificationMenuOpen)}
+                className={`relative p-2 rounded-xl transition-colors cursor-pointer ${
+                  notificationMenuOpen ? "text-[#C61D1F] bg-red-50" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                }`}
+                title="Newsroom Activity & Notifications"
+                aria-label="Notifications"
+              >
+                <Bell className="w-4 h-4" />
+                {totalAlerts > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#C61D1F] text-white text-[10px] font-extrabold flex items-center justify-center ring-2 ring-white animate-pulse">
+                    {totalAlerts}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification Center Dropdown */}
+              {notificationMenuOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setNotificationMenuOpen(false)} 
+                  />
+                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                    <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Bell className="w-4 h-4 text-[#C61D1F]" />
+                        <span className="font-extrabold text-xs uppercase tracking-wider">Newsroom Activity Hub</span>
+                      </div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/15 text-white">
+                        {totalAlerts} Pending
+                      </span>
+                    </div>
+
+                    <div className="max-h-96 overflow-y-auto divide-y divide-slate-100">
+                      {/* Merchant Applications Section */}
+                      {pendingMerchants.length > 0 && (
+                        <div className="p-3 bg-red-50/40">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-extrabold uppercase text-[#C61D1F] tracking-wider flex items-center space-x-1.5">
+                              <Store className="w-3.5 h-3.5" />
+                              <span>Merchant Registrations ({pendingMerchants.length})</span>
+                            </span>
+                            <button
+                              onClick={() => {
+                                setActiveTab("merchants");
+                                setMerchantFilter("pending");
+                                setNotificationMenuOpen(false);
+                              }}
+                              className="text-[10px] font-bold text-[#C61D1F] hover:underline cursor-pointer"
+                            >
+                              View All
+                            </button>
+                          </div>
+                          <div className="space-y-2">
+                            {pendingMerchants.slice(0, 3).map((merchant) => (
+                              <div
+                                key={merchant.id}
+                                onClick={() => {
+                                  setSelectedMerchant(merchant);
+                                  setActiveTab("merchants");
+                                  setNotificationMenuOpen(false);
+                                }}
+                                className="p-2.5 bg-white rounded-xl border border-red-200/60 hover:border-[#C61D1F] hover:shadow-xs transition-all cursor-pointer"
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="font-bold text-xs text-slate-900 truncate">
+                                    {merchant.businessName}
+                                  </div>
+                                  <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 shrink-0">
+                                    New Vendor
+                                  </span>
+                                </div>
+                                <div className="text-[11px] text-slate-500 mt-0.5">
+                                  {merchant.contactName} • {merchant.category}
+                                </div>
+                                <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
+                                  <span>{merchant.location}</span>
+                                  <span className="font-medium text-[#C61D1F]">Review & Onboard →</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Editorial Submissions Section */}
+                      {pendingSubmissions.length > 0 && (
+                        <div className="p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-extrabold uppercase text-slate-500 tracking-wider flex items-center space-x-1.5">
+                              <Inbox className="w-3.5 h-3.5 text-amber-600" />
+                              <span>Manuscripts ({pendingSubmissions.length})</span>
+                            </span>
+                            <button
+                              onClick={() => {
+                                setActiveTab("reviewQueue");
+                                setNotificationMenuOpen(false);
+                              }}
+                              className="text-[10px] font-bold text-blue-600 hover:underline cursor-pointer"
+                            >
+                              Review Queue
+                            </button>
+                          </div>
+                          <div className="space-y-2">
+                            {pendingSubmissions.slice(0, 3).map((sub) => (
+                              <div
+                                key={sub.id}
+                                onClick={() => {
+                                  setActiveTab("reviewQueue");
+                                  setNotificationMenuOpen(false);
+                                }}
+                                className="p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/60 transition-all cursor-pointer"
+                              >
+                                <div className="font-bold text-xs text-slate-900 line-clamp-1">
+                                  {sub.title}
+                                </div>
+                                <div className="text-[10px] text-slate-500 mt-0.5 flex items-center justify-between">
+                                  <span>{sub.authorName} • {sub.category}</span>
+                                  <span className="font-medium text-amber-700">Clear manuscript →</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Empty Notification State */}
+                      {totalAlerts === 0 && (
+                        <div className="p-8 text-center">
+                          <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
+                          <div className="text-xs font-bold text-slate-800">All Queues Cleared</div>
+                          <div className="text-[11px] text-slate-500 mt-1">
+                            No pending merchant registrations or editorial reviews.
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-2.5 bg-slate-50 border-t border-slate-100 text-center">
+                      <Link
+                        href="/marketplace"
+                        target="_blank"
+                        className="text-[11px] font-bold text-[#C61D1F] hover:underline inline-flex items-center space-x-1"
+                      >
+                        <span>View Live Sahel Marketplace</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  </div>
+                </>
               )}
-            </button>
+            </div>
 
             {/* User Profile Pill */}
             <div className="flex items-center space-x-2.5 pl-2 border-l border-slate-200">
@@ -938,6 +1186,34 @@ function AdminDashboardContent() {
                   activeTab === "reviewQueue" ? "bg-white/20 text-white" : "text-slate-400"
                 }`}>
                   0
+                </span>
+              )}
+            </button>
+
+            {/* Sidebar Item 3b: Marketplace Merchants */}
+            <button
+              onClick={() => setActiveTab("merchants")}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === "merchants"
+                  ? "bg-[#C61D1F] text-white shadow-sm"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <Store className="w-4 h-4 shrink-0" />
+                <span>Marketplace Merchants</span>
+              </div>
+              {pendingMerchants.length > 0 ? (
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-extrabold ${
+                  activeTab === "merchants" ? "bg-white text-[#C61D1F]" : "bg-red-100 text-[#C61D1F] border border-red-200"
+                }`}>
+                  {pendingMerchants.length}
+                </span>
+              ) : (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                  activeTab === "merchants" ? "bg-white/20 text-white" : "text-slate-400"
+                }`}>
+                  {merchants.length}
                 </span>
               )}
             </button>
@@ -1200,8 +1476,8 @@ function AdminDashboardContent() {
 
               </div>
 
-              {/* 4 Sleek Micro-Metric Cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* 5 Sleek Micro-Metric Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                 
                 {/* Metric 1 */}
                 <div 
@@ -1257,7 +1533,39 @@ function AdminDashboardContent() {
                   </div>
                 </div>
 
-                {/* Metric 3 */}
+                {/* Metric 3: Marketplace Merchants */}
+                <div 
+                  onClick={() => setActiveTab("merchants")}
+                  className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:border-slate-300 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-2xl bg-red-50 text-[#C61D1F] flex items-center justify-center">
+                      <Store className="w-5 h-5" />
+                    </div>
+                    {pendingMerchants.length > 0 ? (
+                      <span className="text-[10px] font-extrabold text-red-800 bg-red-100 px-2 py-0.5 rounded-full animate-pulse">
+                        Action needed
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                        Directory
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider block">
+                      Marketplace
+                    </span>
+                    <span className="text-xl sm:text-2xl font-extrabold text-slate-900 group-hover:text-[#C61D1F] transition-colors">
+                      {merchants.length}
+                    </span>
+                    <span className="text-[11px] text-slate-500 block mt-0.5">
+                      {pendingMerchants.length > 0 ? `${pendingMerchants.length} pending review` : "Registered vendors"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Metric 4 */}
                 <div 
                   onClick={() => setActiveTab("subscribers")}
                   className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:border-slate-300 transition-all cursor-pointer group"
@@ -1281,7 +1589,7 @@ function AdminDashboardContent() {
                   </div>
                 </div>
 
-                {/* Metric 4 */}
+                {/* Metric 5 */}
                 <div 
                   onClick={() => setActiveTab("team")}
                   className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:border-slate-300 transition-all cursor-pointer group"
@@ -1329,6 +1637,35 @@ function AdminDashboardContent() {
                     className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer shrink-0"
                   >
                     Open Review Queue →
+                  </button>
+                </div>
+              )}
+
+              {/* URGENT MERCHANT REGISTRATION ALERT BANNER (Shows only if pending merchants exist) */}
+              {pendingMerchants.length > 0 && (
+                <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200/90 rounded-3xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
+                  <div className="flex items-center space-x-3.5">
+                    <div className="w-10 h-10 rounded-2xl bg-[#C61D1F] text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <Store className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-sm text-slate-900">
+                        {pendingMerchants.length} Merchant Application{pendingMerchants.length > 1 ? "s" : ""} Awaiting Commercial Review
+                      </h4>
+                      <p className="text-xs text-slate-600 mt-0.5">
+                        Latest submission: <span className="font-semibold text-slate-900">&ldquo;{pendingMerchants[0].businessName}&rdquo;</span> ({pendingMerchants[0].category}, {pendingMerchants[0].location}) by {pendingMerchants[0].contactName}.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setActiveTab("merchants");
+                      setMerchantFilter("pending");
+                    }}
+                    className="px-4 py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer shrink-0"
+                  >
+                    Review Applications →
                   </button>
                 </div>
               )}
@@ -1740,6 +2077,293 @@ function AdminDashboardContent() {
                           >
                             Approve & Publish Live
                           </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 3b: MARKETPLACE MERCHANTS & DIRECTORY */}
+          {activeTab === "merchants" && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              {/* Header Box */}
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/80">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="w-2 h-4 bg-[#C61D1F] rounded-xs inline-block" />
+                      <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wide">
+                        Sahel Commercial Directory & Merchant Applications
+                      </h3>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Review registered vendors, authenticate Northern Nigeria enterprises, and authorize listings for the live directory.
+                    </p>
+                  </div>
+
+                  <Link
+                    href="/marketplace"
+                    target="_blank"
+                    className="px-4 py-2 border border-slate-200 hover:border-slate-800 text-slate-800 text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-2xs flex items-center space-x-2 cursor-pointer shrink-0"
+                  >
+                    <span>View Public Directory</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+
+                {/* Micro Metrics Strip */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4">
+                  <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200/60">
+                    <div className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Total Applications</div>
+                    <div className="text-xl font-extrabold text-slate-900 mt-0.5">{merchants.length}</div>
+                  </div>
+                  <div className="bg-amber-50/60 rounded-2xl p-3 border border-amber-200/60">
+                    <div className="text-[10px] font-extrabold uppercase text-amber-700 tracking-wider">Pending Review</div>
+                    <div className="text-xl font-extrabold text-amber-900 mt-0.5">{pendingMerchants.length}</div>
+                  </div>
+                  <div className="bg-blue-50/60 rounded-2xl p-3 border border-blue-200/60">
+                    <div className="text-[10px] font-extrabold uppercase text-blue-700 tracking-wider">Under Review</div>
+                    <div className="text-xl font-extrabold text-blue-900 mt-0.5">{underReviewMerchants.length}</div>
+                  </div>
+                  <div className="bg-emerald-50/60 rounded-2xl p-3 border border-emerald-200/60">
+                    <div className="text-[10px] font-extrabold uppercase text-emerald-700 tracking-wider">Approved & Live</div>
+                    <div className="text-xl font-extrabold text-emerald-900 mt-0.5">{approvedMerchants.length}</div>
+                  </div>
+                </div>
+
+                {/* Filter and Search Bar */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-6">
+                  {/* Status Filter Tabs */}
+                  <div className="flex items-center space-x-2 overflow-x-auto pb-1">
+                    <button
+                      onClick={() => setMerchantFilter("all")}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                        merchantFilter === "all" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      All ({merchants.length})
+                    </button>
+                    <button
+                      onClick={() => setMerchantFilter("pending")}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                        merchantFilter === "pending" ? "bg-amber-600 text-white" : "bg-amber-50 text-amber-800 hover:bg-amber-100"
+                      }`}
+                    >
+                      Pending ({pendingMerchants.length})
+                    </button>
+                    <button
+                      onClick={() => setMerchantFilter("under_review")}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                        merchantFilter === "under_review" ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-800 hover:bg-blue-100"
+                      }`}
+                    >
+                      Under Review ({underReviewMerchants.length})
+                    </button>
+                    <button
+                      onClick={() => setMerchantFilter("approved")}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                        merchantFilter === "approved" ? "bg-emerald-600 text-white" : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                      }`}
+                    >
+                      Approved ({approvedMerchants.length})
+                    </button>
+                    <button
+                      onClick={() => setMerchantFilter("rejected")}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                        merchantFilter === "rejected" ? "bg-rose-600 text-white" : "bg-rose-50 text-rose-800 hover:bg-rose-100"
+                      }`}
+                    >
+                      Declined ({merchants.filter((m) => m.status === "rejected").length})
+                    </button>
+                  </div>
+
+                  {/* Search Input */}
+                  <div className="relative w-full md:w-72">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="Search business, contact, location..."
+                      value={merchantSearchQuery}
+                      onChange={(e) => setMerchantSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2 text-xs border border-slate-200 rounded-xl focus:border-[#C61D1F] focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Merchant Applications List */}
+              {filteredMerchants.length === 0 ? (
+                <div className="bg-white rounded-3xl p-12 text-center border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                    <Store className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-extrabold text-slate-900 text-sm">No Merchant Applications Found</h4>
+                  <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                    {merchantSearchQuery
+                      ? "No merchant registrations matched your search query. Try broadening your terms."
+                      : "There are currently no merchant applications in this filter cohort."}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-4">
+                  {filteredMerchants.map((merchant) => (
+                    <div
+                      key={merchant.id}
+                      className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:border-slate-300 transition-all space-y-4"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2.5 flex-wrap gap-y-1">
+                            <span className="font-extrabold text-base text-slate-900">
+                              {merchant.businessName}
+                            </span>
+                            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                              {merchant.category}
+                            </span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-100">
+                              {merchant.location}
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-500 flex items-center space-x-3 flex-wrap">
+                            <span className="font-medium text-slate-800">
+                              Contact: {merchant.contactName}
+                            </span>
+                            <span>•</span>
+                            <a
+                              href={`mailto:${merchant.email}`}
+                              className="text-blue-600 hover:underline flex items-center space-x-1"
+                            >
+                              <Mail className="w-3 h-3 inline" />
+                              <span>{merchant.email}</span>
+                            </a>
+                            <span>•</span>
+                            <a
+                              href={`tel:${merchant.phone}`}
+                              className="text-slate-600 hover:text-slate-900 flex items-center space-x-1"
+                            >
+                              <Phone className="w-3 h-3 inline" />
+                              <span>{merchant.phone}</span>
+                            </a>
+                            {merchant.website && (
+                              <>
+                                <span>•</span>
+                                <a
+                                  href={merchant.website.startsWith("http") ? merchant.website : `https://${merchant.website}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-slate-600 hover:text-[#C61D1F] flex items-center space-x-1"
+                                >
+                                  <span>{merchant.website.replace(/^https?:\/\//, "")}</span>
+                                  <ExternalLink className="w-2.5 h-2.5" />
+                                </a>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Status Badge */}
+                        <div className="shrink-0">
+                          {merchant.status === "pending" && (
+                            <span className="inline-flex items-center space-x-1.5 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
+                              <span>Pending Review</span>
+                            </span>
+                          )}
+                          {merchant.status === "under_review" && (
+                            <span className="inline-flex items-center space-x-1.5 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+                              <Clock className="w-3 h-3 text-blue-600" />
+                              <span>Under Review</span>
+                            </span>
+                          )}
+                          {merchant.status === "approved" && (
+                            <span className="inline-flex items-center space-x-1.5 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              <CheckCircle className="w-3 h-3 text-emerald-600" />
+                              <span>Approved & Active</span>
+                            </span>
+                          )}
+                          {merchant.status === "rejected" && (
+                            <span className="inline-flex items-center space-x-1.5 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 border border-rose-200">
+                              <X className="w-3 h-3 text-rose-600" />
+                              <span>Declined</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Products / Description Box */}
+                      <div className="p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/60 text-xs text-slate-700 leading-relaxed">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
+                          Capacity & Product Profile:
+                        </span>
+                        {merchant.description}
+                      </div>
+
+                      {/* Review Notes (if any) */}
+                      {merchant.notes && (
+                        <div className="text-[11px] text-slate-600 bg-amber-50/60 p-2.5 rounded-xl border border-amber-200/50">
+                          <span className="font-bold text-amber-900">Desk Review Note:</span> {merchant.notes}
+                        </div>
+                      )}
+
+                      {/* Card Footer: Metadata & Actions */}
+                      <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <div className="text-[11px] text-slate-400 flex items-center space-x-2">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>Submitted: {formatMerchantDate(merchant.submittedAt)}</span>
+                          {merchant.reviewedBy && (
+                            <>
+                              <span>•</span>
+                              <span>Reviewed by {merchant.reviewedBy}</span>
+                            </>
+                          )}
+                        </div>
+
+                        <div className="flex items-center space-x-2 flex-wrap gap-y-2">
+                          <button
+                            onClick={() => {
+                              setSelectedMerchant(merchant);
+                              setMerchantReviewNotes(merchant.notes || "");
+                            }}
+                            className="px-3 py-1.5 border border-slate-200 hover:border-slate-800 text-slate-800 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center space-x-1.5 bg-white shadow-2xs"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-slate-500" />
+                            <span>Details & Notes</span>
+                          </button>
+
+                          {merchant.status !== "under_review" && (
+                            <button
+                              disabled={updatingMerchantId === merchant.id}
+                              onClick={() => handleUpdateMerchantStatus(merchant.id, "under_review")}
+                              className="px-3 py-1.5 border border-blue-200 bg-blue-50/60 hover:bg-blue-100 text-blue-800 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center space-x-1"
+                            >
+                              <Clock className="w-3.5 h-3.5" />
+                              <span>Under Review</span>
+                            </button>
+                          )}
+
+                          {merchant.status !== "rejected" && (
+                            <button
+                              disabled={updatingMerchantId === merchant.id}
+                              onClick={() => handleUpdateMerchantStatus(merchant.id, "rejected")}
+                              className="px-3 py-1.5 border border-slate-200 hover:border-rose-300 hover:bg-rose-50 text-slate-600 hover:text-rose-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                            >
+                              Decline
+                            </button>
+                          )}
+
+                          {merchant.status !== "approved" && (
+                            <button
+                              disabled={updatingMerchantId === merchant.id}
+                              onClick={() => handleUpdateMerchantStatus(merchant.id, "approved")}
+                              className="px-4 py-1.5 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Approve & Verify</span>
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -2627,6 +3251,131 @@ function AdminDashboardContent() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Merchant Application Details Modal */}
+      {selectedMerchant && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center space-x-2">
+                <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
+                <h3 className="text-sm font-extrabold text-slate-900 uppercase">
+                  Merchant Dossier & Verification
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedMerchant(null)}
+                className="text-slate-400 hover:text-slate-900 p-1 rounded-xl cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/60 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-extrabold text-slate-900 text-sm">{selectedMerchant.businessName}</span>
+                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-slate-200 text-slate-800">
+                    {selectedMerchant.category}
+                  </span>
+                </div>
+                <div className="text-xs text-slate-600 grid grid-cols-2 gap-2 pt-1 border-t border-slate-200/60">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Contact Person</span>
+                    <span className="font-semibold text-slate-800">{selectedMerchant.contactName}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">State / Hub</span>
+                    <span className="font-semibold text-slate-800">{selectedMerchant.location}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Email Address</span>
+                    <a href={`mailto:${selectedMerchant.email}`} className="text-blue-600 hover:underline">{selectedMerchant.email}</a>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Telephone</span>
+                    <a href={`tel:${selectedMerchant.phone}`} className="text-slate-800">{selectedMerchant.phone}</a>
+                  </div>
+                </div>
+                {selectedMerchant.website && (
+                  <div className="pt-1 text-xs">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Digital Storefront / Website</span>
+                    <a
+                      href={selectedMerchant.website.startsWith("http") ? selectedMerchant.website : `https://${selectedMerchant.website}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline inline-flex items-center space-x-1"
+                    >
+                      <span>{selectedMerchant.website}</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block mb-1">
+                  Product Profile & Commercial Description:
+                </span>
+                <div className="p-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 max-h-32 overflow-y-auto">
+                  {selectedMerchant.description}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-700 tracking-wider mb-1">
+                  Internal Verification / Desk Notes
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. CAC verified, inspected products at Dala industrial area..."
+                  value={merchantReviewNotes}
+                  onChange={(e) => setMerchantReviewNotes(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setSelectedMerchant(null)}
+                className="px-3 py-1.5 border border-slate-200 hover:border-slate-800 rounded-xl text-xs font-bold uppercase transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  disabled={updatingMerchantId === selectedMerchant.id}
+                  onClick={() => handleUpdateMerchantStatus(selectedMerchant.id, "rejected", merchantReviewNotes)}
+                  className="px-3 py-1.5 border border-rose-200 hover:bg-rose-50 text-rose-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Decline
+                </button>
+                <button
+                  type="button"
+                  disabled={updatingMerchantId === selectedMerchant.id}
+                  onClick={() => handleUpdateMerchantStatus(selectedMerchant.id, "under_review", merchantReviewNotes)}
+                  className="px-3 py-1.5 border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Save Under Review
+                </button>
+                <button
+                  type="button"
+                  disabled={updatingMerchantId === selectedMerchant.id}
+                  onClick={() => handleUpdateMerchantStatus(selectedMerchant.id, "approved", merchantReviewNotes)}
+                  className="px-4 py-1.5 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
+                >
+                  Approve Vendor
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

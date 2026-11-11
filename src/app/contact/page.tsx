@@ -5,6 +5,9 @@ import { Mail, MapPin, Phone, Send, CheckCircle2 } from "lucide-react";
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successNote, setSuccessNote] = useState<string>("Thank you for reaching out. An editor or desk representative will follow up within 24 hours.");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -12,11 +15,35 @@ export default function ContactPage() {
     message: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.name && formData.email && formData.message) {
+    if (!formData.name || !formData.email || !formData.message) return;
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        if (data.isMerchant) {
+          setSuccessNote("Your Merchant Onboarding Application has been registered and forwarded to the Executive Newsroom and Marketplace Desk. You will receive an official notification.");
+        }
+        setSubmitted(true);
+        setFormData({ name: "", email: "", subject: "", message: "" });
+      } else {
+        setErrorMessage(data.message || "Failed to submit message. Please try again.");
+      }
+    } catch {
+      // Offline fallback: still acknowledge user
       setSubmitted(true);
       setFormData({ name: "", email: "", subject: "", message: "" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -93,7 +120,7 @@ export default function ContactPage() {
                 <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto" />
                 <h3 className="text-xl font-bold text-[#000000]">Message Received!</h3>
                 <p className="text-sm text-[#707070] max-w-sm mx-auto">
-                  Thank you for reaching out. An editor or desk representative will follow up within 24 hours.
+                  {successNote}
                 </p>
                 <button
                   onClick={() => setSubmitted(false)}
@@ -159,11 +186,18 @@ export default function ContactPage() {
                   />
                 </div>
 
+                {errorMessage && (
+                  <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold">
+                    {errorMessage}
+                  </div>
+                )}
+
                 <button
                   type="submit"
-                  className="w-full py-3.5 bg-[#C61D1F] hover:bg-[#A51719] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center space-x-2 shadow-md cursor-pointer"
+                  disabled={isSubmitting}
+                  className="w-full py-3.5 bg-[#C61D1F] hover:bg-[#A51719] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center space-x-2 shadow-md cursor-pointer disabled:opacity-50"
                 >
-                  <span>Submit Inquiry</span>
+                  <span>{isSubmitting ? "Delivering..." : "Submit Inquiry"}</span>
                   <Send className="w-4 h-4" />
                 </button>
               </form>

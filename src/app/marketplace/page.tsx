@@ -1,8 +1,14 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import Link from "next/link";
-import { ShoppingBag, ArrowRight, Store, ShieldCheck, Zap } from "lucide-react";
+import { ShoppingBag, ArrowRight, Store, ShieldCheck, Zap, Sparkles } from "lucide-react";
+import MerchantRegistrationModal from "@/components/merchant-registration-modal";
 
 export default function MarketplacePage() {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [registeredSuccess, setRegisteredSuccess] = useState(false);
+
   return (
     <div className="py-10 lg:py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -48,27 +54,58 @@ export default function MarketplacePage() {
           </div>
         </div>
 
-        {/* Coming Soon Notice */}
-        <div className="bg-[#000000] text-white rounded-3xl p-8 sm:p-12 text-center max-w-3xl mx-auto shadow-xl">
+        {/* Registration Callout Box */}
+        <div className="bg-[#000000] text-white rounded-3xl p-8 sm:p-12 text-center max-w-3xl mx-auto shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-[#C61D1F]/20 rounded-full blur-2xl" />
+          
           <span className="bg-[#C61D1F] text-white px-3 py-1 rounded-sm text-xs font-bold uppercase tracking-wider mb-4 inline-block">
-            Beta Launch Soon
+            Beta Cohort Application
           </span>
           <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">
             Want to list your brand on The Zango Marketplace?
           </h2>
           <p className="text-sm text-gray-300 max-w-lg mx-auto mb-6">
-            Early merchant applications are currently being reviewed for our pilot vendor cohort.
+            Early merchant applications are currently being reviewed for our pilot vendor cohort. Join certified regional suppliers connecting directly with verified institutional buyers.
           </p>
-          <Link
-            href="/contact"
-            className="px-6 py-3 bg-[#C61D1F] hover:bg-[#A51719] text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-colors inline-flex items-center space-x-2"
-          >
-            <span>Register as a Merchant</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
+          
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              className="px-6 py-3.5 bg-[#C61D1F] hover:bg-[#A51719] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md hover:shadow-lg inline-flex items-center space-x-2 cursor-pointer"
+            >
+              <Store className="w-4 h-4" />
+              <span>Register as a Merchant</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+
+            <Link
+              href="/contact?subject=Marketplace+Inquiry"
+              className="px-5 py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all inline-flex items-center space-x-2"
+            >
+              <span>Contact Commercial Desk</span>
+            </Link>
+          </div>
+
+          {registeredSuccess && (
+            <div className="mt-4 p-3 rounded-xl bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-xs font-bold flex items-center justify-center space-x-2">
+              <Sparkles className="w-4 h-4 text-emerald-400" />
+              <span>Your merchant application has been successfully dispatched to the Bureau!</span>
+            </div>
+          )}
         </div>
 
       </div>
+
+      {/* Dedicated Merchant Registration Modal */}
+      <MerchantRegistrationModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSuccess={() => {
+          setRegisteredSuccess(true);
+          setTimeout(() => setRegisteredSuccess(false), 8000);
+        }}
+      />
     </div>
   );
 }

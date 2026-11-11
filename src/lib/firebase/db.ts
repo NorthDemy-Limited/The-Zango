@@ -1,7 +1,7 @@
 import { db, isFirebaseConfigured } from "./config";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
 import { collection, getDocs, getDoc, setDoc, addDoc, doc, updateDoc, deleteDoc, query, orderBy, where, limit, terminate } from "firebase/firestore";
-import { Article, Subscriber, Submission, NewsroomMember, NewsroomRole, UserProfile, UserRole } from "@/types";
+import { Article, Subscriber, Submission, NewsroomMember, NewsroomRole, UserProfile, UserRole, MerchantApplication } from "@/types";
 import { ARTICLES } from "@/data/mock-articles";
 
 function sanitizeForFirestore<T extends Record<string, unknown>>(data: T): Record<string, unknown> {
@@ -1199,3 +1199,125 @@ export async function updateUserProfile(
 export async function setUserRole(uid: string, role: UserRole): Promise<boolean> {
   return await updateUserProfile(uid, { role });
 }
+
+// ==============================================================================
+// REGIONAL MARKETPLACE & MERCHANT APPLICATIONS
+// ==============================================================================
+let localMerchantsStore: MerchantApplication[] = [
+  {
+    id: "merch-1",
+    businessName: "Kano Heritage Tannery & Leatherworks",
+    contactName: "Balarabe Mustapha",
+    email: "balarabe@kanoleather.ng",
+    phone: "+234 803 123 4567",
+    category: "Artisanal Leatherware & Crafts",
+    location: "Kano, Kano State",
+    description: "Certified vegetable-tanned goat and sheep leather exports, handcrafted shoes, and institutional leather goods.",
+    website: "https://kanoleather.ng",
+    status: "approved",
+    submittedAt: "2026-10-15T09:30:00Z",
+    reviewedBy: "Usman Bello",
+  },
+  {
+    id: "merch-2",
+    businessName: "Dawanau Agro-Produce Aggregators",
+    contactName: "Amina Shehu",
+    email: "sales@dawanaugrains.com",
+    phone: "+234 802 987 6543",
+    category: "Agro-Commodities & Produce",
+    location: "Dawanau Market, Kano State",
+    description: "Wholesale grain sourcing: non-GMO sorghum, soya beans, sesame seeds, and dried chili pepper with automated testing.",
+    website: "https://dawanaugrains.com",
+    status: "pending",
+    submittedAt: "2026-11-08T14:15:00Z",
+  },
+  {
+    id: "merch-3",
+    businessName: "Zaria Textile Guild & Indigo Dyers",
+    contactName: "Zubairu Aliyu",
+    email: "zubairu@zariatextiles.org",
+    phone: "+234 814 555 7890",
+    category: "Textiles & Fashion",
+    location: "Zaria, Kaduna State",
+    description: "Traditional hand-woven cotton textiles, organic indigo-dyed fabrics, and contemporary modest fashion apparel.",
+    status: "pending",
+    submittedAt: "2026-11-10T11:45:00Z",
+  },
+];
+
+export async function getMerchantApplications(): Promise<MerchantApplication[]> {
+  if (isFirebaseConfigured && db && isFirestoreAvailable) {
+    try {
+      const q = query(collection(db, "merchants"), orderBy("submittedAt", "desc"));
+      const querySnapshot = await withTimeout(getDocs(q), 3000, null);
+      if (querySnapshot && !querySnapshot.empty) {
+        const fsMerchants = querySnapshot.docs.map(
+          (d) => ({ ...d.data(), id: d.id } as MerchantApplication)
+        );
+        const fsIds = new Set(fsMerchants.map((m) => m.id));
+        const merged = [...fsMerchants, ...localMerchantsStore.filter((m) => !fsIds.has(m.id))];
+        return merged;
+      }
+    } catch (err) {
+      console.warn("Could not fetch merchants from Firestore, using local store:", err);
+    }
+  }
+
+  return localMerchantsStore;
+}
+
+export async function createMerchantApplication(
+  data: Omit<MerchantApplication, "id" | "submittedAt" | "status">
+): Promise<MerchantApplication> {
+  const newMerchant: MerchantApplication = {
+    ...data,
+    id: `merch-${Date.now()}`,
+    status: "pending",
+    submittedAt: new Date().toISOString(),
+  };
+
+  if (isFirebaseConfigured && db && isFirestoreAvailable) {
+    try {
+      const docRef = await addDoc(
+        collection(db, "merchants"),
+        sanitizeForFirestore(newMerchant as unknown as Record<string, unknown>)
+      );
+      newMerchant.id = docRef.id;
+    } catch (err) {
+      console.warn("Could not persist merchant application to Firestore:", err);
+    }
+  }
+
+  localMerchantsStore = [newMerchant, ...localMerchantsStore];
+  return newMerchant;
+}
+
+export async function updateMerchantApplicationStatus(
+  id: string,
+  status: MerchantApplication["status"],
+  notes?: string,
+  reviewedBy?: string
+): Promise<MerchantApplication | null> {
+  const existing = localMerchantsStore.find((m) => m.id === id);
+  if (existing) {
+    existing.status = status;
+    if (notes) existing.notes = notes;
+    if (reviewedBy) existing.reviewedBy = reviewedBy;
+  }
+
+  if (isFirebaseConfigured && db && isFirestoreAvailable) {
+    try {
+      const docRef = doc(db, "merchants", id);
+      await updateDoc(docRef, sanitizeForFirestore({ 
+        status, 
+        ...(notes ? { notes } : {}),
+        ...(reviewedBy ? { reviewedBy } : {})
+      }));
+    } catch (err) {
+      console.warn("Could not update merchant application in Firestore:", err);
+    }
+  }
+
+  return existing || null;
+}
+

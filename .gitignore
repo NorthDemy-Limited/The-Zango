@@ -45,3 +45,6 @@ zango verse.zip
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# runtime uploaded assets
+/public/uploads/

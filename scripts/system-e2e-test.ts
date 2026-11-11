@@ -348,6 +348,81 @@ async function runTestSuite() {
       "Navbar and reader toolbar bookmark triggers registered"
     );
 
+    // --------------------------------------------------------------------------
+    // SUITE 7: Merchant Marketplace & Vendor Onboarding Queue
+    // --------------------------------------------------------------------------
+    console.log("\n--- SUITE 7: Merchant Marketplace & Vendor Onboarding Queue ---");
+
+    // 7.1 Register new merchant via /api/marketplace/merchants
+    const testMerchantPayload = {
+      businessName: "Dala Agro-Industrial Ltd",
+      contactName: "Balarabe Sani",
+      email: "balarabe@dalaagro.com",
+      phone: "+234 802 334 4556",
+      category: "Agribusiness & Commodity Trading",
+      location: "Dala, Kano State",
+      description: "Direct procurement of grains, sesame, and groundnuts with export grade sortation.",
+      website: "https://dalaagro.com",
+    };
+
+    const merchantRegRes = await fetch(`${BASE_URL}/api/marketplace/merchants`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(testMerchantPayload),
+    });
+    const merchantRegData = await merchantRegRes.json();
+    const merchantRegistered =
+      merchantRegRes.status === 201 &&
+      merchantRegData.success === true &&
+      merchantRegData.merchant?.id;
+
+    record(
+      "Merchant: Registration Submission via API",
+      Boolean(merchantRegistered),
+      `HTTP ${merchantRegRes.status} — Registered vendor '${testMerchantPayload.businessName}' (ID: ${merchantRegData.merchant?.id})`
+    );
+
+    const testMerchantId = merchantRegData.merchant?.id;
+
+    // 7.2 Verify merchant listed in dashboard query with pending count
+    const merchantListRes = await fetch(`${BASE_URL}/api/marketplace/merchants`);
+    const merchantListData = await merchantListRes.json();
+    const foundInList =
+      merchantListRes.status === 200 &&
+      merchantListData.success === true &&
+      Array.isArray(merchantListData.merchants) &&
+      merchantListData.merchants.some((m: { id: string }) => m.id === testMerchantId);
+
+    record(
+      "Merchant: Discovery & Pending Queue Count",
+      Boolean(foundInList),
+      `Verified in merchant list (Total: ${merchantListData.count}, Pending: ${merchantListData.pendingCount})`
+    );
+
+    // 7.3 Admin status transition to 'approved'
+    if (testMerchantId) {
+      const updateRes = await fetch(`${BASE_URL}/api/marketplace/merchants/${testMerchantId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "approved",
+          notes: "CAC verified and business credentials verified",
+          reviewedBy: "Chief Admin (E2E Test)",
+        }),
+      });
+      const updateData = await updateRes.json();
+      const isApproved =
+        updateRes.status === 200 &&
+        updateData.success === true &&
+        updateData.merchant?.status === "approved";
+
+      record(
+        "Merchant: Admin Clearance & Verification Transition",
+        Boolean(isApproved),
+        `Status updated to 'approved' by ${updateData.merchant?.reviewedBy || "Admin"}`
+      );
+    }
+
   } catch (err: unknown) {
     allPassed = false;
     console.error("FATAL ERROR during E2E system test execution:", err);
