@@ -24,33 +24,60 @@ export default function BreakingNewsTicker({ initialArticles = [] }: BreakingNew
   useEffect(() => {
     if (!isFirebaseConfigured || !db) return;
 
+    let unsubscribe: (() => void) | undefined;
+
     try {
       const q = query(
         collection(db, "articles"),
-        where("status", "==", "published"),
         where("isBreaking", "==", true)
       );
 
-      const unsubscribe = onSnapshot(
+      unsubscribe = onSnapshot(
         q,
         (snapshot) => {
           if (!snapshot.empty) {
             const liveBreaking: Article[] = snapshot.docs.map((docSnap) => {
               const data = docSnap.data();
               return {
-                ...data,
                 id: docSnap.id,
+                slug: String(data.slug || docSnap.id),
+                title: String(data.title || "Breaking Dispatch"),
+                excerpt: String(data.excerpt || ""),
+                content: String(data.content || ""),
+                coverImage: String(data.coverImage || data.cover_image || "/assets/hero-featured.jpg"),
+                category: String(data.category || "News"),
+                tags: Array.isArray(data.tags) ? data.tags : ["News"],
+                publishedAt: String(data.publishedAt || data.published_at || "Just now"),
+                readTime: String(data.readTime || data.read_time || "2 min read"),
+                isBreaking: true,
+                isLatest: !!data.isLatest,
+                isFeatured: !!data.isFeatured,
+                isTrending: !!data.isTrending,
+                isPopular: !!data.isPopular,
+                isEditorsPick: !!data.isEditorsPick,
+                author: (data.author as Article["author"]) || {
+                  name: String(data.authorName || data.author_name || "The Zango Bureau"),
+                  slug: "the-zango-bureau",
+                  role: "Editorial Desk",
+                },
               } as Article;
             });
             setArticles(liveBreaking);
           }
         },
         (error) => {
-          console.warn("Firestore breaking news subscription warning:", error);
+          // Immediately cancel subscription on error to prevent endless WebChannel RPC Listen retries
+          if (unsubscribe) {
+            unsubscribe();
+            unsubscribe = undefined;
+          }
+          console.warn("Notice: Live breaking ticker subscription fell back to initial feed:", error?.message || "Stream offline");
         }
       );
 
-      return () => unsubscribe();
+      return () => {
+        if (unsubscribe) unsubscribe();
+      };
     } catch (err) {
       console.warn("Could not attach breaking news listener:", err);
     }

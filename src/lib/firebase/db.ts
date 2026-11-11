@@ -20,6 +20,18 @@ function sanitizeForFirestore<T extends Record<string, unknown>>(data: T): Recor
 
 let isFirestoreAvailable = true;
 
+async function withTimeout<T>(promise: Promise<T>, timeoutMs = 3500, fallbackVal: T): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const timeoutPromise = new Promise<T>((resolve) => {
+    timer = setTimeout(() => resolve(fallbackVal), timeoutMs);
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 const disableFirestore = (reason?: unknown) => {
   if (!isFirestoreAvailable) return;
   isFirestoreAvailable = false;
@@ -136,6 +148,84 @@ function mapArticleToSupabase(article: Partial<Article>): Record<string, unknown
   return row;
 }
 
+function mapFirestoreToArticle(id: string, data: Record<string, unknown>): Article {
+  const localMatch = ARTICLES.find(
+    (m) => m.slug.toLowerCase() === String(data.slug || "").toLowerCase()
+  );
+
+  const rawAuthor = (data.author as Record<string, unknown>) || {};
+  const authorName = String(
+    rawAuthor.name ||
+    data.authorName ||
+    data.author_name ||
+    localMatch?.author.name ||
+    "The Zango Bureau"
+  );
+  const authorSlug = String(
+    rawAuthor.slug ||
+    data.authorSlug ||
+    data.author_slug ||
+    localMatch?.author.slug ||
+    "the-zango-bureau"
+  );
+  const authorRole = String(
+    rawAuthor.role ||
+    data.authorRole ||
+    data.author_role ||
+    localMatch?.author.role ||
+    "Editorial Desk"
+  );
+  const authorAvatar =
+    (rawAuthor.avatar as string) ||
+    (data.authorAvatar as string) ||
+    (data.author_avatar as string) ||
+    localMatch?.author.avatar;
+  const authorBio =
+    (rawAuthor.bio as string) ||
+    (data.authorBio as string) ||
+    (data.author_bio as string) ||
+    localMatch?.author.bio;
+
+  return {
+    id,
+    slug: String(data.slug || localMatch?.slug || id),
+    title: String(data.title || localMatch?.title || "Untitled Dispatch"),
+    excerpt: String(data.excerpt || localMatch?.excerpt || ""),
+    content: String(data.content || localMatch?.content || ""),
+    coverImage: String(
+      data.coverImage || data.cover_image || localMatch?.coverImage || "/assets/hero-featured.jpg"
+    ),
+    category: String(data.category || localMatch?.category || "News"),
+    tags: Array.isArray(data.tags)
+      ? (data.tags as string[])
+      : localMatch?.tags || ["News", "Sahel"],
+    publishedAt: String(
+      data.publishedAt || data.published_at || localMatch?.publishedAt || "Today"
+    ),
+    readTime: String(data.readTime || data.read_time || localMatch?.readTime || "4 min read"),
+    isFeatured: data.isFeatured !== undefined ? !!data.isFeatured : !!localMatch?.isFeatured,
+    isLatest: data.isLatest !== undefined ? !!data.isLatest : !!localMatch?.isLatest,
+    isTrending: data.isTrending !== undefined ? !!data.isTrending : !!localMatch?.isTrending,
+    isPopular: data.isPopular !== undefined ? !!data.isPopular : !!localMatch?.isPopular,
+    isEditorsPick:
+      data.isEditorsPick !== undefined ? !!data.isEditorsPick : !!localMatch?.isEditorsPick,
+    isBreaking:
+      data.isBreaking !== undefined
+        ? !!data.isBreaking
+        : !!localMatch?.isBreaking || String(data.slug || "").includes("tomato-jos"),
+    popularRank: (data.popularRank as number) ?? localMatch?.popularRank,
+    views: (data.views as number) ?? localMatch?.views ?? 0,
+    author: {
+      id: String(rawAuthor.id || data.author_id || "author-1"),
+      name: authorName,
+      slug: authorSlug,
+      role: authorRole,
+      avatar: authorAvatar,
+      bio: authorBio,
+    },
+  };
+}
+
 export async function getArticles(): Promise<Article[]> {
   // 1. Check Supabase PostgreSQL
   if (isSupabaseConfigured && supabase) {
@@ -152,21 +242,15 @@ export async function getArticles(): Promise<Article[]> {
     }
   }
 
-  // 2. Check Firebase Firestore
+  // 2. Check Firebase Firestore with timeout
   if (isFirebaseConfigured && db && isFirestoreAvailable) {
     try {
       const q = query(collection(db, "articles"), orderBy("publishedAt", "desc"));
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-        const fsArticles = querySnapshot.docs.map((d) => {
-          const data = d.data();
-          const localMatch = ARTICLES.find((m) => m.slug.toLowerCase() === (data.slug || "").toLowerCase());
-          return {
-            ...data,
-            id: d.id,
-            isBreaking: data.isBreaking !== undefined ? !!data.isBreaking : !!localMatch?.isBreaking,
-          } as Article;
-        });
+      const querySnapshot = await withTimeout(getDocs(q), 3500, null);
+      if (querySnapshot && !querySnapshot.empty) {
+        const fsArticles = querySnapshot.docs.map((d) =>
+          mapFirestoreToArticle(d.id, d.data() as Record<string, unknown>)
+        );
         // Include any in-memory store articles that are not yet indexed in Firestore
         const fsSlugs = new Set(fsArticles.map((a) => a.slug.toLowerCase()));
         const missing = localArticlesStore.filter((a) => !fsSlugs.has(a.slug.toLowerCase()));
@@ -211,14 +295,14 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
     }
   }
 
-  // 2. Query Firebase Firestore by slug directly
+  // 2. Query Firebase Firestore by slug directly with timeout
   if (isFirebaseConfigured && db && isFirestoreAvailable) {
     try {
       const q = query(collection(db, "articles"), where("slug", "==", slugLower), limit(1));
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
+      const querySnapshot = await withTimeout(getDocs(q), 3500, null);
+      if (querySnapshot && !querySnapshot.empty) {
         const docSnap = querySnapshot.docs[0];
-        return { id: docSnap.id, ...docSnap.data() } as Article;
+        return mapFirestoreToArticle(docSnap.id, docSnap.data() as Record<string, unknown>);
       }
     } catch (err) {
       console.warn("Could not query article by slug from Firestore:", err);
@@ -302,11 +386,11 @@ export async function getSubscribers(): Promise<Subscriber[]> {
     }
   }
 
-  if (isFirebaseConfigured && db) {
+  if (isFirebaseConfigured && db && isFirestoreAvailable) {
     try {
       const q = query(collection(db, "subscribers"), orderBy("subscribedAt", "desc"));
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
+      const querySnapshot = await withTimeout(getDocs(q), 3000, null);
+      if (querySnapshot && !querySnapshot.empty) {
         return querySnapshot.docs.map((d) => d.data() as Subscriber);
       }
     } catch (err) {
@@ -477,11 +561,11 @@ export async function getSubmissions(): Promise<Submission[]> {
   }
 
   // 2. Check Firebase Firestore
-  if (isFirebaseConfigured && db) {
+  if (isFirebaseConfigured && db && isFirestoreAvailable) {
     try {
       const q = query(collection(db, "submissions"));
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
+      const querySnapshot = await withTimeout(getDocs(q), 3000, null);
+      if (querySnapshot && !querySnapshot.empty) {
         const firestoreSubs = querySnapshot.docs.map((d) => ({ ...d.data(), id: d.id } as Submission));
         firestoreSubs.sort((a, b) => {
           const timeA = Date.parse(a.submittedAt) || 0;
@@ -868,11 +952,11 @@ export async function getTeamMembers(): Promise<NewsroomMember[]> {
   }
 
   // 2. Check Firebase Firestore
-  if (isFirebaseConfigured && db) {
+  if (isFirebaseConfigured && db && isFirestoreAvailable) {
     try {
       const q = query(collection(db, "team_members"), orderBy("joinedAt", "asc"));
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
+      const querySnapshot = await withTimeout(getDocs(q), 3000, null);
+      if (querySnapshot && !querySnapshot.empty) {
         return querySnapshot.docs.map((d) => ({ id: d.id, ...d.data() } as NewsroomMember));
       }
     } catch (err) {
@@ -1014,8 +1098,8 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   if (isFirebaseConfigured && db && isFirestoreAvailable) {
     try {
       const docRef = doc(db, "users", uid);
-      const snap = await getDoc(docRef);
-      if (snap.exists()) {
+      const snap = await withTimeout(getDoc(docRef), 3000, null);
+      if (snap && snap.exists()) {
         const data = snap.data() as UserProfile;
         const profile: UserProfile = {
           ...data,
