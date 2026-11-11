@@ -33,7 +33,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
     const body = await request.json();
-    const { status, notes } = body;
+    const { status, notes, reviewedBy } = body;
 
     const validStatuses: MerchantApplication["status"][] = ["pending", "approved", "rejected", "under_review"];
     if (!status || !validStatuses.includes(status)) {
@@ -46,7 +46,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       );
     }
 
-    const updated = await updateMerchantApplicationStatus(id, status, notes);
+    const updated = await updateMerchantApplicationStatus(id, status, notes, reviewedBy);
 
     if (!updated) {
       return NextResponse.json(
@@ -71,3 +71,4 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 }
 
 export const PUT = PATCH;
+
