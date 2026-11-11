@@ -45,21 +45,21 @@ export default function CategoryGrid() {
         const res = await fetch("/api/categories");
         if (res.ok) {
           const data = await res.json();
-          if (active && data.success && data.categories) {
+          if (active && data.categories) {
             setCategories(data.categories);
             setLastSyncTime(
               new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
             );
           }
         }
-      } catch (err) {
-        console.warn("Could not sync real-time categories:", err);
+      } catch {
+        // Silently preserve initialized category data on network failure without console spam
       }
     };
 
     void syncCategories();
-    // Real-time synchronization interval (every 30 seconds)
-    const interval = setInterval(syncCategories, 30000);
+    // Refresh desks every 5 minutes (reduced from aggressive 30s polling)
+    const interval = setInterval(syncCategories, 5 * 60 * 1000);
     return () => {
       active = false;
       clearInterval(interval);

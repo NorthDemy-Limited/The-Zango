@@ -3,8 +3,23 @@ import { getArticles } from "@/lib/firebase/db";
 import { CATEGORIES } from "@/data/mock-articles";
 import { Category } from "@/types";
 
+let cachedCategories: Category[] | null = null;
+let lastCategoriesFetch = 0;
+const CATEGORIES_CACHE_TTL = 60 * 1000; // 60 seconds
+
 export async function GET() {
   try {
+    const now = Date.now();
+    if (cachedCategories && now - lastCategoriesFetch < CATEGORIES_CACHE_TTL) {
+      return NextResponse.json({
+        success: true,
+        timestamp: new Date(lastCategoriesFetch).toISOString(),
+        categories: cachedCategories,
+        totalDesks: cachedCategories.length,
+        cached: true,
+      });
+    }
+
     const articles = await getArticles();
 
     const computedCategories: Category[] = CATEGORIES.map((cat) => {
@@ -49,6 +64,9 @@ export async function GET() {
       };
     });
 
+    cachedCategories = computedCategories;
+    lastCategoriesFetch = now;
+
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
@@ -57,9 +75,11 @@ export async function GET() {
       totalStories: articles.length,
     });
   } catch {
-    return NextResponse.json(
-      { success: false, message: "Failed to fetch real-time categories" },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      success: true,
+      categories: cachedCategories || CATEGORIES,
+      totalDesks: (cachedCategories || CATEGORIES).length,
+      fallback: true,
+    });
   }
 }

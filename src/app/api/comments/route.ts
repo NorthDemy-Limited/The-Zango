@@ -16,8 +16,10 @@ export async function GET(request: Request) {
       try {
         const commentsRef = collection(db, "comments");
         const q = slug ? query(commentsRef, where("articleSlug", "==", slug)) : commentsRef;
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
+        const fetchPromise = getDocs(q);
+        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3500));
+        const snapshot = await Promise.race([fetchPromise, timeoutPromise]);
+        if (snapshot && !snapshot.empty) {
           const firestoreComments = snapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data(),

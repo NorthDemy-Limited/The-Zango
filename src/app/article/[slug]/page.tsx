@@ -27,15 +27,20 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     };
   }
 
-  const imageUrl = article.coverImage.startsWith("http")
-    ? article.coverImage
-    : "https://thezango.org" + article.coverImage;
+  const rawCover = article.coverImage || "/assets/hero-featured.jpg";
+  const imageUrl = rawCover.startsWith("http")
+    ? rawCover
+    : "https://thezango.org" + rawCover;
+
+  const authorName = article.author?.name || "The Zango Bureau";
+  const articleCategory = article.category || "News";
+  const articleTags = Array.isArray(article.tags) ? article.tags : [articleCategory, "Northern Nigeria", "The Zango"];
 
   return {
     title: article.title + " | The Zango",
     description: article.excerpt,
-    authors: [{ name: article.author.name }],
-    keywords: article.tags || [article.category, "Northern Nigeria", "The Zango"],
+    authors: [{ name: authorName }],
+    keywords: articleTags,
     alternates: {
       canonical: `https://thezango.org/article/${slug}`,
     },
@@ -44,7 +49,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
       description: article.excerpt,
       type: "article",
       publishedTime: article.publishedAt,
-      authors: [article.author.name],
+      authors: [authorName],
       images: [
         {
           url: imageUrl,
@@ -60,7 +65,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
       title: article.title,
       description: article.excerpt,
       images: [imageUrl],
-      creator: article.author.twitter || "@thezango_media",
+      creator: article.author?.twitter || "@thezango_media",
     },
   };
 }
@@ -80,14 +85,24 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     notFound();
   }
 
+  const authorName = article.author?.name || "The Zango Bureau";
+  const authorSlug = article.author?.slug || "the-zango-bureau";
+  const authorRole = article.author?.role || "Editorial Desk";
+  const authorAvatar = article.author?.avatar;
+  const authorBio = article.author?.bio || "Staff writer covering Northern Nigeria technology, economy, and society for The Zango.";
+  const articleCategory = article.category || "News";
+  const articleCategoryLower = articleCategory.toLowerCase();
+  const articleTags = Array.isArray(article.tags) ? article.tags : [articleCategory, "Northern Nigeria", "The Zango"];
+  const coverImg = article.coverImage || "/assets/hero-featured.jpg";
+
   const allArticles = await getArticles();
   const relatedArticles = allArticles
-    .filter((a) => a.id !== article.id && (a.category.toLowerCase() === article.category.toLowerCase() || a.isLatest))
+    .filter((a) => a.id !== article.id && ((a.category || "").toLowerCase() === articleCategoryLower || a.isLatest))
     .slice(0, 3);
 
-  const articleImageUrl = article.coverImage.startsWith("http")
-    ? article.coverImage
-    : `https://thezango.org${article.coverImage}`;
+  const articleImageUrl = coverImg.startsWith("http")
+    ? coverImg
+    : `https://thezango.org${coverImg}`;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -100,9 +115,9 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     author: [
       {
         "@type": "Person",
-        name: article.author.name,
-        jobTitle: article.author.role,
-        url: `https://thezango.org/author/${article.author.slug || "the-zango-bureau"}`,
+        name: authorName,
+        jobTitle: authorRole,
+        url: `https://thezango.org/author/${authorSlug}`,
       },
     ],
     publisher: {
@@ -118,8 +133,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       "@type": "WebPage",
       "@id": `https://thezango.org/article/${article.slug}`,
     },
-    articleSection: article.category,
-    keywords: (article.tags || []).join(", "),
+    articleSection: articleCategory,
+    keywords: articleTags.join(", "),
   };
 
   return (
@@ -142,10 +157,10 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           </Link>
 
           <Link
-            href={`/category/${article.category.toLowerCase()}`}
+            href={`/category/${articleCategoryLower}`}
             className="inline-block bg-[#FDF2F2] text-[#C61D1F] hover:bg-[#C61D1F] hover:text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-sm transition-colors"
           >
-            {article.category}
+            {articleCategory}
           </Link>
         </div>
 
@@ -162,30 +177,30 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         {/* Author & Publication Metadata */}
         <div className="flex flex-wrap items-center justify-between gap-4 py-4 border-y border-[#E5E6E8] mb-8">
           <Link
-            href={`/author/${article.author.slug || "the-zango-bureau"}`}
+            href={`/author/${authorSlug}`}
             className="flex items-center space-x-3.5 group cursor-pointer"
           >
             <div className="relative w-11 h-11 rounded-full overflow-hidden bg-gray-100 border border-[#DFDFDF] group-hover:border-[#C61D1F] transition-colors">
-              {article.author.avatar ? (
+              {authorAvatar ? (
                 <Image
-                  src={article.author.avatar}
-                  alt={article.author.name}
+                  src={authorAvatar}
+                  alt={authorName}
                   fill
                   sizes="44px"
                   className="object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-[#C61D1F] text-white font-bold text-sm">
-                  {article.author.name.charAt(0)}
+                  {authorName.charAt(0)}
                 </div>
               )}
             </div>
             <div>
               <span className="text-sm font-bold text-[#000000] group-hover:text-[#C61D1F] transition-colors block">
-                {article.author.name}
+                {authorName}
               </span>
               <span className="text-xs text-[#707070]">
-                {article.author.role}
+                {authorRole}
               </span>
             </div>
           </Link>
@@ -206,7 +221,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         {/* Featured Cover Image */}
         <div className="relative w-full h-[320px] sm:h-[440px] rounded-2xl overflow-hidden mb-10 shadow-md">
           <Image
-            src={article.coverImage}
+            src={coverImg}
             alt={article.title}
             fill
             priority
@@ -219,13 +234,13 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         <ArticleContent content={article.content} />
 
         {/* Tags Row */}
-        {article.tags && article.tags.length > 0 && (
+        {articleTags && articleTags.length > 0 && (
           <div className="mt-8 pt-6 border-t border-[#E5E6E8] flex flex-wrap items-center gap-2">
             <span className="text-xs font-bold text-[#707070] uppercase flex items-center space-x-1 mr-1">
               <Tag className="w-3 h-3 text-[#C61D1F]" />
               <span>Topic Tags:</span>
             </span>
-            {article.tags.map((tag) => (
+            {articleTags.map((tag) => (
               <Link
                 key={tag}
                 href={`/search?q=${encodeURIComponent(tag)}`}
@@ -245,20 +260,20 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         {/* Author Bio Box with Link to Author Page */}
         <div className="mt-10 p-6 rounded-2xl bg-[#FAFAFA] border border-[#E5E6E8] flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-5 text-center sm:text-left">
           <Link
-            href={`/author/${article.author.slug || "the-zango-bureau"}`}
+            href={`/author/${authorSlug}`}
             className="relative w-16 h-16 rounded-full overflow-hidden shrink-0 border border-[#DFDFDF] hover:border-[#C61D1F] transition-colors"
           >
-            {article.author.avatar ? (
+            {authorAvatar ? (
               <Image
-                src={article.author.avatar}
-                alt={article.author.name}
+                src={authorAvatar}
+                alt={authorName}
                 fill
                 sizes="64px"
                 className="object-cover"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-[#C61D1F] text-white font-bold text-xl">
-                {article.author.name.charAt(0)}
+                {authorName.charAt(0)}
               </div>
             )}
           </Link>
@@ -267,19 +282,19 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               About the Author
             </span>
             <Link
-              href={`/author/${article.author.slug || "the-zango-bureau"}`}
+              href={`/author/${authorSlug}`}
               className="text-base font-bold text-[#000000] hover:text-[#C61D1F] transition-colors mb-1 inline-block"
             >
-              {article.author.name}
+              {authorName}
             </Link>
             <p className="text-xs sm:text-sm text-[#707070] leading-relaxed mb-3">
-              {article.author.bio || "Staff writer covering Northern Nigeria technology, economy, and society for The Zango."}
+              {authorBio}
             </p>
             <Link
-              href={`/author/${article.author.slug || "the-zango-bureau"}`}
+              href={`/author/${authorSlug}`}
               className="text-xs font-bold text-[#C61D1F] hover:underline"
             >
-              View all articles by {article.author.name} →
+              View all articles by {authorName} →
             </Link>
           </div>
         </div>
@@ -297,31 +312,34 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {relatedArticles.map((rel) => (
-              <Link
-                key={rel.id}
-                href={`/article/${rel.slug}`}
-                className="group block bg-white border border-[#E5E6E8] rounded-xl overflow-hidden shadow-2xs hover:shadow-md transition-all duration-300"
-              >
-                <div className="relative w-full h-36 bg-gray-100">
-                  <Image
-                    src={rel.coverImage}
-                    alt={rel.title}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <div className="p-4">
-                  <span className="text-[11px] font-bold text-[#C61D1F] block mb-1">
-                    {rel.publishedAt}
-                  </span>
-                  <h4 className="text-sm font-bold text-[#000000] group-hover:text-[#C61D1F] transition-colors leading-snug line-clamp-2">
-                    {rel.title}
-                  </h4>
-                </div>
-              </Link>
-            ))}
+            {relatedArticles.map((rel) => {
+              const relCover = rel.coverImage || "/assets/hero-featured.jpg";
+              return (
+                <Link
+                  key={rel.id}
+                  href={`/article/${rel.slug}`}
+                  className="group block bg-white border border-[#E5E6E8] rounded-xl overflow-hidden shadow-2xs hover:shadow-md transition-all duration-300"
+                >
+                  <div className="relative w-full h-36 bg-gray-100">
+                    <Image
+                      src={relCover}
+                      alt={rel.title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <span className="text-[11px] font-bold text-[#C61D1F] block mb-1">
+                      {rel.publishedAt}
+                    </span>
+                    <h4 className="text-sm font-bold text-[#000000] group-hover:text-[#C61D1F] transition-colors leading-snug line-clamp-2">
+                      {rel.title}
+                    </h4>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
 
