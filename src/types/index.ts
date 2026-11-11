@@ -107,3 +107,20 @@ export interface Submission {
   isFeatured?: boolean;
   scheduledAt?: string;
 }
+
+export interface MerchantApplication {
+  id: string;
+  businessName: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  category: string;
+  location: string;
+  description: string;
+  website?: string;
+  status: "pending" | "approved" | "rejected" | "under_review";
+  submittedAt: string;
+  reviewedBy?: string;
+  notes?: string;
+}
+
