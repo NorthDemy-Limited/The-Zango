@@ -24,12 +24,11 @@ import {
   Star,
   TrendingUp,
   Sliders,
-  Store,
   CheckCircle
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
-import { Article, Submission, Category, MerchantApplication } from "@/types";
+import { Article, Submission, Category } from "@/types";
 import { 
   getArticles, 
   createArticle, 
@@ -39,8 +38,7 @@ import {
   getSubmissions, 
   approveSubmission, 
   rejectSubmission,
-  requestRevisionSubmission,
-  getMerchantApplications
+  requestRevisionSubmission
 } from "@/lib/firebase/db";
 import { CATEGORIES } from "@/data/mock-articles";
 import ImageUploader from "@/components/image-uploader";
@@ -52,7 +50,6 @@ function EditorDashboardContent() {
 
   const [articles, setArticles] = useState<Article[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [merchants, setMerchants] = useState<MerchantApplication[]>([]);
   const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
   const [desksList, setDesksList] = useState<Category[]>(CATEGORIES);
   const [searchQuery, setSearchQuery] = useState("");
@@ -153,11 +150,10 @@ function EditorDashboardContent() {
   // Load editor data from API routes with local database fallback
   const loadData = async () => {
     try {
-      const [artsRes, subsRes, desksRes, merchantsRes] = await Promise.all([
+      const [artsRes, subsRes, desksRes] = await Promise.all([
         fetch("/api/editor/articles").then((r) => r.json()).catch(() => null),
         fetch("/api/editor/submissions").then((r) => r.json()).catch(() => null),
         fetch("/api/admin/desks").then((r) => r.json()).catch(() => null),
-        fetch("/api/marketplace/merchants").then((r) => r.json()).catch(() => null),
       ]);
 
       if (desksRes?.success && desksRes.desks) {
@@ -177,21 +173,12 @@ function EditorDashboardContent() {
         const subsQueue = await getSubmissions();
         setSubmissions([...subsQueue]);
       }
-
-      if (merchantsRes?.success && merchantsRes.merchants) {
-        setMerchants(merchantsRes.merchants);
-      } else {
-        const localMerchants = await getMerchantApplications();
-        setMerchants([...localMerchants]);
-      }
     } catch (e) {
       console.error("Editor loadData error, falling back to local db:", e);
       const arts = await getArticles();
       const subsQueue = await getSubmissions();
-      const localMerchants = await getMerchantApplications();
       setArticles([...arts]);
       setSubmissions([...subsQueue]);
-      setMerchants([...localMerchants]);
     }
   };
 
@@ -497,8 +484,6 @@ function EditorDashboardContent() {
   };
 
   const pendingSubmissions = submissions.filter((s) => s.status === "pending" || s.status === "needs_revision");
-  const pendingMerchants = merchants.filter((m) => m.status === "pending");
-  const totalEditorAlerts = pendingSubmissions.length + pendingMerchants.length;
   const filteredArticles = articles.filter((a) => {
     const matchesSearch =
       a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -573,9 +558,9 @@ function EditorDashboardContent() {
                 aria-label="Notifications"
               >
                 <Bell className="w-4 h-4" />
-                {totalEditorAlerts > 0 && (
+                {pendingSubmissions.length > 0 && (
                   <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-blue-600 text-white text-[10px] font-extrabold flex items-center justify-center ring-2 ring-white animate-pulse">
-                    {totalEditorAlerts}
+                    {pendingSubmissions.length}
                   </span>
                 )}
               </button>
@@ -591,63 +576,16 @@ function EditorDashboardContent() {
                     <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <Bell className="w-4 h-4 text-blue-400" />
-                        <span className="font-extrabold text-xs uppercase tracking-wider">Desk Editor Activity</span>
+                        <span className="font-extrabold text-xs uppercase tracking-wider">Desk Review Queue</span>
                       </div>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/15 text-white">
-                        {totalEditorAlerts} Pending
+                        {pendingSubmissions.length} Pending
                       </span>
                     </div>
 
                     <div className="max-h-96 overflow-y-auto divide-y divide-slate-100">
-                      {/* Merchant Registrations Alert */}
-                      {pendingMerchants.length > 0 && (
-                        <div className="p-3 bg-red-50/40">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] font-extrabold uppercase text-[#C61D1F] tracking-wider flex items-center space-x-1.5">
-                              <Store className="w-3.5 h-3.5" />
-                              <span>Marketplace Inquiries ({pendingMerchants.length})</span>
-                            </span>
-                            <Link
-                              href="/dashboard/admin"
-                              className="text-[10px] font-bold text-[#C61D1F] hover:underline"
-                            >
-                              Admin Console →
-                            </Link>
-                          </div>
-                          <div className="space-y-2">
-                            {pendingMerchants.slice(0, 3).map((merchant) => (
-                              <div
-                                key={merchant.id}
-                                className="p-2.5 bg-white rounded-xl border border-red-200/60 hover:shadow-xs transition-all"
-                              >
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="font-bold text-xs text-slate-900 truncate">
-                                    {merchant.businessName}
-                                  </div>
-                                  <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 shrink-0">
-                                    New Vendor
-                                  </span>
-                                </div>
-                                <div className="text-[11px] text-slate-500 mt-0.5">
-                                  {merchant.contactName} • {merchant.category}
-                                </div>
-                                <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
-                                  <span>{merchant.location}</span>
-                                  <Link
-                                    href="/dashboard/admin"
-                                    className="font-medium text-[#C61D1F] hover:underline"
-                                  >
-                                    Verify on Admin →
-                                  </Link>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
                       {/* Editorial Manuscripts */}
-                      {pendingSubmissions.length > 0 && (
+                      {pendingSubmissions.length > 0 ? (
                         <div className="p-3">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-[10px] font-extrabold uppercase text-slate-500 tracking-wider flex items-center space-x-1.5">
@@ -665,7 +603,7 @@ function EditorDashboardContent() {
                             </button>
                           </div>
                           <div className="space-y-2">
-                            {pendingSubmissions.slice(0, 3).map((sub) => (
+                            {pendingSubmissions.slice(0, 4).map((sub) => (
                               <div
                                 key={sub.id}
                                 onClick={() => {
@@ -685,29 +623,28 @@ function EditorDashboardContent() {
                             ))}
                           </div>
                         </div>
-                      )}
-
-                      {/* Empty State */}
-                      {totalEditorAlerts === 0 && (
+                      ) : (
+                        /* Empty State */
                         <div className="p-8 text-center">
                           <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
                           <div className="text-xs font-bold text-slate-800">Queue All Cleared</div>
                           <div className="text-[11px] text-slate-500 mt-1">
-                            No pending writer manuscripts or commercial registrations.
+                            No pending writer manuscripts or pitches in review queue.
                           </div>
                         </div>
                       )}
                     </div>
 
                     <div className="p-2.5 bg-slate-50 border-t border-slate-100 text-center">
-                      <Link
-                        href="/marketplace"
-                        target="_blank"
-                        className="text-[11px] font-bold text-blue-600 hover:underline inline-flex items-center space-x-1"
+                      <button
+                        onClick={() => {
+                          setActiveTab("reviewQueue");
+                          setNotificationMenuOpen(false);
+                        }}
+                        className="text-[11px] font-bold text-blue-600 hover:underline inline-flex items-center space-x-1 cursor-pointer"
                       >
-                        <span>View Sahel Marketplace</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </Link>
+                        <span>Open Editorial Review Queue</span>
+                      </button>
                     </div>
                   </div>
                 </>
@@ -1073,32 +1010,6 @@ function EditorDashboardContent() {
                   </div>
                 </div>
               </div>
-
-              {/* URGENT COMMERCIAL REGISTRATION NOTICE (Shows if pending merchants exist) */}
-              {pendingMerchants.length > 0 && (
-                <div className="bg-gradient-to-r from-red-50 to-amber-50 border border-red-200/90 rounded-3xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
-                  <div className="flex items-center space-x-3.5">
-                    <div className="w-10 h-10 rounded-2xl bg-[#C61D1F] text-white flex items-center justify-center shrink-0 shadow-xs">
-                      <Store className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="font-extrabold text-sm text-slate-900">
-                        {pendingMerchants.length} Merchant Registration{pendingMerchants.length > 1 ? "s" : ""} Received
-                      </h4>
-                      <p className="text-xs text-slate-600 mt-0.5">
-                        New commercial partner inquiry: <span className="font-semibold text-slate-900">&ldquo;{pendingMerchants[0].businessName}&rdquo;</span> ({pendingMerchants[0].category}, {pendingMerchants[0].location}).
-                      </p>
-                    </div>
-                  </div>
-
-                  <Link
-                    href="/dashboard/admin"
-                    className="px-4 py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer shrink-0"
-                  >
-                    Open Admin Verification →
-                  </Link>
-                </div>
-              )}
 
               {/* Quick Actions & Recent Manuscripts Banner */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
