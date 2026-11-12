@@ -5,7 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Send, CheckCircle2 } from "lucide-react";
-import { FacebookIcon, TwitterIcon, InstagramIcon, YoutubeIcon } from "@/components/social-icons";
+import { FacebookIcon, TwitterIcon, InstagramIcon, YoutubeIcon, LinkedinIcon } from "@/components/social-icons";
+import { SITE_CONFIG } from "@/config/site";
 
 export default function Footer() {
   const pathname = usePathname();
@@ -94,25 +95,25 @@ export default function Footer() {
             {/* Social Icons */}
             <div className="flex items-center space-x-3 pt-2">
               <a
-                href="https://facebook.com"
+                href={SITE_CONFIG.socials.twitter.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#C61D1F] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
-                aria-label="Facebook"
-              >
-                <FacebookIcon className="w-4 h-4" />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#C61D1F] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
-                aria-label="Twitter"
+                aria-label="X (Twitter)"
               >
                 <TwitterIcon className="w-4 h-4" />
               </a>
               <a
-                href="https://instagram.com"
+                href={SITE_CONFIG.socials.linkedin.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#C61D1F] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
+                aria-label="LinkedIn"
+              >
+                <LinkedinIcon className="w-4 h-4" />
+              </a>
+              <a
+                href={SITE_CONFIG.socials.instagram.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#C61D1F] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
@@ -121,7 +122,16 @@ export default function Footer() {
                 <InstagramIcon className="w-4 h-4" />
               </a>
               <a
-                href="https://youtube.com"
+                href={SITE_CONFIG.socials.facebook.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#C61D1F] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
+                aria-label="Facebook"
+              >
+                <FacebookIcon className="w-4 h-4" />
+              </a>
+              <a
+                href={SITE_CONFIG.socials.youtube.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#C61D1F] text-[#535252] hover:text-white flex items-center justify-center transition-colors"

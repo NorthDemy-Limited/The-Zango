@@ -134,7 +134,7 @@ export default function ArticleReaderToolbar({ title, slug }: ArticleReaderToolb
 
           {/* Twitter / X */}
           <a
-            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(articleUrl)}&hashtags=TheZango,NorthernNigeria,News`}
+            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(articleUrl)}&via=thezangong&hashtags=TheZango,NorthernNigeria,News`}
             target="_blank"
             rel="noopener noreferrer"
             className="px-3 py-1.5 rounded-md bg-[#F5F5F5] hover:bg-[#C61D1F] hover:text-white text-xs font-semibold text-[#535252] flex items-center space-x-1.5 transition-colors"

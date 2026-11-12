@@ -5,7 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { Search, Menu, X, Bookmark } from "lucide-react";
-import { FacebookIcon, TwitterIcon, InstagramIcon, YoutubeIcon } from "@/components/social-icons";
+import { TwitterIcon, InstagramIcon, LinkedinIcon } from "@/components/social-icons";
+import { SITE_CONFIG } from "@/config/site";
 import SavedArticlesDrawer from "@/components/saved-articles-drawer";
 
 export default function Navbar() {
@@ -150,40 +151,31 @@ export default function Navbar() {
               </span>
               <div className="flex items-center space-x-2">
                 <a
-                  href="https://facebook.com"
+                  href={SITE_CONFIG.socials.twitter.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-7 h-7 rounded-full bg-[#F5F5F5] hover:bg-[#C61D1F] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
-                  aria-label="Facebook"
-                >
-                  <FacebookIcon className="w-3.5 h-3.5" />
-                </a>
-                <a
-                  href="https://twitter.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-7 h-7 rounded-full bg-[#F5F5F5] hover:bg-[#C61D1F] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
-                  aria-label="Twitter"
+                  aria-label="X (Twitter)"
                 >
                   <TwitterIcon className="w-3.5 h-3.5" />
                 </a>
                 <a
-                  href="https://instagram.com"
+                  href={SITE_CONFIG.socials.linkedin.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-7 h-7 rounded-full bg-[#F5F5F5] hover:bg-[#C61D1F] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
+                  aria-label="LinkedIn"
+                >
+                  <LinkedinIcon className="w-3.5 h-3.5" />
+                </a>
+                <a
+                  href={SITE_CONFIG.socials.instagram.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-7 h-7 rounded-full bg-[#F5F5F5] hover:bg-[#C61D1F] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
                   aria-label="Instagram"
                 >
                   <InstagramIcon className="w-3.5 h-3.5" />
-                </a>
-                <a
-                  href="https://youtube.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-7 h-7 rounded-full bg-[#F5F5F5] hover:bg-[#C61D1F] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
-                  aria-label="YouTube"
-                >
-                  <YoutubeIcon className="w-3.5 h-3.5" />
                 </a>
               </div>
             </div>
@@ -266,17 +258,32 @@ export default function Navbar() {
               Follow The Zango
             </span>
             <div className="flex items-center space-x-2">
-              <a href="https://facebook.com" className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-[#535252]">
-                <FacebookIcon className="w-4 h-4" />
-              </a>
-              <a href="https://twitter.com" className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-[#535252]">
+              <a
+                href={SITE_CONFIG.socials.twitter.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-[#535252] hover:text-[#C61D1F] transition-colors"
+                aria-label="X (Twitter)"
+              >
                 <TwitterIcon className="w-4 h-4" />
               </a>
-              <a href="https://instagram.com" className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-[#535252]">
-                <InstagramIcon className="w-4 h-4" />
+              <a
+                href={SITE_CONFIG.socials.linkedin.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-[#535252] hover:text-[#C61D1F] transition-colors"
+                aria-label="LinkedIn"
+              >
+                <LinkedinIcon className="w-4 h-4" />
               </a>
-              <a href="https://youtube.com" className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-[#535252]">
-                <YoutubeIcon className="w-4 h-4" />
+              <a
+                href={SITE_CONFIG.socials.instagram.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-[#535252] hover:text-[#C61D1F] transition-colors"
+                aria-label="Instagram"
+              >
+                <InstagramIcon className="w-4 h-4" />
               </a>
             </div>
           </div>

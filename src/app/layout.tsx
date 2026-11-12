@@ -51,6 +51,14 @@ export const metadata: Metadata = {
     locale: "en_NG",
     type: "website",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "The Zango — Your Trusted Voice for Northern Nigeria & African Innovation",
+    description: "Breaking news, insightful analysis, and stories that matter to you.",
+    site: "@thezangong",
+    creator: "@thezangong",
+    images: ["/assets/hero-featured.jpg"],
+  },
 };
 
 export default function RootLayout({

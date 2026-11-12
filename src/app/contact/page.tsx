@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Mail, MapPin, Phone, Send, CheckCircle2 } from "lucide-react";
+import { Mail, MapPin, Phone, Send, CheckCircle2, Share2 } from "lucide-react";
+import { TwitterIcon, LinkedinIcon, InstagramIcon } from "@/components/social-icons";
+import { SITE_CONFIG } from "@/config/site";
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -108,6 +110,50 @@ export default function ContactPage() {
                   <h3 className="text-sm font-bold text-[#000000] mb-1">Direct Line</h3>
                   <p className="text-xs text-[#707070] mb-1">Operational desk (9 AM - 6 PM WAT):</p>
                   <p className="text-sm font-bold text-[#000000]">+234 (0) 800-ZANGO-NEWS</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-[#FAFAFA] border border-[#E5E6E8]">
+              <div className="flex items-start space-x-4">
+                <div className="w-10 h-10 rounded-xl bg-[#FDF2F2] text-[#C61D1F] flex items-center justify-center shrink-0">
+                  <Share2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-[#000000] mb-1">Official Channels</h3>
+                  <p className="text-xs text-[#707070] mb-3">Follow and engage with our newsroom desks:</p>
+                  <div className="flex items-center space-x-2">
+                    <a
+                      href={SITE_CONFIG.socials.twitter.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-8 h-8 rounded-full bg-white border border-[#E5E6E8] hover:border-[#C61D1F] text-[#535252] hover:text-[#C61D1F] flex items-center justify-center transition-colors"
+                      title="Follow on X (Twitter)"
+                      aria-label="Follow on X (Twitter)"
+                    >
+                      <TwitterIcon className="w-3.5 h-3.5" />
+                    </a>
+                    <a
+                      href={SITE_CONFIG.socials.linkedin.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-8 h-8 rounded-full bg-white border border-[#E5E6E8] hover:border-[#C61D1F] text-[#535252] hover:text-[#C61D1F] flex items-center justify-center transition-colors"
+                      title="Connect on LinkedIn"
+                      aria-label="Connect on LinkedIn"
+                    >
+                      <LinkedinIcon className="w-3.5 h-3.5" />
+                    </a>
+                    <a
+                      href={SITE_CONFIG.socials.instagram.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-8 h-8 rounded-full bg-white border border-[#E5E6E8] hover:border-[#C61D1F] text-[#535252] hover:text-[#C61D1F] flex items-center justify-center transition-colors"
+                      title="Follow on Instagram"
+                      aria-label="Follow on Instagram"
+                    >
+                      <InstagramIcon className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
