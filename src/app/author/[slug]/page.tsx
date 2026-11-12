@@ -11,8 +11,6 @@ interface AuthorPageProps {
   params: Promise<{ slug: string }>;
 }
 
-export const instant = false;
-
 export async function generateStaticParams() {
   return AUTHORS.map((author) => ({
     slug: author.slug,

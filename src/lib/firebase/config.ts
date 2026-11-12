@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
-import { getFirestore, Firestore } from "firebase/firestore";
+import { initializeFirestore, getFirestore, Firestore } from "firebase/firestore";
 import { getAuth, Auth } from "firebase/auth";
 import { getAnalytics, isSupported, Analytics } from "firebase/analytics";
 import { getStorage, FirebaseStorage } from "firebase/storage";
@@ -31,7 +31,13 @@ if (isFirebaseConfigured) {
   try {
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     if (!isBuild || enableDuringBuild) {
-      db = getFirestore(app);
+      try {
+        db = initializeFirestore(app, {
+          experimentalAutoDetectLongPolling: true,
+        });
+      } catch {
+        db = getFirestore(app);
+      }
       try {
         storage = getStorage(app);
       } catch (e) {

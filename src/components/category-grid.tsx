@@ -40,9 +40,14 @@ export default function CategoryGrid() {
 
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
+
     const syncCategories = async () => {
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        return;
+      }
       try {
-        const res = await fetch("/api/categories");
+        const res = await fetch("/api/categories", { signal: controller.signal });
         if (res.ok) {
           const data = await res.json();
           if (active && data.categories) {
@@ -53,16 +58,14 @@ export default function CategoryGrid() {
           }
         }
       } catch {
-        // Silently preserve initialized category data on network failure without console spam
+        // Silently preserve initialized category data on network failure or abort without console spam
       }
     };
 
     void syncCategories();
-    // Refresh desks every 5 minutes (reduced from aggressive 30s polling)
-    const interval = setInterval(syncCategories, 5 * 60 * 1000);
     return () => {
       active = false;
-      clearInterval(interval);
+      controller.abort();
     };
   }, []);
 

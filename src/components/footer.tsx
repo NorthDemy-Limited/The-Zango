@@ -156,6 +156,7 @@ export default function Footer() {
                 <Link
                   key={cat.name}
                   href={cat.href}
+                  prefetch={false}
                   className="text-xs sm:text-sm text-[#707070] hover:text-[#C61D1F] transition-colors"
                 >
                   {cat.name}
@@ -178,6 +179,7 @@ export default function Footer() {
                 <li key={link.name}>
                   <Link
                     href={link.href}
+                    prefetch={false}
                     className="text-xs sm:text-sm text-[#707070] hover:text-[#C61D1F] transition-colors"
                   >
                     {link.name}
