@@ -1,5 +1,12 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
-import { initializeFirestore, getFirestore, Firestore } from "firebase/firestore";
+import {
+  initializeFirestore,
+  getFirestore,
+  Firestore,
+  FirestoreSettings,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from "firebase/firestore";
 import { getAuth, Auth } from "firebase/auth";
 import { getAnalytics, isSupported, Analytics } from "firebase/analytics";
 import { getStorage, FirebaseStorage } from "firebase/storage";
@@ -32,9 +39,19 @@ if (isFirebaseConfigured) {
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     if (!isBuild || enableDuringBuild) {
       try {
-        db = initializeFirestore(app, {
+        const firestoreSettings: FirestoreSettings = {
           experimentalAutoDetectLongPolling: true,
-        });
+        };
+        if (typeof window !== "undefined") {
+          try {
+            firestoreSettings.localCache = persistentLocalCache({
+              tabManager: persistentMultipleTabManager(),
+            });
+          } catch (cacheErr) {
+            console.warn("Firestore persistent cache fallback:", cacheErr);
+          }
+        }
+        db = initializeFirestore(app, firestoreSettings);
       } catch {
         db = getFirestore(app);
       }

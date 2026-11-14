@@ -226,6 +226,28 @@ function mapFirestoreToArticle(id: string, data: Record<string, unknown>): Artic
   };
 }
 
+const CACHED_ARTICLES_KEY = "thezango_cached_articles";
+const CACHED_SUBMISSIONS_KEY = "thezango_cached_submissions";
+
+function saveToOfflineReplica<T>(key: string, data: T): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch {
+    // Quota exceeded or private mode, handle gracefully
+  }
+}
+
+function loadFromOfflineReplica<T>(key: string): T | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getArticles(): Promise<Article[]> {
   // 1. Check Supabase PostgreSQL
   if (isSupabaseConfigured && supabase) {
@@ -235,7 +257,9 @@ export async function getArticles(): Promise<Article[]> {
         .select("*")
         .order("created_at", { ascending: false });
       if (!error && data && data.length > 0) {
-        return data.map(mapSupabaseToArticle);
+        const mapped = data.map(mapSupabaseToArticle);
+        saveToOfflineReplica(CACHED_ARTICLES_KEY, mapped);
+        return mapped;
       }
     } catch (err) {
       console.warn("Could not fetch articles from Supabase:", err);
@@ -254,7 +278,9 @@ export async function getArticles(): Promise<Article[]> {
         // Include any in-memory store articles that are not yet indexed in Firestore
         const fsSlugs = new Set(fsArticles.map((a) => a.slug.toLowerCase()));
         const missing = localArticlesStore.filter((a) => !fsSlugs.has(a.slug.toLowerCase()));
-        return [...fsArticles, ...missing];
+        const result = [...fsArticles, ...missing];
+        saveToOfflineReplica(CACHED_ARTICLES_KEY, result);
+        return result;
       }
     } catch (err: unknown) {
       const msg = (err as { message?: string })?.message || String(err || "");
@@ -266,7 +292,15 @@ export async function getArticles(): Promise<Article[]> {
     }
   }
 
-  // 3. Fallback to Local Store
+  // 3. Check persistent offline replica from localStorage
+  const offlineReplica = loadFromOfflineReplica<Article[]>(CACHED_ARTICLES_KEY);
+  if (offlineReplica && offlineReplica.length > 0) {
+    const replicaSlugs = new Set(offlineReplica.map((a) => a.slug.toLowerCase()));
+    const missing = localArticlesStore.filter((a) => !replicaSlugs.has(a.slug.toLowerCase()));
+    return [...offlineReplica, ...missing];
+  }
+
+  // 4. Fallback to Local Store
   const existingIds = new Set(localArticlesStore.map((a) => a.id));
   const missingArticles = ARTICLES.filter((a) => !existingIds.has(a.id));
   if (missingArticles.length > 0) {
@@ -539,7 +573,7 @@ export async function getSubmissions(): Promise<Submission[]> {
         .select("*")
         .order("created_at", { ascending: false });
       if (!error && data && data.length > 0) {
-        return data.map((d: SupabaseSubmissionRow) => ({
+        const mapped = data.map((d: SupabaseSubmissionRow) => ({
           id: d.id,
           title: d.title,
           excerpt: d.excerpt,
@@ -554,6 +588,8 @@ export async function getSubmissions(): Promise<Submission[]> {
           status: d.status,
           feedbackNotes: d.feedback_notes,
         }));
+        saveToOfflineReplica(CACHED_SUBMISSIONS_KEY, mapped);
+        return mapped;
       }
     } catch (err) {
       console.warn("Could not fetch submissions from Supabase:", err);
@@ -574,11 +610,20 @@ export async function getSubmissions(): Promise<Submission[]> {
         });
         const fsIds = new Set(firestoreSubs.map((s) => s.id));
         const merged = [...firestoreSubs, ...localSubmissionsStore.filter((s) => !fsIds.has(s.id))];
+        saveToOfflineReplica(CACHED_SUBMISSIONS_KEY, merged);
         return merged;
       }
     } catch (err) {
       console.warn("Could not fetch submissions from Firestore, using local store:", err);
     }
+  }
+
+  // 3. Check persistent offline replica from localStorage
+  const offlineReplica = loadFromOfflineReplica<Submission[]>(CACHED_SUBMISSIONS_KEY);
+  if (offlineReplica && offlineReplica.length > 0) {
+    const replicaIds = new Set(offlineReplica.map((s) => s.id));
+    const merged = [...offlineReplica, ...localSubmissionsStore.filter((s) => !replicaIds.has(s.id))];
+    return merged;
   }
 
   return localSubmissionsStore;
@@ -630,6 +675,7 @@ export async function createSubmission(
   }
 
   localSubmissionsStore = [newSubmission, ...localSubmissionsStore];
+  saveToOfflineReplica(CACHED_SUBMISSIONS_KEY, localSubmissionsStore);
   return newSubmission;
 }
 

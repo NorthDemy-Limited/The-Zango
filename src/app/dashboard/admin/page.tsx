@@ -32,11 +32,23 @@ import {
   Store,
   Phone,
   Clock,
-  Eye
+  Eye,
+  Wifi,
+  WifiOff,
+  CloudOff,
+  Database,
+  RefreshCw
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { Article, Subscriber, Submission, NewsroomMember, NewsroomRole, Category, MerchantApplication } from "@/types";
+import { 
+  useOnlineStatus, 
+  ADMIN_DRAFT_KEY, 
+  saveOfflineDraft, 
+  loadOfflineDraft, 
+  clearOfflineDraft 
+} from "@/lib/offline-sync";
 import { 
   getArticles, 
   createArticle, 
@@ -132,6 +144,17 @@ function AdminDashboardContent() {
     checking?: boolean;
   } | null>(null);
 
+  // Network Connectivity & Offline Queue State
+  const { isOnline, wasOffline, pendingCount, isSyncing, syncNow, dismissWasOffline } = useOnlineStatus();
+  const [hasSavedAdminDraft, setHasSavedAdminDraft] = useState(() => {
+    const draft = loadOfflineDraft<{ title?: string; content?: string }>(ADMIN_DRAFT_KEY);
+    return Boolean(draft && (draft.title || draft.content));
+  });
+  const [adminDraftSavedAt, setAdminDraftSavedAt] = useState<string | null>(() => {
+    const draft = loadOfflineDraft<{ savedAt?: string }>(ADMIN_DRAFT_KEY);
+    return draft?.savedAt || null;
+  });
+
   // New/Edit Article Form State
   const [formData, setFormData] = useState({
     title: "",
@@ -148,6 +171,34 @@ function AdminDashboardContent() {
     isEditorsPick: false,
     isLatest: false,
   });
+
+  // Autosave admin article draft when creating a new dispatch
+  useEffect(() => {
+    if (editingArticle || (!formData.title && !formData.content)) return;
+
+    const timer = setTimeout(() => {
+      saveOfflineDraft(ADMIN_DRAFT_KEY, formData);
+      setHasSavedAdminDraft(true);
+      setAdminDraftSavedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [formData, editingArticle]);
+
+  const handleRestoreAdminDraft = () => {
+    const draft = loadOfflineDraft<typeof formData>(ADMIN_DRAFT_KEY);
+    if (draft) {
+      setFormData(draft);
+      triggerToast("Restored unsaved dispatch draft from local cache!");
+    }
+  };
+
+  const handleDiscardAdminDraft = () => {
+    clearOfflineDraft(ADMIN_DRAFT_KEY);
+    setHasSavedAdminDraft(false);
+    setAdminDraftSavedAt(null);
+    triggerToast("Discarded local draft.");
+  };
 
   // Gatekeeping redirect if not logged in
   useEffect(() => {
@@ -655,6 +706,9 @@ function AdminDashboardContent() {
         const data = await res.json();
         if (data.success) {
           triggerToast(`Published new dispatch: "${formData.title.slice(0, 30)}..."`);
+          clearOfflineDraft(ADMIN_DRAFT_KEY);
+          setHasSavedAdminDraft(false);
+          setAdminDraftSavedAt(null);
           await loadData();
           setShowCreateModal(false);
           setEditingArticle(null);
@@ -687,6 +741,9 @@ function AdminDashboardContent() {
         },
       });
       triggerToast(`Published new dispatch: "${formData.title.slice(0, 30)}..."`);
+      clearOfflineDraft(ADMIN_DRAFT_KEY);
+      setHasSavedAdminDraft(false);
+      setAdminDraftSavedAt(null);
     }
 
     await loadData();
@@ -886,6 +943,33 @@ function AdminDashboardContent() {
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>11 Regional Desks Active</span>
             </div>
+
+            {/* Online / Offline Connectivity Pill */}
+            {isOnline ? (
+              <div className="hidden lg:inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-100" title="Connected to Newsroom Cloud Database">
+                <Wifi className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Online</span>
+              </div>
+            ) : (
+              <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-900 text-xs font-bold border border-amber-300 animate-pulse" title="Operating in Offline Mode">
+                <WifiOff className="w-3.5 h-3.5 text-amber-600" />
+                <span>Offline Mode</span>
+              </div>
+            )}
+
+            {/* Offline Pending Items Sync Button */}
+            {pendingCount > 0 && (
+              <button
+                type="button"
+                onClick={syncNow}
+                disabled={isSyncing || !isOnline}
+                className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer"
+                title={isOnline ? "Click to sync offline items" : "Reconnect to internet to sync"}
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
+                <span>{pendingCount} Queued</span>
+              </button>
+            )}
           </div>
 
           {/* Center: Global Quick Search Input */}
@@ -1114,6 +1198,45 @@ function AdminDashboardContent() {
 
         </div>
       </header>
+
+      {/* Offline Status Alert Banners */}
+      {!isOnline && (
+        <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5 text-amber-900 text-xs font-medium">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center space-x-2">
+              <CloudOff className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>
+                <strong>Offline Mode Active:</strong> Operating from local IndexedDB cache. Story dispatches, approvals, and reviews are buffered locally and will sync to newsroom servers upon reconnection.
+              </span>
+            </div>
+            <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-amber-200/80 text-amber-950 font-bold text-[11px] shrink-0">
+              <Database className="w-3 h-3 text-amber-800" />
+              <span>Persistent Local Cache Active</span>
+            </span>
+          </div>
+        </div>
+      )}
+
+      {wasOffline && isOnline && (
+        <div className="bg-emerald-500/10 border-b border-emerald-500/20 px-4 py-2.5 text-emerald-900 text-xs font-medium">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+            <div className="flex items-center space-x-2">
+              <Wifi className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>
+                <strong>Connection Restored:</strong> You are back online. {isSyncing ? "Synchronising newsroom cache..." : "All newsroom databases connected."}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={dismissWasOffline}
+              className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
+              title="Dismiss"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 2. MAIN DASHBOARD BODY (Sidebar + Workspace Canvas) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full flex-1 flex flex-col md:flex-row items-start gap-6">
@@ -2808,6 +2931,34 @@ function AdminDashboardContent() {
             {/* Scrollable Form Body */}
             <form id="story-dispatch-form" onSubmit={handleCreateSubmit} className="overflow-y-auto flex-1 p-6 space-y-5 text-xs overscroll-contain">
               
+              {/* Local Offline Draft Alert */}
+              {!editingArticle && hasSavedAdminDraft && (
+                <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs text-amber-950">
+                  <div className="flex items-center space-x-2">
+                    <Database className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>
+                      <strong>Unsaved Local Draft:</strong> Draft content from {adminDraftSavedAt || "recent session"} detected in device cache.
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleRestoreAdminDraft}
+                      className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-[11px] transition-colors cursor-pointer"
+                    >
+                      Restore Draft
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDiscardAdminDraft}
+                      className="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-bold text-[11px] transition-colors cursor-pointer"
+                    >
+                      Discard
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Headline */}
               <div>
                 <label className="block font-bold text-slate-900 uppercase mb-1.5">Headline *</label>

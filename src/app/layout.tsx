@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
+import OfflineManager from "@/components/offline-manager";
 import { AuthProvider } from "@/context/auth-context";
 
 const jakarta = localFont({
@@ -77,6 +78,7 @@ export default function RootLayout({
           <Navbar />
           <main className="flex-1">{children}</main>
           <Footer />
+          <OfflineManager />
         </AuthProvider>
       </body>
     </html>

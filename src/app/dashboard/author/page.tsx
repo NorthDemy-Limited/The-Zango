@@ -24,7 +24,11 @@ import {
   TrendingUp,
   Inbox,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  Wifi,
+  WifiOff,
+  CloudOff,
+  Database
 } from "lucide-react";
 import { ARTICLES, CATEGORIES } from "@/data/mock-articles";
 import { 
@@ -34,6 +38,11 @@ import {
   rejectSubmission, 
   getArticles 
 } from "@/lib/firebase/db";
+import { 
+  useOnlineStatus, 
+  queueOfflineSubmission, 
+  getOfflineQueue 
+} from "@/lib/offline-sync";
 import { Submission, Article, Category } from "@/types";
 import { useAuth } from "@/context/auth-context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
@@ -63,7 +72,11 @@ function AuthorStudioContent() {
     id: string;
     title: string;
     category: string;
+    isOffline?: boolean;
   } | null>(null);
+
+  // Network Connectivity & Offline Queue State
+  const { isOnline, wasOffline, pendingCount, isSyncing, syncNow, dismissWasOffline } = useOnlineStatus();
 
   // Status & Data State
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
@@ -136,17 +149,39 @@ function AuthorStudioContent() {
         setDesksList(desksRes.desks);
       }
 
+      let baseSubs: Submission[] = [];
       if (subsRes?.success && subsRes.submissions) {
-        setMySubmissions(subsRes.submissions);
+        baseSubs = subsRes.submissions;
       } else {
         const allSubs = await getSubmissions();
-        const mine = allSubs.filter(
+        baseSubs = allSubs.filter(
           (s) =>
             (user?.email && s.authorEmail?.toLowerCase() === user.email.toLowerCase()) ||
             s.authorName?.toLowerCase() === authorName.toLowerCase()
         );
-        setMySubmissions(mine);
       }
+
+      // Merge pending local offline queued submissions
+      const offlineQueue = getOfflineQueue();
+      const queuedSubs: Submission[] = offlineQueue
+        .filter((q) => q.status !== "synced" && (!user?.email || q.authorEmail.toLowerCase() === authorEmail.toLowerCase()))
+        .map((q) => ({
+          id: q.id,
+          title: q.title,
+          excerpt: q.excerpt,
+          content: q.content,
+          category: q.category,
+          authorName: q.authorName,
+          authorEmail: q.authorEmail,
+          coverImage: q.coverImage,
+          tags: q.tags,
+          wordCount: q.wordCount,
+          readTime: q.readTime,
+          submittedAt: `Offline (Queued at ${new Date(q.queuedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})`,
+          status: "pending" as const,
+        }));
+      const seenIds = new Set(baseSubs.map((s) => s.id));
+      setMySubmissions([...queuedSubs.filter((q) => !seenIds.has(q.id)), ...baseSubs]);
 
       if (artsRes?.success && artsRes.articles) {
         setMyArticles(artsRes.articles);
@@ -189,6 +224,21 @@ function AuthorStudioContent() {
     }
     return () => {
       active = false;
+    };
+  }, [loadWriterData]);
+
+  // Listen for background offline sync events to refresh data automatically
+  useEffect(() => {
+    const handleOfflineSynced = (event: Event) => {
+      const customEvent = event as CustomEvent<{ item: { title: string }; success: boolean }>;
+      if (customEvent.detail?.success) {
+        triggerToast(`Auto-synced pitch to newsroom: "${customEvent.detail.item.title.slice(0, 30)}..."`, "success");
+        void loadWriterData();
+      }
+    };
+    window.addEventListener("thezango_offline_synced", handleOfflineSynced);
+    return () => {
+      window.removeEventListener("thezango_offline_synced", handleOfflineSynced);
     };
   }, [loadWriterData]);
 
@@ -350,6 +400,62 @@ function AuthorStudioContent() {
 
     setIsSubmitting(true);
 
+    // If offline, buffer directly to the local offline sync queue
+    if (!isOnline) {
+      const payload = {
+        title: title.trim(),
+        excerpt: excerpt.trim() || content.replace(/<[^>]*>/g, " ").slice(0, 150) + "...",
+        content,
+        category,
+        authorName: user?.name || "Fatima Sanusi",
+        authorEmail: user?.email || "fatima.sanusi@thezango.org",
+        coverImage,
+        tags,
+        wordCount,
+        readTime: estimatedReadTime,
+        editingSubmissionId,
+      };
+
+      const queued = queueOfflineSubmission(payload);
+      const offlineSub: Submission = {
+        id: queued.id,
+        title: queued.title,
+        excerpt: queued.excerpt,
+        content: queued.content,
+        category: queued.category,
+        authorName: queued.authorName,
+        authorEmail: queued.authorEmail,
+        coverImage: queued.coverImage,
+        tags: queued.tags,
+        wordCount: queued.wordCount,
+        readTime: queued.readTime,
+        submittedAt: `Offline (Queued at ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})`,
+        status: "pending",
+      };
+
+      setMySubmissions((prev) => [offlineSub, ...prev]);
+      triggerToast("Offline Mode: Manuscript saved locally to sync queue!", "info");
+      setSubmittedSuccessModal({
+        id: queued.id,
+        title: title.trim(),
+        category,
+        isOffline: true,
+      });
+
+      localStorage.removeItem("thezango_writer_draft");
+      setTitle("");
+      setExcerpt("");
+      setContent("");
+      setTags([]);
+      setTagInput("");
+      setCoverImage("/assets/hero-featured.jpg");
+      setLastAutoSaved(null);
+      setEditingSubmissionId(null);
+      setEditingRevisionNotes(null);
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       if (editingSubmissionId) {
         // Re-submitting an existing submission that requested revision
@@ -445,8 +551,64 @@ function AuthorStudioContent() {
       setCoverImage("/assets/hero-featured.jpg");
       setLastAutoSaved(null);
       await loadWriterData();
-    } catch (err) {
-      console.error("Submission failed:", err);
+    } catch (err: unknown) {
+      console.warn("Submission remote transmission exception, checking network status:", err);
+      const isNetworkErr =
+        (typeof navigator !== "undefined" && !navigator.onLine) ||
+        (err instanceof TypeError && err.message.toLowerCase().includes("fetch")) ||
+        String(err).includes("NetworkError") ||
+        String(err).includes("Failed to fetch");
+
+      if (isNetworkErr) {
+        const payload = {
+          title: title.trim(),
+          excerpt: excerpt.trim() || content.replace(/<[^>]*>/g, " ").slice(0, 150) + "...",
+          content,
+          category,
+          authorName: user?.name || "Fatima Sanusi",
+          authorEmail: user?.email || "fatima.sanusi@thezango.org",
+          coverImage,
+          tags,
+          wordCount,
+          readTime: estimatedReadTime,
+          editingSubmissionId,
+        };
+        const queued = queueOfflineSubmission(payload);
+        const offlineSub: Submission = {
+          id: queued.id,
+          title: queued.title,
+          excerpt: queued.excerpt,
+          content: queued.content,
+          category: queued.category,
+          authorName: queued.authorName,
+          authorEmail: queued.authorEmail,
+          coverImage: queued.coverImage,
+          tags: queued.tags,
+          wordCount: queued.wordCount,
+          readTime: queued.readTime,
+          submittedAt: `Offline (Queued at ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})`,
+          status: "pending",
+        };
+        setMySubmissions((prev) => [offlineSub, ...prev]);
+        triggerToast("Network disconnected: Manuscript safely queued locally.", "info");
+        setSubmittedSuccessModal({
+          id: queued.id,
+          title: title.trim(),
+          category,
+          isOffline: true,
+        });
+        localStorage.removeItem("thezango_writer_draft");
+        setTitle("");
+        setExcerpt("");
+        setContent("");
+        setTags([]);
+        setTagInput("");
+        setCoverImage("/assets/hero-featured.jpg");
+        setLastAutoSaved(null);
+        setEditingSubmissionId(null);
+        setEditingRevisionNotes(null);
+        return;
+      }
       triggerToast("Failed to submit manuscript. Please try again.", "error");
     } finally {
       setIsSubmitting(false);
@@ -604,8 +766,35 @@ function AuthorStudioContent() {
               />
             </div>
 
+            {/* Online / Offline Connectivity Pill */}
+            {isOnline ? (
+              <div className="hidden sm:inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-100" title="Connected to Newsroom Cloud Database">
+                <Wifi className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Online</span>
+              </div>
+            ) : (
+              <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-900 text-xs font-bold border border-amber-300 animate-pulse" title="Operating in Offline Mode">
+                <WifiOff className="w-3.5 h-3.5 text-amber-600" />
+                <span>Offline Mode</span>
+              </div>
+            )}
+
+            {/* Offline Pending Items Sync Button */}
+            {pendingCount > 0 && (
+              <button
+                type="button"
+                onClick={syncNow}
+                disabled={isSyncing || !isOnline}
+                className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer"
+                title={isOnline ? "Click to sync offline manuscripts" : "Reconnect to internet to sync"}
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
+                <span>{pendingCount} Queued</span>
+              </button>
+            )}
+
             {/* Live Clearance Badge */}
-            <div className="hidden sm:inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-100">
+            <div className="hidden md:inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-100">
               <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
               <span>Writer Clearance Active</span>
             </div>
@@ -628,6 +817,60 @@ function AuthorStudioContent() {
 
         </div>
       </header>
+
+      {/* Offline Status Alert Banners */}
+      {!isOnline && (
+        <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5 text-amber-900 text-xs font-medium">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center space-x-2">
+              <CloudOff className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>
+                <strong>Offline Mode Active:</strong> Network disconnected. Local IndexedDB replication is active. All pitches are cached on your device and will auto-transmit once connectivity returns.
+              </span>
+            </div>
+            {pendingCount > 0 && (
+              <span className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-amber-200/80 text-amber-950 font-bold text-[11px] shrink-0">
+                <Database className="w-3 h-3 text-amber-800" />
+                <span>{pendingCount} Pitches Queued Offline</span>
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {wasOffline && isOnline && (
+        <div className="bg-emerald-500/10 border-b border-emerald-500/20 px-4 py-2.5 text-emerald-900 text-xs font-medium">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+            <div className="flex items-center space-x-2">
+              <Wifi className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>
+                <strong>Connection Restored:</strong> You are back online. {isSyncing ? "Synchronising offline queue with editorial desk..." : pendingCount > 0 ? `${pendingCount} offline items queued for sync.` : "All manuscripts synchronised."}
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              {pendingCount > 0 && (
+                <button
+                  type="button"
+                  onClick={syncNow}
+                  disabled={isSyncing}
+                  className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 transition-colors cursor-pointer flex items-center space-x-1"
+                >
+                  <RefreshCw className={`w-3 h-3 ${isSyncing ? "animate-spin" : ""}`} />
+                  <span>Sync Now</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={dismissWasOffline}
+                className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
+                title="Dismiss"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 2. MAIN BODY */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full flex-1 flex flex-col md:flex-row items-start gap-6">
@@ -926,8 +1169,13 @@ function AuthorStudioContent() {
 
                   <div className="flex items-center space-x-3 text-xs font-semibold text-slate-500">
                     {lastAutoSaved && !editingSubmissionId && (
-                      <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-[11px] font-bold border border-emerald-100">
-                        Saved {lastAutoSaved}
+                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border flex items-center space-x-1.5 ${
+                        isOnline 
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
+                          : "bg-amber-50 text-amber-900 border-amber-300"
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? "bg-emerald-500" : "bg-amber-500 animate-pulse"}`} />
+                        <span>{isOnline ? `Auto-Saved ${lastAutoSaved}` : `Offline Saved ${lastAutoSaved}`}</span>
                       </span>
                     )}
                     <span className="bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200 text-slate-700 font-bold text-[11px]">
@@ -1233,7 +1481,12 @@ function AuthorStudioContent() {
 
                         {/* Status Badge */}
                         <div className="shrink-0 flex items-center space-x-2">
-                          {sub.status === "needs_revision" ? (
+                          {sub.submittedAt.includes("Offline") || sub.id.startsWith("offline-sub-") ? (
+                            <span className="px-3 py-1 bg-amber-50 text-amber-900 rounded-full text-[11px] font-extrabold uppercase border border-amber-300 flex items-center space-x-1.5 shadow-2xs">
+                              <Database className="w-3.5 h-3.5 text-amber-600" />
+                              <span>Offline Queued</span>
+                            </span>
+                          ) : sub.status === "needs_revision" ? (
                             <span className="px-3 py-1 bg-amber-50 text-amber-900 rounded-full text-[11px] font-extrabold uppercase border border-amber-300 flex items-center space-x-1.5 shadow-2xs">
                               <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                               <span>Revision Requested</span>
@@ -1632,19 +1885,33 @@ function AuthorStudioContent() {
       {submittedSuccessModal && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-100 text-center animate-in zoom-in-95 duration-200">
-            <div className="w-16 h-16 rounded-full bg-emerald-50 border-4 border-emerald-100 text-emerald-600 mx-auto flex items-center justify-center shadow-inner">
-              <CheckCircle2 className="w-8 h-8" />
+            <div className={`w-16 h-16 rounded-full border-4 mx-auto flex items-center justify-center shadow-inner ${
+              submittedSuccessModal.isOffline
+                ? "bg-amber-50 border-amber-100 text-amber-600"
+                : "bg-emerald-50 border-emerald-100 text-emerald-600"
+            }`}>
+              {submittedSuccessModal.isOffline ? (
+                <Database className="w-8 h-8" />
+              ) : (
+                <CheckCircle2 className="w-8 h-8" />
+              )}
             </div>
 
             <div className="space-y-1.5">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">
-                Manuscript In Review
+              <span className={`text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full border ${
+                submittedSuccessModal.isOffline
+                  ? "text-amber-800 bg-amber-50 border-amber-200"
+                  : "text-emerald-600 bg-emerald-50 border-emerald-100"
+              }`}>
+                {submittedSuccessModal.isOffline ? "Offline Queue Buffered" : "Manuscript In Review"}
               </span>
               <h3 className="text-lg font-black text-slate-900">
-                Pitched to Editorial Desk!
+                {submittedSuccessModal.isOffline ? "Saved Locally to Sync Queue!" : "Pitched to Editorial Desk!"}
               </h3>
               <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
-                Your dispatch has been queued for Desk Editor review and fact-checking.
+                {submittedSuccessModal.isOffline
+                  ? "Your dispatch is stored securely in your device's persistent cache. It will automatically upload to the editorial desk once an internet connection is established."
+                  : "Your dispatch has been queued for Desk Editor review and fact-checking."}
               </p>
             </div>
 
@@ -1657,6 +1924,15 @@ function AuthorStudioContent() {
                 <span className="text-slate-400 font-semibold">Desk:</span>
                 <span className="font-bold text-slate-800">{submittedSuccessModal.category}</span>
               </div>
+              {submittedSuccessModal.isOffline && (
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400 font-semibold">Sync Status:</span>
+                  <span className="font-bold text-amber-700 flex items-center space-x-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    <span>Auto-Transmits on Reconnect</span>
+                  </span>
+                </div>
+              )}
               <div className="text-xs font-bold text-slate-900 line-clamp-2 pt-1 border-t border-slate-200/60">
                 &ldquo;{submittedSuccessModal.title}&rdquo;
               </div>
@@ -1669,7 +1945,11 @@ function AuthorStudioContent() {
                   setSubmittedSuccessModal(null);
                   setActiveTab("submissions");
                 }}
-                className="w-full sm:flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold uppercase tracking-wider transition-colors cursor-pointer shadow-sm"
+                className={`w-full sm:flex-1 py-2.5 px-4 text-white rounded-xl text-xs font-extrabold uppercase tracking-wider transition-colors cursor-pointer shadow-sm ${
+                  submittedSuccessModal.isOffline
+                    ? "bg-amber-600 hover:bg-amber-700"
+                    : "bg-emerald-600 hover:bg-emerald-700"
+                }`}
               >
                 Track in My Pitches
               </button>
