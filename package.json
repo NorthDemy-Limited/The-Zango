@@ -6,7 +6,9 @@
     "dev": "next dev -p 3002",
     "build": "next build",
     "start": "next start -p 3002",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:e2e": "tsx scripts/system-e2e-test.ts",
+    "verify": "npm run build && tsx scripts/system-e2e-test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
