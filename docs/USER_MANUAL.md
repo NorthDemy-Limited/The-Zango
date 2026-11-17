@@ -33,6 +33,11 @@ graph TD
 - **Offline Operational Resilience:** Native multi-tab IndexedDB cache (`persistentLocalCache` with `persistentMultipleTabManager`) paired with a client-side submission replay queue (`thezango_offline_sync_queue`) guarantees zero data loss during telecommunication blackouts.
 - **Role-Based Access Control (RBAC):** Granular permission isolation spanning five distinct tiers: Public Reader, Contributing Writer, Desk Editor, Chief Editor (Admin), and Marketplace Merchant.
 
+### Visual Interface Reference (`SC-Manual`)
+The primary administrative command center and operational dashboards are depicted in `SC-Manual.png` (Chief Editor CMS) and `SC-Manual-Composite.png` (multi-panel operational view).
+
+![SC-Manual: The Zango System Interface Reference](/SC-Manual.png)
+
 ---
 
 ## 2. User Roles & Permission Matrix
@@ -296,3 +301,4 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
 
 > **Q: How do editors review breaking stories quickly?**  
 > **A:** Editorial desks can filter the Review Queue by desk or use the quick approval trigger. Once approved, the story immediately propagates to the live catalog without requiring a server redeployment.
+
