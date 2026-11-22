@@ -37,7 +37,9 @@ import {
   WifiOff,
   CloudOff,
   Database,
-  RefreshCw
+  RefreshCw,
+  Copy,
+  Check
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
@@ -72,6 +74,7 @@ import {
 import { CATEGORIES } from "@/data/mock-articles";
 import ImageUploader from "@/components/image-uploader";
 import RichEditor from "@/components/rich-editor";
+import { PasswordChangeCard } from "@/components/dashboard/password-change-card";
 
 function AdminDashboardContent() {
   const router = useRouter();
@@ -110,6 +113,17 @@ function AdminDashboardContent() {
     bio: "",
     status: "active" as "active" | "inactive",
   });
+  const [staffCredentialsModal, setStaffCredentialsModal] = useState<{
+    memberName: string;
+    username: string;
+    defaultPassword: string;
+    role: string;
+    desk: string;
+    email: string;
+    emailSent: boolean;
+    simulated: boolean;
+  } | null>(null);
+  const [copiedCredentials, setCopiedCredentials] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
@@ -481,6 +495,18 @@ function AdminDashboardContent() {
       if (data.success) {
         await loadData();
         setShowTeamModal(false);
+        if (data.credentials) {
+          setStaffCredentialsModal({
+            memberName: newMemberForm.name,
+            username: data.credentials.username,
+            defaultPassword: data.credentials.defaultPassword,
+            role: newMemberForm.role,
+            desk: newMemberForm.desk,
+            email: newMemberForm.email,
+            emailSent: data.credentials.emailSent,
+            simulated: data.credentials.simulated,
+          });
+        }
         setNewMemberForm({
           name: "",
           email: "",
@@ -490,15 +516,27 @@ function AdminDashboardContent() {
           bio: "",
           status: "active",
         });
-        triggerToast("Staff member added to newsroom roster!");
+        triggerToast("Staff member added and clearance credentials dispatched!");
         return;
       }
     } catch {
       // fallback
     }
-    await createTeamMember(newMemberForm);
+    const fallbackMember = await createTeamMember(newMemberForm);
     await loadData();
     setShowTeamModal(false);
+    if (fallbackMember.username) {
+      setStaffCredentialsModal({
+        memberName: fallbackMember.name,
+        username: fallbackMember.username,
+        defaultPassword: "password123",
+        role: fallbackMember.role,
+        desk: fallbackMember.desk,
+        email: fallbackMember.email,
+        emailSent: false,
+        simulated: true,
+      });
+    }
     setNewMemberForm({
       name: "",
       email: "",
@@ -1149,17 +1187,6 @@ function AdminDashboardContent() {
                         </div>
                       )}
                     </div>
-
-                    <div className="p-2.5 bg-slate-50 border-t border-slate-100 text-center">
-                      <Link
-                        href="/marketplace"
-                        target="_blank"
-                        className="text-[11px] font-bold text-[#C61D1F] hover:underline inline-flex items-center space-x-1"
-                      >
-                        <span>View Live Sahel Marketplace</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </Link>
-                    </div>
                   </div>
                 </>
               )}
@@ -1454,13 +1481,8 @@ function AdminDashboardContent() {
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
               </div>
               <div className="font-bold text-slate-800 truncate">{user?.name || "Usman Bello"}</div>
-              <div className="flex items-center justify-between text-slate-500 pt-0.5">
-                <Link href="/dashboard/editor" className="hover:text-[#C61D1F] transition-colors font-medium">
-                  Editor Portal →
-                </Link>
-                <Link href="/dashboard/author" className="hover:text-[#C61D1F] transition-colors font-medium">
-                  Writer Studio →
-                </Link>
+              <div className="text-[10px] text-slate-500 pt-0.5">
+                Chief Executive Newsroom Authority
               </div>
             </div>
           </div>
@@ -1506,12 +1528,6 @@ function AdminDashboardContent() {
                 >
                   👑 Switch to Chief Admin
                 </button>
-                <Link
-                  href="/dashboard/author"
-                  className="px-4 py-2 bg-[#C61D1F] text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-xs hover:bg-[#A51719] transition-colors shrink-0 text-center"
-                >
-                  Writer Studio →
-                </Link>
               </div>
             </div>
           )}
@@ -1800,14 +1816,14 @@ function AdminDashboardContent() {
                     <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
                       Active Lead Headline Dispatch
                     </span>
-                    <Link
-                      href={`/article/${leadFeaturedArticle.slug}`}
-                      target="_blank"
-                      className="text-xs font-bold text-[#C61D1F] hover:underline flex items-center space-x-1"
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEdit(leadFeaturedArticle)}
+                      className="text-xs font-bold text-[#C61D1F] hover:underline flex items-center space-x-1 cursor-pointer"
                     >
-                      <span>View Live On Site</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </Link>
+                      <Edit3 className="w-3 h-3" />
+                      <span>Edit Headline</span>
+                    </button>
                   </div>
 
                   <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] flex flex-col md:flex-row items-center gap-6">
@@ -2226,15 +2242,6 @@ function AdminDashboardContent() {
                       Review registered vendors, authenticate Northern Nigeria enterprises, and authorize listings for the live directory.
                     </p>
                   </div>
-
-                  <Link
-                    href="/marketplace"
-                    target="_blank"
-                    className="px-4 py-2 border border-slate-200 hover:border-slate-800 text-slate-800 text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-2xs flex items-center space-x-2 cursor-pointer shrink-0"
-                  >
-                    <span>View Public Directory</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </Link>
                 </div>
 
                 {/* Micro Metrics Strip */}
@@ -2725,12 +2732,16 @@ function AdminDashboardContent() {
                     <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">{desk.description}</p>
                     <div className="pt-2 flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-100">
                       <span>Status: {desk.status || "Active"}</span>
-                      <Link
-                        href={`/category/${desk.slug}`}
-                        className="text-[#C61D1F] font-bold hover:underline"
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCategory(desk.name);
+                          setActiveTab("dispatches");
+                        }}
+                        className="text-[#C61D1F] font-bold hover:underline cursor-pointer"
                       >
-                        View Desk →
-                      </Link>
+                        Manage Dispatches →
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -2740,7 +2751,8 @@ function AdminDashboardContent() {
 
           {/* TAB 6: ACCOUNT & BUREAU SETTINGS */}
           {activeTab === "settings" && (
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-6 animate-in fade-in duration-200">
+            <div className="space-y-6">
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-6 animate-in fade-in duration-200">
               <div className="pb-4 border-b border-slate-200/80">
                 <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wide">
                   Executive Admin Profile & Bureau Settings
@@ -2847,6 +2859,13 @@ function AdminDashboardContent() {
                 </button>
               </div>
             </div>
+
+            <PasswordChangeCard
+              identifier={user?.username || user?.email || "admin"}
+              accentColor="red"
+              onSuccessToast={(msg) => triggerToast(msg)}
+            />
+          </div>
           )}
 
           {/* TAB 7: NEWSLETTER ROSTER */}
@@ -3231,9 +3250,14 @@ function AdminDashboardContent() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 shrink-0 bg-white">
               <div className="flex items-center space-x-2.5">
                 <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
-                <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wide">
-                  Add Newsroom Staff Member
-                </h3>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wide">
+                    Add Newsroom Staff Member
+                  </h3>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    Credentials & onboarding instructions will be auto-dispatched to their email.
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
@@ -3524,6 +3548,118 @@ function AdminDashboardContent() {
                   className="px-4 py-1.5 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
                 >
                   Approve Vendor
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STAFF CLEARANCE CREDENTIALS DISPATCHED MODAL */}
+      {staffCredentialsModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-lg w-full flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#C61D1F] to-[#991517] p-6 text-white text-center relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setStaffCredentialsModal(null);
+                  setCopiedCredentials(false);
+                }}
+                className="absolute top-4 right-4 text-white/70 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="w-12 h-12 bg-white/15 rounded-2xl mx-auto flex items-center justify-center mb-3 backdrop-blur-xs border border-white/20">
+                <CheckCircle2 className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-lg font-extrabold uppercase tracking-wide">
+                Clearance Provisioned & Dispatched
+              </h3>
+              <p className="text-xs text-white/80 mt-1">
+                Newsroom credentials for <strong>{staffCredentialsModal.memberName}</strong>
+              </p>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4 text-xs">
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Assigned Beat</span>
+                  <span className="font-extrabold text-slate-900">{staffCredentialsModal.desk}</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Clearance</span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-red-100 text-[#C61D1F] font-bold text-[11px] uppercase">
+                    {staffCredentialsModal.role}
+                  </span>
+                </div>
+              </div>
+
+              {/* Credentials Box */}
+              <div className="space-y-3 bg-slate-900 text-white p-4 rounded-2xl border border-slate-800">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Login Username</span>
+                  <span className="font-mono font-extrabold text-amber-400 text-sm">{staffCredentialsModal.username}</span>
+                </div>
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Temporary Passcode</span>
+                  <span className="font-mono font-extrabold text-emerald-400 text-sm">{staffCredentialsModal.defaultPassword}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Portal URL</span>
+                  <span className="font-mono text-xs text-slate-300">https://thezango.com/login</span>
+                </div>
+              </div>
+
+              {/* Email Status Indicator */}
+              <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex items-start space-x-2.5">
+                <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <p className="font-bold">Automated Onboarding Dispatch</p>
+                  <p className="text-[11px] text-emerald-700">
+                    {staffCredentialsModal.emailSent
+                      ? `Official welcome email with login instructions has been dispatched to ${staffCredentialsModal.email}.`
+                      : `Clearance generated for ${staffCredentialsModal.email}. Dispatched to server log for immediate testing.`}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-2 flex flex-col sm:flex-row items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const text = `The Zango Newsroom Clearance:\nName: ${staffCredentialsModal.memberName}\nUsername: ${staffCredentialsModal.username}\nTemporary Passcode: ${staffCredentialsModal.defaultPassword}\nLogin Portal: https://thezango.com/login\n\nSecurity notice: Please sign in and update your passcode under your dashboard Settings tab.`;
+                    navigator.clipboard.writeText(text);
+                    setCopiedCredentials(true);
+                    setTimeout(() => setCopiedCredentials(false), 2500);
+                  }}
+                  className="w-full sm:flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl transition-all flex items-center justify-center space-x-2 cursor-pointer text-xs"
+                >
+                  {copiedCredentials ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-600" />
+                      <span className="text-emerald-700">Credentials Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 text-slate-600" />
+                      <span>Copy Login Details</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStaffCredentialsModal(null);
+                    setCopiedCredentials(false);
+                  }}
+                  className="w-full sm:w-auto py-2.5 px-6 bg-[#C61D1F] hover:bg-[#A51719] text-white font-bold rounded-xl uppercase tracking-wider transition-all cursor-pointer text-xs"
+                >
+                  Done
                 </button>
               </div>
             </div>

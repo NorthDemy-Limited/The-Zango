@@ -79,6 +79,7 @@ export interface NewsroomMember {
   id: string;
   name: string;
   email: string;
+  username?: string;
   role: NewsroomRole;
   desk: string;
   avatar?: string;
@@ -86,6 +87,9 @@ export interface NewsroomMember {
   status: "active" | "inactive";
   articlesCount?: number;
   joinedAt: string;
+  passwordHash?: string;
+  passwordSalt?: string;
+  mustChangePassword?: boolean;
 }
 
 export interface Submission {

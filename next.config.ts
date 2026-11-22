@@ -22,6 +22,14 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
+        hostname: "thezango.com",
+      },
+      {
+        protocol: "https",
+        hostname: "secure.gravatar.com",
+      },
+      {
+        protocol: "https",
         hostname: "res.cloudinary.com",
       },
       {

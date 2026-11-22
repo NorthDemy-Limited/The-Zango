@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { getTeamMembers, createTeamMember } from "@/lib/firebase/db";
+import { getTeamMembers, createTeamMember, getAllUsernames } from "@/lib/firebase/db";
 import { NewsroomRole } from "@/types";
+import { generateDefaultPassword, generateNextUsername, hashPassword } from "@/lib/auth-passwords";
+import { sendStaffWelcomeEmail, EmailDispatchResult } from "@/lib/email";
 
 export async function GET(request: Request) {
   try {
@@ -67,21 +69,51 @@ export async function POST(request: Request) {
       );
     }
 
+    const existingUsernames = await getAllUsernames();
+    const assignedUsername = body.username?.trim().toLowerCase() || generateNextUsername(role, existingUsernames);
+    const defaultPassword = generateDefaultPassword();
+    const { hash, salt } = hashPassword(defaultPassword);
+
     const newMember = await createTeamMember({
       name: name.trim(),
       email: email.trim().toLowerCase(),
+      username: assignedUsername,
       role: role as NewsroomRole,
       desk: desk || "Technology & Digital Economy",
       avatar: avatar || "/assets/social-image-1.png",
       bio: bio?.trim() || "",
       status: (status as "active" | "inactive") || "active",
+      passwordHash: hash,
+      passwordSalt: salt,
+      mustChangePassword: true,
     });
+
+    // Automatically send onboarding welcome email with credentials
+    let emailResult: EmailDispatchResult = { success: false, simulated: true };
+    try {
+      emailResult = await sendStaffWelcomeEmail({
+        to: newMember.email,
+        name: newMember.name,
+        username: assignedUsername,
+        defaultPassword,
+        role: newMember.role,
+        desk: newMember.desk,
+      });
+    } catch (mailErr) {
+      console.warn("Could not send welcome email:", mailErr);
+    }
 
     return NextResponse.json(
       {
         success: true,
-        message: "Newsroom staff member added successfully",
+        message: "Newsroom staff member added successfully and credentials dispatched",
         member: newMember,
+        credentials: {
+          username: assignedUsername,
+          defaultPassword,
+          emailSent: emailResult.success,
+          simulated: !!emailResult.simulated,
+        },
       },
       { status: 201 }
     );

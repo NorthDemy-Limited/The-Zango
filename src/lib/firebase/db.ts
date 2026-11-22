@@ -3,6 +3,8 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
 import { collection, getDocs, getDoc, setDoc, addDoc, doc, updateDoc, deleteDoc, query, orderBy, where, limit, terminate } from "firebase/firestore";
 import { Article, Subscriber, Submission, NewsroomMember, NewsroomRole, UserProfile, UserRole, MerchantApplication } from "@/types";
 import { ARTICLES } from "@/data/mock-articles";
+import LIVE_WORDPRESS_ARTICLES from "@/data/live-wordpress-articles.json";
+import { DEFAULT_SEED_HASH, DEFAULT_SEED_SALT } from "@/lib/auth-passwords";
 
 function sanitizeForFirestore<T extends Record<string, unknown>>(data: T): Record<string, unknown> {
   const clean: Record<string, unknown> = {};
@@ -51,7 +53,15 @@ const disableFirestore = (reason?: unknown) => {
   }
 };
 
-let localArticlesStore: Article[] = [...ARTICLES];
+// Merge live migrated WordPress articles with supplementary mock articles (live articles take precedence)
+const liveSlugs = new Set((LIVE_WORDPRESS_ARTICLES as unknown as Article[]).map((a) => a.slug.toLowerCase()));
+const supplementaryMockArticles = ARTICLES.filter((m) => !liveSlugs.has(m.slug.toLowerCase()));
+const COMBINED_NEWSROOM_ARTICLES: Article[] = [
+  ...(LIVE_WORDPRESS_ARTICLES as unknown as Article[]),
+  ...supplementaryMockArticles,
+];
+
+let localArticlesStore: Article[] = [...COMBINED_NEWSROOM_ARTICLES];
 let localSubscribersStore: Subscriber[] = [
   { email: "ibrahim.k@startupkano.com", subscribedAt: "2026-07-20" },
   { email: "fatima.al@kadunahub.ng", subscribedAt: "2026-07-21" },
@@ -226,8 +236,8 @@ function mapFirestoreToArticle(id: string, data: Record<string, unknown>): Artic
   };
 }
 
-const CACHED_ARTICLES_KEY = "thezango_cached_articles";
-const CACHED_SUBMISSIONS_KEY = "thezango_cached_submissions";
+const CACHED_ARTICLES_KEY = "thezango_cached_articles_v3";
+const CACHED_SUBMISSIONS_KEY = "thezango_cached_submissions_v3";
 
 function saveToOfflineReplica<T>(key: string, data: T): void {
   if (typeof window === "undefined") return;
@@ -275,10 +285,15 @@ export async function getArticles(): Promise<Article[]> {
         const fsArticles = querySnapshot.docs.map((d) =>
           mapFirestoreToArticle(d.id, d.data() as Record<string, unknown>)
         );
+        // Prioritize live WordPress articles over mock articles
+        const liveArticles = fsArticles.filter((a) => a.id.startsWith("wp-"));
+        const otherArticles = fsArticles.filter((a) => !a.id.startsWith("wp-"));
+        const sortedFs = [...liveArticles, ...otherArticles];
+        
         // Include any in-memory store articles that are not yet indexed in Firestore
-        const fsSlugs = new Set(fsArticles.map((a) => a.slug.toLowerCase()));
+        const fsSlugs = new Set(sortedFs.map((a) => a.slug.toLowerCase()));
         const missing = localArticlesStore.filter((a) => !fsSlugs.has(a.slug.toLowerCase()));
-        const result = [...fsArticles, ...missing];
+        const result = [...sortedFs, ...missing];
         saveToOfflineReplica(CACHED_ARTICLES_KEY, result);
         return result;
       }
@@ -899,6 +914,7 @@ let localTeamMembersStore: NewsroomMember[] = [
     id: "member-1",
     name: "Usman Bello",
     email: "usman.bello@thezango.org",
+    username: "admin",
     role: "admin",
     desk: "Executive & Investigation",
     avatar: "/assets/social-image-1.png",
@@ -906,11 +922,15 @@ let localTeamMembersStore: NewsroomMember[] = [
     status: "active",
     articlesCount: 42,
     joinedAt: "2024-01-15",
+    passwordHash: DEFAULT_SEED_HASH,
+    passwordSalt: DEFAULT_SEED_SALT,
+    mustChangePassword: false,
   },
   {
     id: "member-2",
     name: "Aisha Dahiru",
     email: "aisha.dahiru@thezango.org",
+    username: "editor1",
     role: "editor",
     desk: "Business & Capital Markets",
     avatar: "/assets/social-image-2.png",
@@ -918,11 +938,15 @@ let localTeamMembersStore: NewsroomMember[] = [
     status: "active",
     articlesCount: 28,
     joinedAt: "2024-03-01",
+    passwordHash: DEFAULT_SEED_HASH,
+    passwordSalt: DEFAULT_SEED_SALT,
+    mustChangePassword: false,
   },
   {
     id: "member-3",
     name: "Ibrahim Garba",
     email: "ibrahim.garba@thezango.org",
+    username: "editor2",
     role: "editor",
     desk: "Security & Regional Conflict",
     avatar: "/assets/social-image-3.png",
@@ -930,11 +954,15 @@ let localTeamMembersStore: NewsroomMember[] = [
     status: "active",
     articlesCount: 35,
     joinedAt: "2024-04-10",
+    passwordHash: DEFAULT_SEED_HASH,
+    passwordSalt: DEFAULT_SEED_SALT,
+    mustChangePassword: false,
   },
   {
     id: "member-4",
     name: "Fatima Sanusi",
     email: "fatima.sanusi@thezango.org",
+    username: "author1",
     role: "writer",
     desk: "Technology & Digital Economy",
     avatar: "/assets/social-image-4.png",
@@ -942,11 +970,15 @@ let localTeamMembersStore: NewsroomMember[] = [
     status: "active",
     articlesCount: 19,
     joinedAt: "2024-06-20",
+    passwordHash: DEFAULT_SEED_HASH,
+    passwordSalt: DEFAULT_SEED_SALT,
+    mustChangePassword: false,
   },
   {
     id: "member-5",
     name: "Zainab Aliyu",
     email: "zainab.aliyu@thezango.org",
+    username: "author2",
     role: "writer",
     desk: "Culture, Heritage & Arts",
     avatar: "/assets/social-image-1.png",
@@ -954,6 +986,57 @@ let localTeamMembersStore: NewsroomMember[] = [
     status: "active",
     articlesCount: 14,
     joinedAt: "2024-08-05",
+    passwordHash: DEFAULT_SEED_HASH,
+    passwordSalt: DEFAULT_SEED_SALT,
+    mustChangePassword: false,
+  },
+  {
+    id: "member-6",
+    name: "Tahir Ahmad",
+    email: "tahir.ahmad@thezango.org",
+    username: "tahir",
+    role: "writer",
+    desk: "Technology & Digital Economy",
+    avatar: "https://thezango.com/wp-content/uploads/2025/10/cropped-673709c9774b480f9ec4bd6636e03ab7-POP_OUT-scaled-2.jpg",
+    bio: "Tahir Ahmad is a reporter with The Zango covering Northern Nigeria’s fast-growing tech and innovation ecosystem.",
+    status: "active",
+    articlesCount: 38,
+    joinedAt: "2024-02-10",
+    passwordHash: DEFAULT_SEED_HASH,
+    passwordSalt: DEFAULT_SEED_SALT,
+    mustChangePassword: false,
+  },
+  {
+    id: "member-7",
+    name: "Saratu Abubakar",
+    email: "saratu.abubakar@thezango.org",
+    username: "saratu",
+    role: "writer",
+    desk: "Features",
+    avatar: "https://secure.gravatar.com/avatar/8340a7ddc114086cca2e28175b6d4c57d92b2aace19a91561de333f337cbc70a?s=96&d=mm&r=g",
+    bio: "Investigative correspondent reporting for The Zango Bureau.",
+    status: "active",
+    articlesCount: 22,
+    joinedAt: "2024-03-15",
+    passwordHash: DEFAULT_SEED_HASH,
+    passwordSalt: DEFAULT_SEED_SALT,
+    mustChangePassword: false,
+  },
+  {
+    id: "member-8",
+    name: "Gidado Shuaib",
+    email: "gidado.shuaib@thezango.org",
+    username: "gidado",
+    role: "editor",
+    desk: "Executive & Investigation",
+    avatar: "https://secure.gravatar.com/avatar/0107b4a0d443559c9a0b9c8b4fa28e8d0452246331145b90578d3b5cc23a2b32?s=96&d=mm&r=g",
+    bio: "Senior Investigative Editor analyzing governance and socio-political dynamics.",
+    status: "active",
+    articlesCount: 16,
+    joinedAt: "2024-01-20",
+    passwordHash: DEFAULT_SEED_HASH,
+    passwordSalt: DEFAULT_SEED_SALT,
+    mustChangePassword: false,
   },
 ];
 
@@ -1030,6 +1113,7 @@ export async function createTeamMember(
           id: newMember.id,
           name: newMember.name,
           email: newMember.email,
+          username: newMember.username || null,
           role: newMember.role,
           desk: newMember.desk,
           avatar: newMember.avatar || "/assets/social-image-1.png",
@@ -1037,6 +1121,9 @@ export async function createTeamMember(
           status: newMember.status,
           articles_count: 0,
           joined_at: newMember.joinedAt,
+          password_hash: newMember.passwordHash || null,
+          password_salt: newMember.passwordSalt || null,
+          must_change_password: newMember.mustChangePassword ?? true,
         },
       ]);
     } catch (err) {
@@ -1047,7 +1134,8 @@ export async function createTeamMember(
   // Persist to Firebase Firestore
   if (isFirebaseConfigured && db) {
     try {
-      const docRef = await addDoc(collection(db, "team_members"), newMember);
+      const sanitized = sanitizeForFirestore(newMember as unknown as Record<string, unknown>);
+      const docRef = await addDoc(collection(db, "team_members"), sanitized);
       newMember.id = docRef.id;
     } catch (err) {
       console.warn("Could not add team member to Firestore:", err);
@@ -1058,10 +1146,146 @@ export async function createTeamMember(
   return newMember;
 }
 
+export async function findStaffByIdentifier(identifier: string): Promise<NewsroomMember | null> {
+  const clean = identifier.trim().toLowerCase();
+  if (!clean) return null;
+
+  // Direct special alias matches for administrative convenience
+  if (clean === "admin" || clean === "usman") {
+    const admin = localTeamMembersStore.find((m) => m.role === "admin");
+    if (admin) return admin;
+  }
+  if (clean === "editor") {
+    const editor = localTeamMembersStore.find((m) => m.role === "editor");
+    if (editor) return editor;
+  }
+  if (clean === "writer" || clean === "author") {
+    const writer = localTeamMembersStore.find((m) => m.role === "writer");
+    if (writer) return writer;
+  }
+
+  // 1. Check local store by username or email
+  const localMatch = localTeamMembersStore.find(
+    (m) =>
+      (m.username && m.username.toLowerCase() === clean) ||
+      m.email.toLowerCase() === clean
+  );
+  if (localMatch) return localMatch;
+
+  // 2. Query Firestore if configured
+  if (isFirebaseConfigured && db && isFirestoreAvailable) {
+    try {
+      // Check by username
+      const qUser = query(collection(db, "team_members"), where("username", "==", clean), limit(1));
+      const snapUser = await withTimeout(getDocs(qUser), 2500, null);
+      if (snapUser && !snapUser.empty) {
+        const docSnap = snapUser.docs[0];
+        const member = { id: docSnap.id, ...docSnap.data() } as NewsroomMember;
+        if (!localTeamMembersStore.some((m) => m.id === member.id)) {
+          localTeamMembersStore.push(member);
+        }
+        return member;
+      }
+
+      // Check by email
+      const qEmail = query(collection(db, "team_members"), where("email", "==", clean), limit(1));
+      const snapEmail = await withTimeout(getDocs(qEmail), 2500, null);
+      if (snapEmail && !snapEmail.empty) {
+        const docSnap = snapEmail.docs[0];
+        const member = { id: docSnap.id, ...docSnap.data() } as NewsroomMember;
+        if (!localTeamMembersStore.some((m) => m.id === member.id)) {
+          localTeamMembersStore.push(member);
+        }
+        return member;
+      }
+    } catch (err) {
+      console.warn("Could not query team member in Firestore:", err);
+    }
+  }
+
+  return null;
+}
+
+export async function updateStaffPassword(
+  memberIdOrIdentifier: string,
+  newHash: string,
+  newSalt: string
+): Promise<boolean> {
+  const clean = memberIdOrIdentifier.trim().toLowerCase();
+  const member = localTeamMembersStore.find(
+    (m) =>
+      m.id === memberIdOrIdentifier ||
+      (m.username && m.username.toLowerCase() === clean) ||
+      m.email.toLowerCase() === clean
+  );
+
+  if (member) {
+    member.passwordHash = newHash;
+    member.passwordSalt = newSalt;
+    member.mustChangePassword = false;
+  }
+
+  const targetId = member?.id || memberIdOrIdentifier;
+
+  // Update in Supabase
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase
+        .from("newsroom_members")
+        .update({
+          password_hash: newHash,
+          password_salt: newSalt,
+          must_change_password: false,
+        })
+        .eq("id", targetId);
+    } catch (err) {
+      console.warn("Could not update staff password in Supabase:", err);
+    }
+  }
+
+  // Update in Firestore
+  if (isFirebaseConfigured && db && isFirestoreAvailable) {
+    try {
+      const docRef = doc(db, "team_members", targetId);
+      await updateDoc(docRef, {
+        passwordHash: newHash,
+        passwordSalt: newSalt,
+        mustChangePassword: false,
+      });
+    } catch (err) {
+      console.warn("Could not update staff password in Firestore:", err);
+    }
+  }
+
+  return true;
+}
+
+export async function getAllUsernames(): Promise<string[]> {
+  const members = await getTeamMembers();
+  return members
+    .map((m) => m.username)
+    .filter((u): u is string => typeof u === "string" && u.trim().length > 0);
+}
+
 export async function updateTeamMemberRole(id: string, role: NewsroomRole): Promise<boolean> {
   const member = localTeamMembersStore.find((m) => m.id === id);
   if (!member) return false;
   member.role = role;
+
+  // Synchronize corresponding user profile if user has already signed in
+  const mappedUserRole: UserRole = role === "writer" ? "author" : role;
+  for (const [uid, profile] of Object.entries(localUserProfilesStore)) {
+    if (profile.email.toLowerCase() === member.email.toLowerCase()) {
+      profile.role = mappedUserRole;
+      if (isFirebaseConfigured && db) {
+        try {
+          await updateDoc(doc(db, "users", uid), { role: mappedUserRole });
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }
 
   if (isSupabaseConfigured && supabase) {
     try {
@@ -1176,15 +1400,27 @@ export async function getOrCreateUserProfile(
     return existing;
   }
 
-  // Derive role based on known staff email or default
+  // Check if Chief Admin pre-configured this user in the team roster
   const emailLower = (user.email || "").toLowerCase();
+  const preConfiguredStaff = localTeamMembersStore.find(
+    (m) => m.email.toLowerCase() === emailLower
+  );
+
   let assignedRole: UserRole = defaultRole;
-  if (emailLower.includes("usman") || emailLower.includes("admin")) {
+  let assignedDesk = "Technology & Digital Economy";
+
+  if (preConfiguredStaff) {
+    assignedRole = preConfiguredStaff.role === "writer" ? "author" : preConfiguredStaff.role;
+    assignedDesk = preConfiguredStaff.desk || assignedDesk;
+  } else if (emailLower.includes("usman") || emailLower.includes("admin")) {
     assignedRole = "admin";
+    assignedDesk = "Executive & Investigation";
   } else if (emailLower.includes("editor") || emailLower.includes("aisha") || emailLower.includes("ibrahim")) {
     assignedRole = "editor";
+    assignedDesk = "Editorial Desk";
   } else if (emailLower.includes("writer") || emailLower.includes("fatima") || emailLower.includes("sanusi")) {
     assignedRole = "author";
+    assignedDesk = "Technology & Digital Economy";
   }
 
   const now = new Date().toISOString();
@@ -1194,8 +1430,8 @@ export async function getOrCreateUserProfile(
     displayName: user.displayName || user.email?.split("@")[0].replace(/[._-]/g, " ").toUpperCase() || "Newsroom Contributor",
     photoURL: user.photoURL || "/assets/social-image-1.png",
     role: assignedRole,
-    desk: assignedRole === "admin" ? "Executive & Investigation" : assignedRole === "editor" ? "Editorial Desk" : "Technology & Digital Economy",
-    bio: "",
+    desk: assignedDesk,
+    bio: preConfiguredStaff?.bio || "",
     created_at: now,
     updated_at: now,
   };

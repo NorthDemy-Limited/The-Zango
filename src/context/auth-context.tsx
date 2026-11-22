@@ -20,6 +20,7 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
+  username?: string;
   role: UserRole;
   desk: string;
   avatar: string;
@@ -32,6 +33,7 @@ export const PRESET_USERS: Record<string, AuthUser> = {
     id: "usr-admin-1",
     name: "Usman Bello",
     email: "usman.bello@thezango.org",
+    username: "admin",
     role: "admin",
     desk: "Executive & Investigation",
     avatar: "/assets/social-image-1.png",
@@ -42,6 +44,7 @@ export const PRESET_USERS: Record<string, AuthUser> = {
     id: "usr-editor-2",
     name: "Aisha Dahiru",
     email: "aisha.dahiru@thezango.org",
+    username: "editor1",
     role: "editor",
     desk: "Business & Capital Markets",
     avatar: "/assets/social-image-2.png",
@@ -52,6 +55,7 @@ export const PRESET_USERS: Record<string, AuthUser> = {
     id: "usr-writer-3",
     name: "Fatima Sanusi",
     email: "fatima.sanusi@thezango.org",
+    username: "author1",
     role: "writer",
     desk: "Technology & Digital Economy",
     avatar: "/assets/social-image-4.png",
@@ -62,6 +66,7 @@ export const PRESET_USERS: Record<string, AuthUser> = {
     id: "usr-reader-4",
     name: "Amina Yusuf",
     email: "amina.yusuf@gmail.com",
+    username: "reader1",
     role: "reader",
     desk: "Public Reader",
     avatar: "/assets/social-image-3.png",
@@ -178,7 +183,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (roleOrEmail: string, password?: string): Promise<{ success: boolean; error?: string }> => {
     const clean = roleOrEmail.trim().toLowerCase();
 
-    // 1. Direct role key matching
+    // 1. If password is provided, attempt cryptographic clearance verification via internal API
+    if (password) {
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: clean, password }),
+        });
+        const data = await res.json();
+        if (data.success && data.user) {
+          const authUser: AuthUser = {
+            id: data.user.id,
+            name: data.user.name,
+            email: data.user.email,
+            username: data.user.username,
+            role: data.user.role,
+            desk: data.user.desk,
+            avatar: data.user.avatar,
+            bio: data.user.bio,
+            badge: data.user.badge,
+          };
+          setUser(authUser);
+          localStorage.setItem("thezango_session_user", JSON.stringify(authUser));
+          return { success: true };
+        } else if (!data.success && res.status === 401) {
+          return { success: false, error: data.message || "Invalid credentials." };
+        }
+      } catch (apiErr) {
+        console.warn("API login verification failed, checking fallback presets:", apiErr);
+      }
+    }
+
+    // 2. Direct role key matching (Fast Clearance / 1-Click for dev/demo)
     if (PRESET_USERS[clean]) {
       const selected = PRESET_USERS[clean];
       setUser(selected);
@@ -186,7 +223,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: true };
     }
 
-    // 2. Email matching with local preset or Firebase Auth
+    // Map common staff usernames to presets as fallback
+    if (clean === "editor1" || clean === "editor2") {
+      const selected = PRESET_USERS.editor;
+      setUser(selected);
+      localStorage.setItem("thezango_session_user", JSON.stringify(selected));
+      return { success: true };
+    }
+    if (clean === "author1" || clean === "author2") {
+      const selected = PRESET_USERS.writer;
+      setUser(selected);
+      localStorage.setItem("thezango_session_user", JSON.stringify(selected));
+      return { success: true };
+    }
+
+    // 3. Email matching with local preset or Firebase Auth
     const found = Object.values(PRESET_USERS).find((u) => u.email.toLowerCase() === clean);
 
     // If Firebase Auth is configured and credentials are supplied, attempt Firebase sign-in
@@ -227,23 +278,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: true };
     }
 
-    // 3. Custom dynamic user login
-    if (clean.includes("@")) {
-      const customUser: AuthUser = {
-        id: `usr-${Date.now()}`,
-        name: clean.split("@")[0].replace(/[._-]/g, " ").toUpperCase(),
-        email: clean,
-        role: "writer",
-        desk: "General News Desk",
-        avatar: "/assets/social-image-1.png",
-        badge: "Staff Writer",
-      };
-      setUser(customUser);
-      localStorage.setItem("thezango_session_user", JSON.stringify(customUser));
-      return { success: true };
-    }
-
-    return { success: false, error: "Invalid credentials. Use a verified newsroom account." };
+    return { success: false, error: "Invalid credentials. Staff should sign in using their assigned username (e.g. editor1, author1) and passcode." };
   };
 
   const signInWithEmail = async (email: string, password: string) => {
@@ -334,8 +369,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (err: unknown) {
         const firebaseErr = err as { code?: string; message?: string };
-        if (firebaseErr?.code === "auth/popup-closed-by-user") {
-          return { success: false, error: "Sign-in popup was closed." };
+        if (firebaseErr?.code === "auth/popup-closed-by-user" || firebaseErr?.code === "auth/popup-blocked") {
+          return {
+            success: false,
+            error: "Google sign-in popup was blocked or closed. If using Brave Browser, please disable Brave Shields for this tab. If using an ad blocker, allow popups.",
+          };
+        }
+        if (firebaseErr?.code === "auth/unauthorized-domain") {
+          return {
+            success: false,
+            error: "This domain is not authorized in Firebase Console. Please add localhost (or your current URL) under Firebase Authentication > Settings > Authorized domains.",
+          };
+        }
+        if (firebaseErr?.code === "auth/operation-not-allowed") {
+          return {
+            success: false,
+            error: "Google sign-in is not enabled yet in Firebase Console. Please enable Google provider and click Save.",
+          };
         }
         return { success: false, error: firebaseErr?.message || "Google sign-in failed." };
       }
