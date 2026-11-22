@@ -48,3 +48,8 @@ next-env.d.ts
 
 # runtime uploaded assets
 /public/uploads/
+
+# documentation exports & credentials reports
+*.doc
+*.docx
+docs/LIVE_DATABASE_MIGRATION_AND_CREDENTIALS*
