@@ -43,6 +43,7 @@ import {
 import { CATEGORIES } from "@/data/mock-articles";
 import ImageUploader from "@/components/image-uploader";
 import RichEditor from "@/components/rich-editor";
+import { PasswordChangeCard } from "@/components/dashboard/password-change-card";
 
 function EditorDashboardContent() {
   const router = useRouter();
@@ -1510,7 +1511,8 @@ function EditorDashboardContent() {
 
           {/* TAB 5: ACCOUNT & BYLINE SETTINGS */}
           {activeTab === "settings" && (
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-2xs space-y-6 max-w-3xl animate-in fade-in duration-200">
+            <div className="space-y-6 max-w-3xl">
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-2xs space-y-6 animate-in fade-in duration-200">
               <div>
                 <h3 className="text-base font-extrabold text-slate-900">Desk Editor Profile & Editorial Signature</h3>
                 <p className="text-xs text-slate-500">Configure your verified byline credentials and beat assignments</p>
@@ -1570,6 +1572,13 @@ function EditorDashboardContent() {
                 </button>
               </div>
             </div>
+
+            <PasswordChangeCard
+              identifier={user?.username || user?.email || "editor1"}
+              accentColor="blue"
+              onSuccessToast={(msg) => triggerToast(msg)}
+            />
+          </div>
           )}
 
         </main>

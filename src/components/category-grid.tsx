@@ -1,28 +1,33 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { 
-  ArrowRight, 
-  Newspaper, 
-  Briefcase, 
-  Cpu, 
-  MessageSquareText, 
-  Coffee, 
-  Trophy, 
-  FileText, 
-  Landmark, 
-  Film, 
-  HeartPulse, 
+import {
+  ArrowRight,
+  Newspaper,
+  Briefcase,
+  Cpu,
+  MessageSquareText,
+  Coffee,
+  Trophy,
+  FileText,
+  Landmark,
+  Film,
+  HeartPulse,
   GraduationCap
 } from "lucide-react";
 import { CATEGORIES } from "@/data/mock-articles";
 import { Category } from "@/types";
 
-export default function CategoryGrid() {
-  const [categories, setCategories] = useState<Category[]>(CATEGORIES);
+interface CategoryGridProps {
+  initialCategories?: Category[];
+}
+
+export default function CategoryGrid({ initialCategories }: CategoryGridProps = {}) {
+  const [categories, setCategories] = useState<Category[]>(initialCategories || CATEGORIES);
   const [showAll, setShowAll] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState<string>("Just now");
+  const [lastSyncTime, setLastSyncTime] = useState<string>("Active");
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const iconMap: Record<string, React.ElementType> = {
     news: Newspaper,
@@ -38,43 +43,34 @@ export default function CategoryGrid() {
     education: GraduationCap,
   };
 
-  useEffect(() => {
-    let active = true;
-    const controller = new AbortController();
-
-    const syncCategories = async () => {
-      if (typeof navigator !== "undefined" && !navigator.onLine) {
-        return;
-      }
-      try {
-        const res = await fetch("/api/categories", { signal: controller.signal });
-        if (res.ok) {
-          const data = await res.json();
-          if (active && data.categories) {
-            setCategories(data.categories);
-            setLastSyncTime(
-              new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
-            );
-          }
+  // Manual or on-demand re-sync handler (no longer fires automatically on initial mount)
+  const handleManualSync = async () => {
+    if (isSyncing) return;
+    setIsSyncing(true);
+    try {
+      const res = await fetch("/api/categories");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.categories) {
+          setCategories(data.categories);
+          setLastSyncTime(
+            new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          );
         }
-      } catch {
-        // Silently preserve initialized category data on network failure or abort without console spam
       }
-    };
-
-    void syncCategories();
-    return () => {
-      active = false;
-      controller.abort();
-    };
-  }, []);
+    } catch {
+      // Preserve category data on failure
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const displayedCategories = showAll ? categories : categories.slice(0, 6);
 
   return (
     <section className="py-12 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Header with Real-time Sync Indicator */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3.5 mb-8 border-b border-[#E5E6E8] gap-4">
           <div className="flex items-center space-x-3">
@@ -82,16 +78,21 @@ export default function CategoryGrid() {
             <h2 className="text-xl sm:text-2xl font-extrabold text-[#000000] tracking-wide uppercase">
               Browse by Category
             </h2>
-            
+
             {/* Real-time Status Badge */}
-            <div className="inline-flex items-center space-x-1.5 bg-[#FDF2F2] border border-red-200/80 px-2.5 py-1 rounded-full text-[11px] font-bold text-[#C61D1F] shadow-2xs">
+            <button
+              type="button"
+              onClick={handleManualSync}
+              title="Click to re-sync live desks"
+              className="inline-flex items-center space-x-1.5 bg-[#FDF2F2] hover:bg-red-100 border border-red-200/80 px-2.5 py-1 rounded-full text-[11px] font-bold text-[#C61D1F] shadow-2xs transition-colors cursor-pointer"
+            >
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-[#C61D1F]"></span>
               </span>
-              <span className="tracking-wider uppercase">Live Desks</span>
+              <span className="tracking-wider uppercase">{isSyncing ? "Syncing..." : "Live Desks"}</span>
               <span className="text-gray-400 text-[10px] hidden md:inline">• {lastSyncTime}</span>
-            </div>
+            </button>
           </div>
 
           <div className="flex items-center space-x-4">

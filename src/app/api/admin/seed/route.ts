@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { db, isFirebaseConfigured } from "@/lib/firebase/config";
 import { collection, getDocs, doc, setDoc } from "firebase/firestore";
-import { ARTICLES } from "@/data/mock-articles";
-import { getTeamMembers } from "@/lib/firebase/db";
+import { getArticles, getTeamMembers } from "@/lib/firebase/db";
 
 export async function GET() {
   try {
@@ -55,7 +54,8 @@ export async function POST() {
     let seededArticlesCount = 0;
 
     if (existingArticles.empty) {
-      for (const article of ARTICLES) {
+      const articlesToSeed = await getArticles();
+      for (const article of articlesToSeed) {
         await setDoc(doc(db, "articles", article.id), {
           ...article,
           views: article.views || Math.floor(Math.random() * 2000) + 500,

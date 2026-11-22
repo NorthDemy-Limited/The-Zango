@@ -48,6 +48,7 @@ import { useAuth } from "@/context/auth-context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import ImageUploader from "@/components/image-uploader";
 import RichEditor from "@/components/rich-editor";
+import { PasswordChangeCard } from "@/components/dashboard/password-change-card";
 
 function AuthorStudioContent() {
   const router = useRouter();
@@ -1778,7 +1779,8 @@ function AuthorStudioContent() {
 
           {/* TAB 5: SETTINGS */}
           {activeTab === "settings" && (
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-6">
+            <div className="space-y-6">
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-6">
               
               <div className="pb-4 border-b border-slate-100">
                 <div className="flex items-center space-x-2">
@@ -1876,6 +1878,13 @@ function AuthorStudioContent() {
                 </button>
               </div>
             </div>
+
+            <PasswordChangeCard
+              identifier={user?.username || user?.email || "author1"}
+              accentColor="emerald"
+              onSuccessToast={(msg) => triggerToast(msg, "success")}
+            />
+          </div>
           )}
 
         </main>

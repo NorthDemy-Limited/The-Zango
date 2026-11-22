@@ -8,7 +8,6 @@ import { useAuth, PRESET_USERS } from "@/context/auth-context";
 import { 
   ShieldCheck, 
   Lock, 
-  Mail, 
   ArrowRight, 
   AlertCircle, 
   Eye, 
@@ -38,6 +37,25 @@ function LoginContent() {
 
   const determineTarget = (userEmailOrRole: string): string => {
     if (redirectParam) return redirectParam;
+
+    // Check if session user has assigned role
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("thezango_session_user");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && parsed.role) {
+            if (parsed.role === "editor") return "/dashboard/editor";
+            if (parsed.role === "author" || parsed.role === "writer") return "/dashboard/author";
+            if (parsed.role === "admin") return "/dashboard/admin";
+            if (parsed.role === "reader") return "/";
+          }
+        }
+      } catch {
+        // fallback
+      }
+    }
+
     const clean = userEmailOrRole.trim().toLowerCase();
     if (clean === "editor" || clean.includes("editor") || clean.includes("aisha")) {
       return "/dashboard/editor";
@@ -211,15 +229,18 @@ function LoginContent() {
         {activeTab === "credentials" && (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                Newsroom Email
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Username or Corporate Email
+                </label>
+                <span className="text-[11px] text-slate-400 font-medium">e.g. editor1, author1, or admin</span>
+              </div>
               <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
-                  type="email"
+                  type="text"
                   required
-                  placeholder="name@thezango.org"
+                  placeholder="editor1, author1, or admin@thezango.org"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 focus:border-[#C61D1F] text-xs font-semibold focus:outline-hidden transition-all bg-slate-50/60 focus:bg-white text-slate-900"
