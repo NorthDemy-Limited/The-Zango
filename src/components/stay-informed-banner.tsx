@@ -133,22 +133,22 @@ export default function StayInformedBanner() {
               <div className="flex items-center space-x-2 text-red-500 mb-2">
                 <Mail className="w-5 h-5 text-[#84CC16]" />
                 <span className="text-xs font-bold uppercase tracking-widest text-[#84CC16]">
-                  Daily Briefing
+                  Labarin Zango
                 </span>
               </div>
 
               <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-wide text-white mb-2">
-                Stay Informed
+                Subscribe to Labarin Zango
               </h2>
               <p className="text-sm sm:text-base text-gray-300 max-w-xl mb-8 leading-relaxed">
-                Get the biggest stories in your inbox, once a day. Curated analysis, breaking updates, and insider stories from Northern Nigeria.
+                Get the biggest innovation insights and curated dispatches happening up North, delivered once a day straight to your inbox.
               </p>
 
               {submitted ? (
                 <div className="bg-white/10 border border-green-500/40 rounded-xl p-4 flex items-center space-x-3 text-green-300">
                   <CheckCircle2 className="w-6 h-6 text-green-400 shrink-0" />
                   <div>
-                    <p className="text-sm font-bold">You are now subscribed to The Zango Brief!</p>
+                    <p className="text-sm font-bold">You are now subscribed to Labarin Zango!</p>
                     <p className="text-xs text-gray-300">Check your inbox for our latest dispatch.</p>
                   </div>
                 </div>

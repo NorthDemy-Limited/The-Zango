@@ -1724,7 +1724,7 @@ function AdminDashboardContent() {
                     <span className="text-xl sm:text-2xl font-extrabold text-slate-900 group-hover:text-emerald-600 transition-colors">
                       {metrics.totalSubscribers}
                     </span>
-                    <span className="text-[11px] text-slate-500 block mt-0.5">Daily Briefing Roster</span>
+                    <span className="text-[11px] text-slate-500 block mt-0.5">Labarin Zango Roster</span>
                   </div>
                 </div>
 

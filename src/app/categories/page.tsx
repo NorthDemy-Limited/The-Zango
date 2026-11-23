@@ -7,30 +7,16 @@ import {
   ArrowRight, 
   ArrowLeft,
   Newspaper, 
-  Briefcase, 
-  Cpu, 
-  MessageSquareText, 
-  Coffee, 
-  Trophy, 
   FileText, 
-  Landmark, 
-  Film, 
-  HeartPulse, 
-  GraduationCap
+  Sparkles, 
+  Store
 } from "lucide-react";
 
 const iconMap: Record<string, React.ElementType> = {
   news: Newspaper,
-  business: Briefcase,
-  technology: Cpu,
-  opinion: MessageSquareText,
-  lifestyle: Coffee,
-  sports: Trophy,
   features: FileText,
-  politics: Landmark,
-  entertainment: Film,
-  health: HeartPulse,
-  education: GraduationCap,
+  scope: Sparkles,
+  marketplace: Store,
 };
 
 async function CategoriesDirectoryList() {
@@ -38,15 +24,25 @@ async function CategoriesDirectoryList() {
   const articles = await getArticles();
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
       {CATEGORIES.map((cat) => {
         const Icon = iconMap[cat.slug] || Newspaper;
         const catArticles = articles.filter(
-          (a) => a.category.toLowerCase() === cat.slug || (cat.slug === "news" && a.isLatest)
+          (a) =>
+            a.category.toLowerCase() === cat.slug.toLowerCase() ||
+            (cat.slug === "scope" && a.category.toLowerCase().includes("scope")) ||
+            (cat.slug === "marketplace" && a.category.toLowerCase().includes("market")) ||
+            (cat.slug === "news" && a.isLatest)
         );
         const actualCount = catArticles.length > 0 ? catArticles.length : cat.count;
         const latestArticle = catArticles[0];
         const isLive = cat.isLive || cat.status === "breaking" || cat.status === "live";
+        const targetHref =
+          cat.slug === "scope"
+            ? "/scope"
+            : cat.slug === "marketplace"
+            ? "/marketplace"
+            : `/category/${cat.slug}`;
 
         return (
           <div
@@ -73,7 +69,7 @@ async function CategoriesDirectoryList() {
               </div>
 
               <h2 className="text-xl font-bold text-[#000000] group-hover:text-[#84CC16] transition-colors mb-2">
-                <Link href={`/category/${cat.slug}`}>
+                <Link href={targetHref}>
                   {cat.name}
                 </Link>
               </h2>
@@ -98,7 +94,7 @@ async function CategoriesDirectoryList() {
             </div>
 
             <Link
-              href={`/category/${cat.slug}`}
+              href={targetHref}
               className="w-full py-2.5 px-4 rounded-xl bg-[#F7FEE7] hover:bg-[#84CC16] text-[#84CC16] hover:text-white font-bold text-xs uppercase tracking-wider transition-colors flex items-center justify-center space-x-2 mt-2"
             >
               <span>Explore {cat.name} Desk</span>

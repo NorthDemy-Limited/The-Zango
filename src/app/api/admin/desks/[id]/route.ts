@@ -91,7 +91,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     const { id } = await params;
     const index = CATEGORIES.findIndex((c) => c.id === id || c.slug === id);
 
-    if (index !== -1 && ["news", "business", "technology"].includes(CATEGORIES[index].slug)) {
+    if (index !== -1 && ["news", "features", "scope", "marketplace"].includes(CATEGORIES[index].slug)) {
       return NextResponse.json(
         { success: false, message: "Core pillar desks cannot be removed" },
         { status: 403 }

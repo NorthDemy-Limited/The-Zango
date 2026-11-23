@@ -5,16 +5,9 @@ import Link from "next/link";
 import {
   ArrowRight,
   Newspaper,
-  Briefcase,
-  Cpu,
-  MessageSquareText,
-  Coffee,
-  Trophy,
   FileText,
-  Landmark,
-  Film,
-  HeartPulse,
-  GraduationCap
+  Sparkles,
+  Store,
 } from "lucide-react";
 import { CATEGORIES } from "@/data/mock-articles";
 import { Category } from "@/types";
@@ -25,25 +18,17 @@ interface CategoryGridProps {
 
 export default function CategoryGrid({ initialCategories }: CategoryGridProps = {}) {
   const [categories, setCategories] = useState<Category[]>(initialCategories || CATEGORIES);
-  const [showAll, setShowAll] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<string>("Active");
   const [isSyncing, setIsSyncing] = useState(false);
 
   const iconMap: Record<string, React.ElementType> = {
     news: Newspaper,
-    business: Briefcase,
-    technology: Cpu,
-    opinion: MessageSquareText,
-    lifestyle: Coffee,
-    sports: Trophy,
     features: FileText,
-    politics: Landmark,
-    entertainment: Film,
-    health: HeartPulse,
-    education: GraduationCap,
+    scope: Sparkles,
+    marketplace: Store,
   };
 
-  // Manual or on-demand re-sync handler (no longer fires automatically on initial mount)
+  // Manual or on-demand re-sync handler (never fires automatically on initial mount)
   const handleManualSync = async () => {
     if (isSyncing) return;
     setIsSyncing(true);
@@ -65,8 +50,6 @@ export default function CategoryGrid({ initialCategories }: CategoryGridProps = 
     }
   };
 
-  const displayedCategories = showAll ? categories : categories.slice(0, 6);
-
   return (
     <section className="py-12 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -84,10 +67,10 @@ export default function CategoryGrid({ initialCategories }: CategoryGridProps = 
               type="button"
               onClick={handleManualSync}
               title="Click to re-sync live desks"
-              className="inline-flex items-center space-x-1.5 bg-[#F7FEE7] hover:bg-red-100 border border-red-200/80 px-2.5 py-1 rounded-full text-[11px] font-bold text-[#84CC16] shadow-2xs transition-colors cursor-pointer"
+              className="inline-flex items-center space-x-1.5 bg-[#F7FEE7] hover:bg-lime-100 border border-lime-300/80 px-2.5 py-1 rounded-full text-[11px] font-bold text-[#84CC16] shadow-2xs transition-colors cursor-pointer"
             >
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lime-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-[#84CC16]"></span>
               </span>
               <span className="tracking-wider uppercase">{isSyncing ? "Syncing..." : "Live Desks"}</span>
@@ -96,12 +79,9 @@ export default function CategoryGrid({ initialCategories }: CategoryGridProps = 
           </div>
 
           <div className="flex items-center space-x-4">
-            <button
-              onClick={() => setShowAll(!showAll)}
-              className="text-xs font-bold text-[#535252] hover:text-[#84CC16] uppercase tracking-wider transition-colors cursor-pointer bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-lg border border-[#E5E6E8]"
-            >
-              {showAll ? "Show Primary Desks (6)" : "View All Desks (11)"}
-            </button>
+            <span className="text-xs font-bold text-[#535252] uppercase tracking-wider bg-gray-50 px-3 py-1.5 rounded-lg border border-[#E5E6E8]">
+              4 Editorial Desks
+            </span>
 
             <Link
               href="/categories"
@@ -113,17 +93,23 @@ export default function CategoryGrid({ initialCategories }: CategoryGridProps = 
           </div>
         </div>
 
-        {/* Categories Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
-          {displayedCategories.map((cat) => {
+        {/* Categories Grid - 4 Columns */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          {categories.map((cat) => {
             const Icon = iconMap[cat.slug] || Newspaper;
             const isLive = cat.isLive || cat.status === "live" || cat.status === "breaking";
+            const targetHref =
+              cat.slug === "scope"
+                ? "/scope"
+                : cat.slug === "marketplace"
+                ? "/marketplace"
+                : `/category/${cat.slug}`;
 
             return (
               <Link
                 key={cat.id}
-                href={`/category/${cat.slug}`}
-                className="group relative bg-white border border-[#E5E6E8] hover:border-[#84CC16] rounded-2xl p-5 sm:p-6 text-center shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col items-center justify-between"
+                href={targetHref}
+                className="group relative bg-white border border-[#E5E6E8] hover:border-[#84CC16] rounded-2xl p-6 text-center shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col items-center justify-between"
               >
                 {/* Live Status Tag */}
                 <div className="absolute top-2.5 right-2.5 flex items-center space-x-1">
@@ -151,7 +137,7 @@ export default function CategoryGrid({ initialCategories }: CategoryGridProps = 
                     {cat.name}
                   </h3>
                   <div className="flex flex-col items-center space-y-0.5">
-                    <span className="text-[11px] font-semibold text-[#111111] bg-gray-50 group-hover:bg-red-50 px-2 py-0.5 rounded-full transition-colors">
+                    <span className="text-[11px] font-semibold text-[#111111] bg-gray-50 group-hover:bg-lime-50 px-2 py-0.5 rounded-full transition-colors">
                       {cat.count} {cat.count === 1 ? "story" : "stories"}
                     </span>
                     {cat.lastUpdated && (

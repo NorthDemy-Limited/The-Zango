@@ -33,7 +33,11 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   };
 
   const articles = allArticles.filter(
-    (a) => a.category.toLowerCase() === normalizedSlug || (normalizedSlug === "news" && a.isLatest)
+    (a) =>
+      a.category.toLowerCase() === normalizedSlug ||
+      (normalizedSlug === "scope" && a.category.toLowerCase().includes("scope")) ||
+      (normalizedSlug === "marketplace" && a.category.toLowerCase().includes("market")) ||
+      (normalizedSlug === "news" && a.isLatest)
   );
 
   return (
@@ -183,10 +187,16 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map((cat) => {
               const isCurrent = cat.slug === normalizedSlug;
+              const targetHref =
+                cat.slug === "scope"
+                  ? "/scope"
+                  : cat.slug === "marketplace"
+                  ? "/marketplace"
+                  : `/category/${cat.slug}`;
               return (
                 <Link
                   key={cat.id}
-                  href={`/category/${cat.slug}`}
+                  href={targetHref}
                   className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all ${
                     isCurrent
                       ? "bg-[#84CC16] text-black font-bold border-[#84CC16] shadow-xs"

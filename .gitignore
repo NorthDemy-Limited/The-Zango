@@ -52,4 +52,6 @@ next-env.d.ts
 # documentation exports & credentials reports
 *.doc
 *.docx
+/docs/
+docs/
 docs/LIVE_DATABASE_MIGRATION_AND_CREDENTIALS*
