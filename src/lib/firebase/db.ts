@@ -1086,7 +1086,7 @@ export async function getTeamMembers(): Promise<NewsroomMember[]> {
       const q = query(collection(db, "team_members"), orderBy("joinedAt", "asc"));
       const querySnapshot = await withTimeout(getDocs(q), 3000, null);
       if (querySnapshot && !querySnapshot.empty) {
-        return querySnapshot.docs.map((d) => ({ id: d.id, ...d.data() } as NewsroomMember));
+        return querySnapshot.docs.map((d) => ({ ...d.data(), id: d.id } as NewsroomMember));
       }
     } catch (err) {
       console.warn("Could not fetch team members from Firestore, using local store:", err);
@@ -1131,12 +1131,12 @@ export async function createTeamMember(
     }
   }
 
-  // Persist to Firebase Firestore
+  // Persist to Firebase Firestore with consistent ID
   if (isFirebaseConfigured && db) {
     try {
       const sanitized = sanitizeForFirestore(newMember as unknown as Record<string, unknown>);
-      const docRef = await addDoc(collection(db, "team_members"), sanitized);
-      newMember.id = docRef.id;
+      const docRef = doc(db, "team_members", newMember.id);
+      await setDoc(docRef, sanitized);
     } catch (err) {
       console.warn("Could not add team member to Firestore:", err);
     }
@@ -1180,7 +1180,7 @@ export async function findStaffByIdentifier(identifier: string): Promise<Newsroo
       const snapUser = await withTimeout(getDocs(qUser), 2500, null);
       if (snapUser && !snapUser.empty) {
         const docSnap = snapUser.docs[0];
-        const member = { id: docSnap.id, ...docSnap.data() } as NewsroomMember;
+        const member = { ...docSnap.data(), id: docSnap.id } as NewsroomMember;
         if (!localTeamMembersStore.some((m) => m.id === member.id)) {
           localTeamMembersStore.push(member);
         }
@@ -1192,7 +1192,7 @@ export async function findStaffByIdentifier(identifier: string): Promise<Newsroo
       const snapEmail = await withTimeout(getDocs(qEmail), 2500, null);
       if (snapEmail && !snapEmail.empty) {
         const docSnap = snapEmail.docs[0];
-        const member = { id: docSnap.id, ...docSnap.data() } as NewsroomMember;
+        const member = { ...docSnap.data(), id: docSnap.id } as NewsroomMember;
         if (!localTeamMembersStore.some((m) => m.id === member.id)) {
           localTeamMembersStore.push(member);
         }
@@ -1299,8 +1299,16 @@ export async function updateTeamMemberRole(id: string, role: NewsroomRole): Prom
     try {
       const docRef = doc(db, "team_members", id);
       await updateDoc(docRef, { role });
-    } catch (err) {
-      console.warn("Could not update team member role in Firestore:", err);
+    } catch {
+      try {
+        const q = query(collection(db, "team_members"), where("id", "==", id));
+        const snap = await getDocs(q);
+        for (const d of snap.docs) {
+          await updateDoc(d.ref, { role });
+        }
+      } catch (err) {
+        console.warn("Could not update team member role in Firestore:", err);
+      }
     }
   }
 
@@ -1309,8 +1317,7 @@ export async function updateTeamMemberRole(id: string, role: NewsroomRole): Prom
 
 export async function updateTeamMemberStatus(id: string, status: "active" | "inactive"): Promise<boolean> {
   const member = localTeamMembersStore.find((m) => m.id === id);
-  if (!member) return false;
-  member.status = status;
+  if (member) member.status = status;
 
   if (isSupabaseConfigured && supabase) {
     try {
@@ -1324,8 +1331,16 @@ export async function updateTeamMemberStatus(id: string, status: "active" | "ina
     try {
       const docRef = doc(db, "team_members", id);
       await updateDoc(docRef, { status });
-    } catch (err) {
-      console.warn("Could not update team member status in Firestore:", err);
+    } catch {
+      try {
+        const q = query(collection(db, "team_members"), where("id", "==", id));
+        const snap = await getDocs(q);
+        for (const d of snap.docs) {
+          await updateDoc(d.ref, { status });
+        }
+      } catch (err) {
+        console.warn("Could not update team member status in Firestore:", err);
+      }
     }
   }
 
@@ -1345,8 +1360,16 @@ export async function deleteTeamMember(id: string): Promise<boolean> {
 
   if (isFirebaseConfigured && db) {
     try {
+      // 1. Delete by direct document ID
       const docRef = doc(db, "team_members", id);
       await deleteDoc(docRef);
+
+      // 2. Also delete any doc where data.id equals the target id (handles legacy docs with random Firestore IDs)
+      const q = query(collection(db, "team_members"), where("id", "==", id));
+      const snap = await getDocs(q);
+      for (const d of snap.docs) {
+        await deleteDoc(d.ref);
+      }
     } catch (err) {
       console.warn("Could not delete team member in Firestore:", err);
     }

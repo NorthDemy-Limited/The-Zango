@@ -18,7 +18,7 @@ export async function GET(request: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
     const members = await getTeamMembers();
-    const member = members.find((m) => m.id === id);
+    const member = members.find((m) => m.id === id || (m as unknown as Record<string, unknown>).internalId === id);
 
     if (!member) {
       return NextResponse.json(
@@ -44,7 +44,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     const { role, status } = body;
 
     const members = await getTeamMembers();
-    const member = members.find((m) => m.id === id);
+    const member = members.find((m) => m.id === id || (m as unknown as Record<string, unknown>).internalId === id);
 
     if (!member) {
       return NextResponse.json(
@@ -80,7 +80,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
           { status: 400 }
         );
       }
-      await updateTeamMemberRole(id, role as NewsroomRole);
+      await updateTeamMemberRole(member.id, role as NewsroomRole);
+      if (member.id !== id) {
+        await updateTeamMemberRole(id, role as NewsroomRole);
+      }
     }
 
     if (status) {
@@ -90,7 +93,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
           { status: 400 }
         );
       }
-      await updateTeamMemberStatus(id, status as "active" | "inactive");
+      await updateTeamMemberStatus(member.id, status as "active" | "inactive");
+      if (member.id !== id) {
+        await updateTeamMemberStatus(id, status as "active" | "inactive");
+      }
     }
 
     return NextResponse.json({
@@ -110,7 +116,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
     const members = await getTeamMembers();
-    const member = members.find((m) => m.id === id);
+    const member = members.find((m) => m.id === id || (m as unknown as Record<string, unknown>).internalId === id);
 
     if (!member) {
       return NextResponse.json(
@@ -130,12 +136,9 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       );
     }
 
-    const success = await deleteTeamMember(id);
-    if (!success) {
-      return NextResponse.json(
-        { success: false, message: "Failed to delete staff member" },
-        { status: 500 }
-      );
+    await deleteTeamMember(member.id);
+    if (member.id !== id) {
+      await deleteTeamMember(id);
     }
 
     return NextResponse.json({
