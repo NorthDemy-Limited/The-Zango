@@ -497,8 +497,8 @@ function LoginContent() {
         <div className="mt-8 pt-5 border-t border-slate-100 text-center">
           <p className="text-[11px] text-slate-400">
             For credentials reset or desk assignment changes, contact the Bureau Systems Desk at{" "}
-            <a href="mailto:editorial@thezango.org" className="text-slate-600 font-bold hover:underline">
-              editorial@thezango.org
+            <a href="mailto:inquiry@thezango.com" className="text-slate-600 font-bold hover:underline">
+              inquiry@thezango.com
             </a>
           </p>
         </div>

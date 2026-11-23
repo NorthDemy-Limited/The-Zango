@@ -79,8 +79,8 @@ export default function ContactPage() {
                 <div>
                   <h3 className="text-sm font-bold text-[#000000] mb-1">Newsroom & Tips</h3>
                   <p className="text-xs text-[#707070] mb-2">Send anonymous leads, press releases, and inquiries:</p>
-                  <a href="mailto:tips@thezango.com" className="text-sm font-bold text-[#84CC16] hover:underline">
-                    tips@thezango.com
+                  <a href="mailto:inquiry@thezango.com" className="text-sm font-bold text-[#84CC16] hover:underline">
+                    inquiry@thezango.com
                   </a>
                 </div>
               </div>
