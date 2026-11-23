@@ -62,8 +62,13 @@ export default function ArticleReaderToolbar({ title, slug }: ArticleReaderToolb
     }
   };
 
+  const canonicalUrl = `https://thezango.com/article/${slug}`;
+
   const handleShare = async () => {
-    const url = typeof window !== "undefined" ? window.location.href : `https://thezango.com/article/${slug}`;
+    const url =
+      typeof window !== "undefined" && !window.location.hostname.includes("localhost")
+        ? window.location.href
+        : canonicalUrl;
     if (navigator.share) {
       try {
         await navigator.share({
@@ -82,7 +87,7 @@ export default function ArticleReaderToolbar({ title, slug }: ArticleReaderToolb
     setTimeout(() => setCopied(false), 3000);
   };
 
-  const articleUrl = typeof window !== "undefined" ? window.location.href : `https://thezango.com/article/${slug}`;
+  const articleUrl = canonicalUrl;
 
   return (
     <>
