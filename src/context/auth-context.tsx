@@ -207,31 +207,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(authUser);
           localStorage.setItem("thezango_session_user", JSON.stringify(authUser));
           return { success: true };
-        } else if (!data.success && res.status === 401) {
-          return { success: false, error: data.message || "Invalid credentials." };
+        } else {
+          return { success: false, error: data.message || "Invalid clearance credentials." };
         }
       } catch (apiErr) {
-        console.warn("API login verification failed, checking fallback presets:", apiErr);
+        console.warn("API login verification failed:", apiErr);
+        return { success: false, error: "Network error during authentication. Please try again." };
       }
     }
 
     // 2. Direct role key matching (Fast Clearance / 1-Click for dev/demo)
     if (PRESET_USERS[clean]) {
       const selected = PRESET_USERS[clean];
-      setUser(selected);
-      localStorage.setItem("thezango_session_user", JSON.stringify(selected));
-      return { success: true };
-    }
-
-    // Map common staff usernames to presets as fallback
-    if (clean === "editor1" || clean === "editor2") {
-      const selected = PRESET_USERS.editor;
-      setUser(selected);
-      localStorage.setItem("thezango_session_user", JSON.stringify(selected));
-      return { success: true };
-    }
-    if (clean === "author1" || clean === "author2") {
-      const selected = PRESET_USERS.writer;
       setUser(selected);
       localStorage.setItem("thezango_session_user", JSON.stringify(selected));
       return { success: true };

@@ -926,118 +926,6 @@ let localTeamMembersStore: NewsroomMember[] = [
     passwordSalt: DEFAULT_SEED_SALT,
     mustChangePassword: false,
   },
-  {
-    id: "member-2",
-    name: "Aisha Dahiru",
-    email: "aisha.dahiru@thezango.org",
-    username: "editor1",
-    role: "editor",
-    desk: "Business & Capital Markets",
-    avatar: "/assets/social-image-2.png",
-    bio: "Senior Markets Editor analyzing private equity, agribusiness finance, and trade dynamics across Northern Nigeria.",
-    status: "active",
-    articlesCount: 28,
-    joinedAt: "2024-03-01",
-    passwordHash: DEFAULT_SEED_HASH,
-    passwordSalt: DEFAULT_SEED_SALT,
-    mustChangePassword: false,
-  },
-  {
-    id: "member-3",
-    name: "Ibrahim Garba",
-    email: "ibrahim.garba@thezango.org",
-    username: "editor2",
-    role: "editor",
-    desk: "Security & Regional Conflict",
-    avatar: "/assets/social-image-3.png",
-    bio: "Defense and Lake Chad basin correspondent, specializing in counter-insurgency and humanitarian corridors.",
-    status: "active",
-    articlesCount: 35,
-    joinedAt: "2024-04-10",
-    passwordHash: DEFAULT_SEED_HASH,
-    passwordSalt: DEFAULT_SEED_SALT,
-    mustChangePassword: false,
-  },
-  {
-    id: "member-4",
-    name: "Fatima Sanusi",
-    email: "fatima.sanusi@thezango.org",
-    username: "author1",
-    role: "writer",
-    desk: "Technology & Digital Economy",
-    avatar: "/assets/social-image-4.png",
-    bio: "Tech correspondent tracking venture capital, AI hubs, and mobile banking adoption from Kano to Kaduna.",
-    status: "active",
-    articlesCount: 19,
-    joinedAt: "2024-06-20",
-    passwordHash: DEFAULT_SEED_HASH,
-    passwordSalt: DEFAULT_SEED_SALT,
-    mustChangePassword: false,
-  },
-  {
-    id: "member-5",
-    name: "Zainab Aliyu",
-    email: "zainab.aliyu@thezango.org",
-    username: "author2",
-    role: "writer",
-    desk: "Culture, Heritage & Arts",
-    avatar: "/assets/social-image-1.png",
-    bio: "Cultural essayist documenting Sahelian architecture, Hausa literature, and contemporary creative movements.",
-    status: "active",
-    articlesCount: 14,
-    joinedAt: "2024-08-05",
-    passwordHash: DEFAULT_SEED_HASH,
-    passwordSalt: DEFAULT_SEED_SALT,
-    mustChangePassword: false,
-  },
-  {
-    id: "member-6",
-    name: "Tahir Ahmad",
-    email: "tahir.ahmad@thezango.org",
-    username: "tahir",
-    role: "writer",
-    desk: "Technology & Digital Economy",
-    avatar: "https://thezango.com/wp-content/uploads/2025/10/cropped-673709c9774b480f9ec4bd6636e03ab7-POP_OUT-scaled-2.jpg",
-    bio: "Tahir Ahmad is a reporter with The Zango covering Northern Nigeria’s fast-growing tech and innovation ecosystem.",
-    status: "active",
-    articlesCount: 38,
-    joinedAt: "2024-02-10",
-    passwordHash: DEFAULT_SEED_HASH,
-    passwordSalt: DEFAULT_SEED_SALT,
-    mustChangePassword: false,
-  },
-  {
-    id: "member-7",
-    name: "Saratu Abubakar",
-    email: "saratu.abubakar@thezango.org",
-    username: "saratu",
-    role: "writer",
-    desk: "Features",
-    avatar: "https://secure.gravatar.com/avatar/8340a7ddc114086cca2e28175b6d4c57d92b2aace19a91561de333f337cbc70a?s=96&d=mm&r=g",
-    bio: "Investigative correspondent reporting for The Zango Bureau.",
-    status: "active",
-    articlesCount: 22,
-    joinedAt: "2024-03-15",
-    passwordHash: DEFAULT_SEED_HASH,
-    passwordSalt: DEFAULT_SEED_SALT,
-    mustChangePassword: false,
-  },
-  {
-    id: "member-8",
-    name: "Gidado Shuaib",
-    email: "gidado.shuaib@thezango.org",
-    username: "gidado",
-    role: "editor",
-    desk: "Executive & Investigation",
-    avatar: "https://secure.gravatar.com/avatar/0107b4a0d443559c9a0b9c8b4fa28e8d0452246331145b90578d3b5cc23a2b32?s=96&d=mm&r=g",
-    bio: "Senior Investigative Editor analyzing governance and socio-political dynamics.",
-    status: "active",
-    articlesCount: 16,
-    joinedAt: "2024-01-20",
-    passwordHash: DEFAULT_SEED_HASH,
-    passwordSalt: DEFAULT_SEED_SALT,
-    mustChangePassword: false,
-  },
 ];
 
 interface SupabaseTeamMemberRow {
@@ -1080,13 +968,14 @@ export async function getTeamMembers(): Promise<NewsroomMember[]> {
     }
   }
 
-  // 2. Check Firebase Firestore
+  // 2. Check Firebase Firestore (Primary Cloud Store)
   if (isFirebaseConfigured && db && isFirestoreAvailable) {
     try {
-      const q = query(collection(db, "team_members"), orderBy("joinedAt", "asc"));
-      const querySnapshot = await withTimeout(getDocs(q), 3000, null);
-      if (querySnapshot && !querySnapshot.empty) {
-        return querySnapshot.docs.map((d) => ({ ...d.data(), id: d.id } as NewsroomMember));
+      const querySnapshot = await withTimeout(getDocs(collection(db, "team_members")), 4000, null);
+      if (querySnapshot) {
+        return querySnapshot.docs
+          .map((d) => ({ ...d.data(), id: d.id } as NewsroomMember))
+          .sort((a, b) => (a.joinedAt || "").localeCompare(b.joinedAt || ""));
       }
     } catch (err) {
       console.warn("Could not fetch team members from Firestore, using local store:", err);
@@ -1150,58 +1039,50 @@ export async function findStaffByIdentifier(identifier: string): Promise<Newsroo
   const clean = identifier.trim().toLowerCase();
   if (!clean) return null;
 
-  // Direct special alias matches for administrative convenience
-  if (clean === "admin" || clean === "usman") {
-    const admin = localTeamMembersStore.find((m) => m.role === "admin");
-    if (admin) return admin;
-  }
-  if (clean === "editor") {
-    const editor = localTeamMembersStore.find((m) => m.role === "editor");
-    if (editor) return editor;
-  }
-  if (clean === "writer" || clean === "author") {
-    const writer = localTeamMembersStore.find((m) => m.role === "writer");
-    if (writer) return writer;
+  // 1. Query Firebase Firestore directly (Production Source of Truth)
+  if (isFirebaseConfigured && db && isFirestoreAvailable) {
+    try {
+      // Check by username
+      const qUser = query(collection(db, "team_members"), where("username", "==", clean), limit(1));
+      const snapUser = await withTimeout(getDocs(qUser), 3000, null);
+      if (snapUser && !snapUser.empty) {
+        const docSnap = snapUser.docs[0];
+        return { ...docSnap.data(), id: docSnap.id } as NewsroomMember;
+      }
+
+      // Check by email
+      const qEmail = query(collection(db, "team_members"), where("email", "==", clean), limit(1));
+      const snapEmail = await withTimeout(getDocs(qEmail), 3000, null);
+      if (snapEmail && !snapEmail.empty) {
+        const docSnap = snapEmail.docs[0];
+        return { ...docSnap.data(), id: docSnap.id } as NewsroomMember;
+      }
+
+      // Case-insensitive fallback across all team members in Firestore
+      const allSnap = await withTimeout(getDocs(collection(db, "team_members")), 3000, null);
+      if (allSnap && !allSnap.empty) {
+        const matched = allSnap.docs.find((d) => {
+          const data = d.data();
+          const u = (data.username || "").toLowerCase();
+          const e = (data.email || "").toLowerCase();
+          return u === clean || e === clean;
+        });
+        if (matched) {
+          return { ...matched.data(), id: matched.id } as NewsroomMember;
+        }
+      }
+    } catch (err) {
+      console.warn("Could not query team member in Firestore:", err);
+    }
   }
 
-  // 1. Check local store by username or email
+  // 2. Fallback to local store for offline development
   const localMatch = localTeamMembersStore.find(
     (m) =>
       (m.username && m.username.toLowerCase() === clean) ||
       m.email.toLowerCase() === clean
   );
   if (localMatch) return localMatch;
-
-  // 2. Query Firestore if configured
-  if (isFirebaseConfigured && db && isFirestoreAvailable) {
-    try {
-      // Check by username
-      const qUser = query(collection(db, "team_members"), where("username", "==", clean), limit(1));
-      const snapUser = await withTimeout(getDocs(qUser), 2500, null);
-      if (snapUser && !snapUser.empty) {
-        const docSnap = snapUser.docs[0];
-        const member = { ...docSnap.data(), id: docSnap.id } as NewsroomMember;
-        if (!localTeamMembersStore.some((m) => m.id === member.id)) {
-          localTeamMembersStore.push(member);
-        }
-        return member;
-      }
-
-      // Check by email
-      const qEmail = query(collection(db, "team_members"), where("email", "==", clean), limit(1));
-      const snapEmail = await withTimeout(getDocs(qEmail), 2500, null);
-      if (snapEmail && !snapEmail.empty) {
-        const docSnap = snapEmail.docs[0];
-        const member = { ...docSnap.data(), id: docSnap.id } as NewsroomMember;
-        if (!localTeamMembersStore.some((m) => m.id === member.id)) {
-          localTeamMembersStore.push(member);
-        }
-        return member;
-      }
-    } catch (err) {
-      console.warn("Could not query team member in Firestore:", err);
-    }
-  }
 
   return null;
 }
@@ -1252,8 +1133,20 @@ export async function updateStaffPassword(
         passwordSalt: newSalt,
         mustChangePassword: false,
       });
-    } catch (err) {
-      console.warn("Could not update staff password in Firestore:", err);
+    } catch {
+      try {
+        const q = query(collection(db, "team_members"), where("id", "==", targetId));
+        const snap = await getDocs(q);
+        for (const d of snap.docs) {
+          await updateDoc(d.ref, {
+            passwordHash: newHash,
+            passwordSalt: newSalt,
+            mustChangePassword: false,
+          });
+        }
+      } catch (err) {
+        console.warn("Could not update staff password in Firestore:", err);
+      }
     }
   }
 
