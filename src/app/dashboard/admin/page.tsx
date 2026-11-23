@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { 
   FileText, 
   Users, 
@@ -39,7 +39,8 @@ import {
   Database,
   RefreshCw,
   Copy,
-  Check
+  Check,
+  Menu
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
@@ -78,6 +79,7 @@ import { PasswordChangeCard } from "@/components/dashboard/password-change-card"
 
 function AdminDashboardContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, role, logout, switchRole, updateUser, isAuthenticated, isLoading } = useAuth();
 
   const [articles, setArticles] = useState<Article[]>([]);
@@ -99,7 +101,23 @@ function AdminDashboardContent() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [activeTab, setActiveTab] = useState<"overview" | "dispatches" | "reviewQueue" | "merchants" | "team" | "desks" | "subscribers" | "settings">("overview");
+  type AdminTab = "overview" | "dispatches" | "reviewQueue" | "merchants" | "team" | "desks" | "subscribers" | "settings";
+  const tabParam = searchParams.get("tab") as AdminTab | null;
+  const [activeTabOverride, setActiveTabOverride] = useState<AdminTab | null>(null);
+
+  const activeTab: AdminTab = activeTabOverride ?? (tabParam && ["overview", "dispatches", "reviewQueue", "merchants", "team", "desks", "subscribers", "settings"].includes(tabParam) ? tabParam : "overview");
+  const setActiveTab = (tab: AdminTab) => {
+    setActiveTabOverride(tab);
+  };
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleTabSelect = (tab: AdminTab) => {
+    setActiveTab(tab);
+    setMobileMenuOpen(false);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
   const [teamFilter, setTeamFilter] = useState<"all" | "admin" | "editor" | "writer">("all");
   const [staffSearchQuery, setStaffSearchQuery] = useState("");
   const [teamMembers, setTeamMembers] = useState<NewsroomMember[]>([]);
@@ -959,9 +977,19 @@ function AdminDashboardContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between gap-4">
           
           {/* Left: Brand Identity & Quick Navigation */}
-          <div className="flex items-center space-x-5">
+          <div className="flex items-center space-x-3 sm:space-x-5">
+            {/* Mobile Hamburger Drawer Trigger */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-1.5 -ml-1 text-slate-700 hover:text-black hover:bg-slate-100 rounded-xl md:hidden transition-colors cursor-pointer"
+              aria-label="Open newsroom navigation menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
             <Link href="/" className="flex items-center space-x-2.5 group">
-              <div className="relative w-32 h-8">
+              <div className="relative w-28 sm:w-32 h-7 sm:h-8">
                 <Image
                   src="/assets/logo.png"
                   alt="The Zango"
@@ -1072,7 +1100,7 @@ function AdminDashboardContent() {
                     className="fixed inset-0 z-40" 
                     onClick={() => setNotificationMenuOpen(false)} 
                   />
-                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                  <div className="fixed inset-x-3 top-18 sm:absolute sm:inset-auto sm:right-0 sm:mt-2 w-auto sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
                     <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <Bell className="w-4 h-4 text-[#84CC16]" />
@@ -1226,6 +1254,328 @@ function AdminDashboardContent() {
         </div>
       </header>
 
+      {/* Mobile Sticky Tab Strip for 1-Tap Switching */}
+      <div className="md:hidden bg-white/95 backdrop-blur-md border-b border-slate-200/80 sticky top-16 z-30 px-3 py-2 overflow-x-auto no-scrollbar flex items-center space-x-1.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.02)]">
+        {[
+          { id: "overview" as const, label: "Dashboard", count: null },
+          { id: "dispatches" as const, label: "Dispatches", count: articles.length },
+          { id: "reviewQueue" as const, label: "Queue", count: pendingSubmissions.length, alert: pendingSubmissions.length > 0 },
+          { id: "merchants" as const, label: "Merchants", count: pendingMerchants.length, alert: pendingMerchants.length > 0 },
+          { id: "team" as const, label: "Staff", count: teamMembers.length },
+          { id: "desks" as const, label: "Desks", count: 11 },
+          { id: "subscribers" as const, label: "Subscribers", count: subscribers.length },
+          { id: "settings" as const, label: "Settings", count: null },
+        ].map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => handleTabSelect(tab.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center space-x-1.5 shrink-0 cursor-pointer ${
+                isActive
+                  ? "bg-[#84CC16] text-black font-extrabold shadow-xs"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              <span>{tab.label}</span>
+              {tab.count !== null && (
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    isActive
+                      ? "bg-black/15 text-black font-extrabold"
+                      : tab.alert
+                      ? "bg-amber-100 text-amber-800"
+                      : "bg-slate-200/80 text-slate-600"
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Mobile Slide-Over Navigation Drawer */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+
+          {/* Drawer Panel */}
+          <div className="relative w-4/5 max-w-xs bg-white h-full shadow-2xl flex flex-col z-10 animate-in slide-in-from-left duration-200">
+            {/* Drawer Top Header */}
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="relative w-28 h-7">
+                  <Image
+                    src="/assets/logo.png"
+                    alt="The Zango"
+                    fill
+                    sizes="112px"
+                    className="object-contain"
+                  />
+                </div>
+                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md bg-lime-50 text-[#3F6212] border border-lime-200">
+                  CMS
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+                aria-label="Close menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Drawer Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-4">
+              {/* Online / Offline status */}
+              <div className="px-1">
+                {isOnline ? (
+                  <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-100">
+                    <div className="flex items-center space-x-2">
+                      <Wifi className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Newsroom Online</span>
+                    </div>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-amber-50 text-amber-900 text-xs font-bold border border-amber-300">
+                    <div className="flex items-center space-x-2">
+                      <WifiOff className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Offline Cache Active</span>
+                    </div>
+                    {pendingCount > 0 && (
+                      <span className="text-[10px] bg-amber-200 px-1.5 py-0.5 rounded-md font-bold">
+                        {pendingCount} queued
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Group 1: Core Newsroom */}
+              <div className="space-y-1">
+                <span className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
+                  Core Newsroom
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleTabSelect("overview")}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "overview"
+                      ? "bg-[#84CC16] text-black font-extrabold shadow-xs"
+                      : "text-slate-700 hover:bg-slate-100"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <LayoutDashboard className="w-4 h-4 shrink-0" />
+                    <span>Dashboard</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleTabSelect("dispatches")}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "dispatches"
+                      ? "bg-[#84CC16] text-black font-extrabold shadow-xs"
+                      : "text-slate-700 hover:bg-slate-100"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <FileText className="w-4 h-4 shrink-0" />
+                    <span>Story Dispatches</span>
+                  </div>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                    activeTab === "dispatches" ? "bg-black/15 text-black" : "bg-slate-100 text-slate-600"
+                  }`}>
+                    {articles.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleTabSelect("reviewQueue")}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "reviewQueue"
+                      ? "bg-[#84CC16] text-black font-extrabold shadow-xs"
+                      : "text-slate-700 hover:bg-slate-100"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Inbox className="w-4 h-4 shrink-0" />
+                    <span>Review Queue</span>
+                  </div>
+                  {pendingSubmissions.length > 0 && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-extrabold bg-amber-100 text-amber-900 border border-amber-200">
+                      {pendingSubmissions.length}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleTabSelect("merchants")}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "merchants"
+                      ? "bg-[#84CC16] text-black font-extrabold shadow-xs"
+                      : "text-slate-700 hover:bg-slate-100"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Store className="w-4 h-4 shrink-0" />
+                    <span>Marketplace Merchants</span>
+                  </div>
+                  {pendingMerchants.length > 0 && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-extrabold bg-lime-100 text-[#3F6212] border border-lime-200">
+                      {pendingMerchants.length}
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              {/* Group 2: Staff & Beats */}
+              <div className="space-y-1 pt-2 border-t border-slate-100">
+                <span className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
+                  Staff & Beats
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTeamFilter("all");
+                    handleTabSelect("team");
+                  }}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "team" && !showTeamModal
+                      ? "bg-[#84CC16] text-black font-extrabold shadow-xs"
+                      : "text-slate-700 hover:bg-slate-100"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Users className="w-4 h-4 shrink-0" />
+                    <span>Newsroom Staff</span>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-slate-100 text-slate-600">
+                    {teamMembers.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setActiveTab("team");
+                    setShowTeamModal(true);
+                  }}
+                  className="w-full flex items-center space-x-2.5 px-3.5 py-2 rounded-xl text-xs font-bold text-[#3F6212] bg-lime-50 hover:bg-lime-100 border border-lime-200 transition-colors cursor-pointer"
+                >
+                  <UserPlus className="w-3.5 h-3.5 shrink-0" />
+                  <span>+ Add Newsroom Staff</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleTabSelect("desks")}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "desks"
+                      ? "bg-[#84CC16] text-black font-extrabold shadow-xs"
+                      : "text-slate-700 hover:bg-slate-100"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Layers className="w-4 h-4 shrink-0" />
+                    <span>Desk Taxonomy</span>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-slate-100 text-slate-600">
+                    11
+                  </span>
+                </button>
+              </div>
+
+              {/* Group 3: Audience & Platform */}
+              <div className="space-y-1 pt-2 border-t border-slate-100">
+                <span className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
+                  Audience & Platform
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleTabSelect("subscribers")}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "subscribers"
+                      ? "bg-[#84CC16] text-black font-extrabold shadow-xs"
+                      : "text-slate-700 hover:bg-slate-100"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Mail className="w-4 h-4 shrink-0" />
+                    <span>Labarin Zango Roster</span>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-slate-100 text-slate-600">
+                    {subscribers.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleTabSelect("settings")}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "settings"
+                      ? "bg-[#84CC16] text-black font-extrabold shadow-xs"
+                      : "text-slate-700 hover:bg-slate-100"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <KeyRound className="w-4 h-4 shrink-0" />
+                    <span>Bureau Settings</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Drawer Footer User Profile */}
+            <div className="p-3 border-t border-slate-100 bg-slate-50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2.5">
+                  <div className="relative w-8 h-8 rounded-full overflow-hidden border border-slate-300 shrink-0">
+                    <Image
+                      src={user?.avatar || "/assets/social-image-1.png"}
+                      alt={user?.name || "Usman Bello"}
+                      fill
+                      sizes="32px"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div>
+                    <div className="font-extrabold text-xs text-slate-900 leading-tight">
+                      {user?.name || "Usman Bello"}
+                    </div>
+                    <div className="text-[9px] font-extrabold uppercase text-[#84CC16]">
+                      {user?.badge || "CHIEF ADMIN"}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="p-2 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Offline Status Alert Banners */}
       {!isOnline && (
         <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5 text-amber-900 text-xs font-medium">
@@ -1268,8 +1618,8 @@ function AdminDashboardContent() {
       {/* 2. MAIN DASHBOARD BODY (Sidebar + Workspace Canvas) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full flex-1 flex flex-col md:flex-row items-start gap-6">
         
-        {/* LEFT COMPACT ROUNDED SIDEBAR */}
-        <aside className="w-full md:w-60 lg:w-64 shrink-0 bg-white rounded-3xl p-3 border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-4">
+        {/* LEFT COMPACT ROUNDED SIDEBAR (Desktop) */}
+        <aside className="hidden md:block md:w-60 lg:w-64 shrink-0 bg-white rounded-3xl p-3 border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-4 sticky top-20">
           
           {/* Group 1: CORE WORKSPACE */}
           <div className="space-y-1">
@@ -1404,7 +1754,7 @@ function AdminDashboardContent() {
                 setActiveTab("team");
                 setShowTeamModal(true);
               }}
-              className="w-full flex items-center space-x-2.5 px-3.5 py-2 rounded-2xl text-xs font-bold text-[#3F6212] bg-lime-50/70 hover:bg-red-100/90 transition-all border border-red-200/70 cursor-pointer"
+              className="w-full flex items-center space-x-2.5 px-3.5 py-2 rounded-2xl text-xs font-bold text-[#3F6212] bg-lime-50/70 hover:bg-lime-100/90 transition-all border border-lime-200/70 cursor-pointer"
             >
               <UserPlus className="w-3.5 h-3.5 shrink-0" />
               <span>+ Add Newsroom Staff</span>
@@ -1490,7 +1840,7 @@ function AdminDashboardContent() {
         </aside>
 
         {/* RIGHT WORKSPACE CANVAS */}
-        <main className="flex-1 w-full space-y-6">
+        <main className="flex-1 w-full min-w-0 space-y-6">
 
           {/* Smooth Toast Notification */}
           {notification && (
@@ -1537,7 +1887,7 @@ function AdminDashboardContent() {
             <div className="space-y-6 animate-in fade-in duration-200">
               
               {/* Executive Welcome Hero Banner */}
-              <div className="rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-[#1c0809] p-6 sm:p-8 text-white relative overflow-hidden shadow-xl border border-slate-800/80 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-black p-5 sm:p-8 text-white relative overflow-hidden shadow-xl border border-slate-800/80 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                 
                 {/* Background ambient lighting */}
                 <div className="absolute -right-8 -bottom-8 w-80 h-80 bg-[#84CC16]/20 rounded-full blur-3xl pointer-events-none" />
@@ -1731,7 +2081,7 @@ function AdminDashboardContent() {
                 {/* Metric 5 */}
                 <div 
                   onClick={() => setActiveTab("team")}
-                  className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:border-slate-300 transition-all cursor-pointer group"
+                  className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:border-slate-300 transition-all cursor-pointer group col-span-2 sm:col-span-1"
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
@@ -1958,7 +2308,7 @@ function AdminDashboardContent() {
 
               {/* Table */}
               <div className="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
-                <div className="overflow-x-auto">
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-slate-200/80 bg-slate-50/80 text-[11px] font-extrabold uppercase text-slate-500 tracking-wider">
@@ -2096,6 +2446,114 @@ function AdminDashboardContent() {
                       )}
                     </tbody>
                   </table>
+                </div>
+
+                {/* Mobile Card List for Dispatches */}
+                <div className="md:hidden divide-y divide-slate-100">
+                  {filteredArticles.length === 0 ? (
+                    <div className="py-12 text-center text-slate-500 text-xs">
+                      No published dispatches match your filter query.
+                    </div>
+                  ) : (
+                    filteredArticles.map((article) => (
+                      <div key={article.id} className="p-4 space-y-3">
+                        <div className="flex items-start space-x-3">
+                          <div className="relative w-16 h-14 rounded-xl overflow-hidden shrink-0 border border-slate-200">
+                            <Image
+                              src={article.coverImage}
+                              alt={article.title}
+                              fill
+                              sizes="64px"
+                              className="object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-1.5 flex-wrap gap-y-1 mb-1">
+                              <span className="font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md text-[10px]">
+                                {article.category}
+                              </span>
+                              <span className="text-[10px] text-slate-400">• {article.readTime}</span>
+                            </div>
+                            <h4 className="font-bold text-slate-900 text-xs leading-snug line-clamp-2">
+                              {article.title}
+                            </h4>
+                            <div className="text-[10px] text-slate-500 mt-1">
+                              By <span className="font-medium text-slate-700">{article.author.name}</span> • {article.publishedAt}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Quick Placements & Actions on Mobile */}
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-2">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleFlag(article.id, "isFeatured")}
+                              className={`px-2 py-1 rounded-md text-[9px] font-bold uppercase transition-colors cursor-pointer ${
+                                article.isFeatured
+                                  ? "bg-[#84CC16] text-black font-extrabold"
+                                  : "bg-slate-100 text-slate-400"
+                              }`}
+                              title="Toggle Hero"
+                            >
+                              Hero
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleFlag(article.id, "isTrending")}
+                              className={`px-2 py-1 rounded-md text-[9px] font-bold uppercase transition-colors cursor-pointer ${
+                                article.isTrending
+                                  ? "bg-amber-500 text-white font-extrabold"
+                                  : "bg-slate-100 text-slate-400"
+                              }`}
+                              title="Toggle Trending"
+                            >
+                              Trending
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleFlag(article.id, "isEditorsPick")}
+                              className={`px-2 py-1 rounded-md text-[9px] font-bold uppercase transition-colors cursor-pointer ${
+                                article.isEditorsPick
+                                  ? "bg-blue-600 text-white font-extrabold"
+                                  : "bg-slate-100 text-slate-400"
+                              }`}
+                              title="Toggle Pick"
+                            >
+                              Pick
+                            </button>
+                          </div>
+
+                          <div className="flex items-center space-x-1.5 shrink-0">
+                            <Link
+                              href={`/article/${article.slug}`}
+                              target="_blank"
+                              className="p-1.5 text-slate-500 hover:text-slate-900 bg-slate-50 rounded-lg"
+                              title="View Live"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEdit(article)}
+                              className="p-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg cursor-pointer"
+                              title="Edit Dispatch"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(article.id, article.title)}
+                              className="p-1.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg cursor-pointer"
+                              title="Delete Dispatch"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -2584,7 +3042,7 @@ function AdminDashboardContent() {
                 </div>
 
                 {/* Team Roster Table */}
-                <div className="overflow-x-auto border border-slate-200/80 rounded-2xl mt-4">
+                <div className="hidden md:block overflow-x-auto border border-slate-200/80 rounded-2xl mt-4">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-slate-200/80 bg-slate-50/80 text-[11px] font-extrabold uppercase text-slate-500 tracking-wider">
@@ -2697,6 +3155,91 @@ function AdminDashboardContent() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+
+                {/* Mobile Card List for Newsroom Staff */}
+                <div className="md:hidden divide-y divide-slate-100 bg-white">
+                  {teamMembers
+                    .filter(m => teamFilter === "all" || m.role === teamFilter)
+                    .filter(m => 
+                      staffSearchQuery === "" ||
+                      m.name.toLowerCase().includes(staffSearchQuery.toLowerCase()) ||
+                      m.email.toLowerCase().includes(staffSearchQuery.toLowerCase()) ||
+                      m.desk.toLowerCase().includes(staffSearchQuery.toLowerCase())
+                    )
+                    .map((member) => (
+                      <div key={member.id} className="p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3 min-w-0">
+                            <div className="relative w-10 h-10 rounded-full overflow-hidden border border-slate-200 shrink-0">
+                              <Image
+                                src={member.avatar || "/assets/social-image-1.png"}
+                                alt={member.name}
+                                fill
+                                sizes="40px"
+                                className="object-cover"
+                              />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-bold text-slate-900 text-xs truncate">{member.name}</div>
+                              <div className="text-[11px] text-slate-400 truncate">{member.email}</div>
+                            </div>
+                          </div>
+                          {(member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) ? (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                              ● Active
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleMemberStatus(member.id, member.status, member.name)}
+                              className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider cursor-pointer transition-colors shrink-0 ${
+                                member.status === "active"
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : "bg-slate-100 text-slate-500"
+                              }`}
+                            >
+                              ● {member.status}
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-50 text-xs">
+                          <span className="font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md text-[10px]">
+                            {member.desk}
+                          </span>
+
+                          <div className="flex items-center space-x-2">
+                            {(member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) ? (
+                              <span className="px-2 py-0.5 bg-slate-900 text-white rounded-md font-extrabold text-[9px] uppercase tracking-wider">
+                                Chief
+                              </span>
+                            ) : (
+                              <select
+                                value={member.role}
+                                onChange={(e) => handleUpdateRole(member.id, e.target.value as NewsroomRole, member.name)}
+                                className="bg-white border border-slate-200 text-[10px] font-semibold rounded-lg px-2 py-1 focus:outline-hidden cursor-pointer"
+                              >
+                                <option value="admin">Admin</option>
+                                <option value="editor">Editor</option>
+                                <option value="writer">Writer</option>
+                              </select>
+                            )}
+
+                            {!(member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteMember(member.id, member.name)}
+                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                title="Remove staff member"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                 </div>
 
               </div>
@@ -2871,10 +3414,10 @@ function AdminDashboardContent() {
           {/* TAB 7: NEWSLETTER ROSTER */}
           {activeTab === "subscribers" && (
             <div className="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] animate-in fade-in duration-200">
-              <div className="p-6 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="p-4 sm:p-6 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h3 className="text-base font-extrabold text-slate-900">
-                    The Zango Brief Subscribers ({subscribers.length})
+                    Labarin Zango Subscribers ({subscribers.length})
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
                     Verified readers subscribed to morning dispatches.
@@ -2883,14 +3426,14 @@ function AdminDashboardContent() {
 
                 <button
                   onClick={exportSubscribersCSV}
-                  className="px-4 py-2 bg-slate-900 hover:bg-[#84CC16] hover:text-black text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors flex items-center space-x-2 cursor-pointer shadow-xs"
+                  className="px-4 py-2 bg-slate-900 hover:bg-[#84CC16] hover:text-black text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center space-x-2 cursor-pointer shadow-xs w-full sm:w-auto"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Export CSV</span>
                 </button>
               </div>
 
-              <div className="overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-slate-200/80 bg-slate-50/80 text-[11px] font-extrabold uppercase text-slate-500 tracking-wider">
@@ -2914,6 +3457,27 @@ function AdminDashboardContent() {
                   </tbody>
                 </table>
               </div>
+
+              {/* Mobile Card List for Subscribers */}
+              <div className="md:hidden divide-y divide-slate-100">
+                {subscribers.length === 0 ? (
+                  <div className="py-12 text-center text-slate-500 text-xs">
+                    No verified subscribers found.
+                  </div>
+                ) : (
+                  subscribers.map((sub, i) => (
+                    <div key={i} className="p-4 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-semibold text-slate-900 text-xs truncate">{sub.email}</div>
+                        <div className="text-[10px] text-slate-400 mt-0.5">{sub.subscribedAt}</div>
+                      </div>
+                      <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase px-2 py-0.5 rounded-md shrink-0">
+                        Verified
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           )}
 
@@ -2924,11 +3488,11 @@ function AdminDashboardContent() {
       
       {/* Story Publishing / Edit Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-hidden animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-4xl w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
             
             {/* Pinned Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 shrink-0 bg-white">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200/80 shrink-0 bg-white">
               <div className="flex items-center space-x-2.5">
                 <span className="w-2.5 h-5 bg-[#84CC16] rounded-xs inline-block" />
                 <h3 className="text-base sm:text-lg font-extrabold text-slate-900 uppercase tracking-wide">
@@ -2948,7 +3512,7 @@ function AdminDashboardContent() {
             </div>
 
             {/* Scrollable Form Body */}
-            <form id="story-dispatch-form" onSubmit={handleCreateSubmit} className="overflow-y-auto flex-1 p-6 space-y-5 text-xs overscroll-contain">
+            <form id="story-dispatch-form" onSubmit={handleCreateSubmit} className="overflow-y-auto flex-1 p-4 sm:p-6 space-y-4 sm:space-y-5 text-xs overscroll-contain">
               
               {/* Local Offline Draft Alert */}
               {!editingArticle && hasSavedAdminDraft && (
@@ -3213,25 +3777,25 @@ function AdminDashboardContent() {
             </form>
 
             {/* Pinned Sticky Footer */}
-            <div className="px-6 py-4 border-t border-slate-200/80 shrink-0 bg-slate-50 flex items-center justify-between">
-              <span className="text-[11px] text-slate-500">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-200/80 shrink-0 bg-slate-50 flex items-center justify-between gap-3">
+              <span className="hidden sm:inline text-[11px] text-slate-500 truncate max-w-[200px]">
                 {editingArticle ? "Editing: " + editingArticle.title.slice(0, 30) + "..." : "Live Publishing Clearance"}
               </span>
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 sm:space-x-3 w-full sm:w-auto justify-end">
                 <button
                   type="button"
                   onClick={() => {
                     setShowCreateModal(false);
                     setEditingArticle(null);
                   }}
-                  className="px-4 py-2 border border-slate-200 hover:border-slate-800 rounded-xl text-xs font-bold uppercase transition-colors cursor-pointer bg-white"
+                  className="flex-1 sm:flex-initial px-4 py-2 border border-slate-200 hover:border-slate-800 rounded-xl text-xs font-bold uppercase transition-colors cursor-pointer bg-white text-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   form="story-dispatch-form"
-                  className="px-6 py-2 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
+                  className="flex-1 sm:flex-initial px-6 py-2 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer text-center"
                 >
                   {editingArticle ? "Save Changes" : "Publish Dispatch"}
                 </button>
@@ -3244,10 +3808,10 @@ function AdminDashboardContent() {
 
       {/* Add Newsroom Team Member Modal */}
       {showTeamModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-hidden animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-xl w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
             
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 shrink-0 bg-white">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200/80 shrink-0 bg-white">
               <div className="flex items-center space-x-2.5">
                 <span className="w-2.5 h-5 bg-[#84CC16] rounded-xs inline-block" />
                 <div>
@@ -3268,7 +3832,7 @@ function AdminDashboardContent() {
               </button>
             </div>
 
-            <form id="team-member-form" onSubmit={handleAddTeamMember} className="overflow-y-auto flex-1 p-6 space-y-4 text-xs overscroll-contain">
+            <form id="team-member-form" onSubmit={handleAddTeamMember} className="overflow-y-auto flex-1 p-4 sm:p-6 space-y-4 text-xs overscroll-contain">
               <div>
                 <label className="block font-bold text-slate-900 uppercase mb-1.5">Full Name *</label>
                 <input
@@ -3342,20 +3906,20 @@ function AdminDashboardContent() {
               </div>
             </form>
 
-            <div className="px-6 py-4 border-t border-slate-200/80 shrink-0 bg-slate-50 flex items-center justify-between">
-              <span className="text-[11px] text-slate-500">Newsroom Staff Clearance</span>
-              <div className="flex items-center space-x-3">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-200/80 shrink-0 bg-slate-50 flex items-center justify-between gap-3">
+              <span className="hidden sm:inline text-[11px] text-slate-500">Newsroom Staff Clearance</span>
+              <div className="flex items-center space-x-2 sm:space-x-3 w-full sm:w-auto justify-end">
                 <button
                   type="button"
                   onClick={() => setShowTeamModal(false)}
-                  className="px-4 py-2 border border-slate-200 hover:border-slate-800 rounded-xl text-xs font-bold uppercase transition-colors cursor-pointer bg-white"
+                  className="flex-1 sm:flex-initial px-4 py-2 border border-slate-200 hover:border-slate-800 rounded-xl text-xs font-bold uppercase transition-colors cursor-pointer bg-white text-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   form="team-member-form"
-                  className="px-6 py-2 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
+                  className="flex-1 sm:flex-initial px-6 py-2 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer text-center"
                 >
                   Confirm & Add Staff
                 </button>
@@ -3368,8 +3932,8 @@ function AdminDashboardContent() {
 
       {/* Request Editorial Revision Modal */}
       {revisionModalSub && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[94vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center space-x-2">
                 <span className="w-2.5 h-5 bg-amber-500 rounded-xs inline-block" />
@@ -3432,8 +3996,8 @@ function AdminDashboardContent() {
 
       {/* Merchant Application Details Modal */}
       {selectedMerchant && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[94vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center space-x-2">
                 <span className="w-2.5 h-5 bg-[#84CC16] rounded-xs inline-block" />
@@ -3557,8 +4121,8 @@ function AdminDashboardContent() {
 
       {/* STAFF CLEARANCE CREDENTIALS DISPATCHED MODAL */}
       {staffCredentialsModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-hidden animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-lg w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="bg-gradient-to-r from-[#84CC16] to-[#3F6212] p-6 text-white text-center relative">
               <button

@@ -31,7 +31,7 @@ export function PasswordChangeCard({
       case "emerald":
         return "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20";
       default:
-        return "bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold shadow-red-500/20";
+        return "bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold shadow-lime-500/20";
     }
   };
 
