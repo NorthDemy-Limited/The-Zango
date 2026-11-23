@@ -9,7 +9,7 @@ export default function AdvertisePage() {
         
         {/* Header */}
         <div className="max-w-3xl mb-12">
-          <div className="inline-flex items-center space-x-2 text-[#C61D1F] text-xs font-bold uppercase tracking-widest mb-3">
+          <div className="inline-flex items-center space-x-2 text-[#84CC16] text-xs font-bold uppercase tracking-widest mb-3">
             <Megaphone className="w-3.5 h-3.5" />
             <span>Commercial Partnerships</span>
           </div>
@@ -24,19 +24,19 @@ export default function AdvertisePage() {
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-16">
           <div className="p-6 rounded-2xl bg-[#FAFAFA] border border-[#E5E6E8] text-center">
-            <Users className="w-7 h-7 text-[#C61D1F] mx-auto mb-2" />
+            <Users className="w-7 h-7 text-[#84CC16] mx-auto mb-2" />
             <span className="text-3xl font-extrabold text-[#000000] block mb-1">250K+</span>
             <span className="text-xs text-[#707070] font-semibold uppercase">Monthly Active Readers</span>
           </div>
 
           <div className="p-6 rounded-2xl bg-[#FAFAFA] border border-[#E5E6E8] text-center">
-            <Mail className="w-7 h-7 text-[#C61D1F] mx-auto mb-2" />
+            <Mail className="w-7 h-7 text-[#84CC16] mx-auto mb-2" />
             <span className="text-3xl font-extrabold text-[#000000] block mb-1">42%</span>
             <span className="text-xs text-[#707070] font-semibold uppercase">Newsletter Open Rate</span>
           </div>
 
           <div className="p-6 rounded-2xl bg-[#FAFAFA] border border-[#E5E6E8] text-center">
-            <BarChart3 className="w-7 h-7 text-[#C61D1F] mx-auto mb-2" />
+            <BarChart3 className="w-7 h-7 text-[#84CC16] mx-auto mb-2" />
             <span className="text-3xl font-extrabold text-[#000000] block mb-1">68%</span>
             <span className="text-xs text-[#707070] font-semibold uppercase">C-Suite & Founders</span>
           </div>
@@ -51,7 +51,7 @@ export default function AdvertisePage() {
                 In-depth editorial native features written by our staff and amplified across our homepage and social feeds.
               </p>
             </div>
-            <span className="text-xs font-bold text-[#C61D1F] uppercase tracking-wider">Custom Packaging</span>
+            <span className="text-xs font-bold text-[#84CC16] uppercase tracking-wider">Custom Packaging</span>
           </div>
 
           <div className="p-8 rounded-2xl border border-[#E5E6E8] flex flex-col justify-between">
@@ -61,7 +61,7 @@ export default function AdvertisePage() {
                 Exclusive top-of-email and mid-email sponsor placement in our daily curated newsletter briefing.
               </p>
             </div>
-            <span className="text-xs font-bold text-[#C61D1F] uppercase tracking-wider">High Conversion</span>
+            <span className="text-xs font-bold text-[#84CC16] uppercase tracking-wider">High Conversion</span>
           </div>
 
           <div className="p-8 rounded-2xl border border-[#E5E6E8] flex flex-col justify-between">
@@ -71,7 +71,7 @@ export default function AdvertisePage() {
                 High-impact billboard, sticky sidebar, and in-article premium responsive ad placements.
               </p>
             </div>
-            <span className="text-xs font-bold text-[#C61D1F] uppercase tracking-wider">Direct Media Kit</span>
+            <span className="text-xs font-bold text-[#84CC16] uppercase tracking-wider">Direct Media Kit</span>
           </div>
         </div>
 
@@ -85,7 +85,7 @@ export default function AdvertisePage() {
           </p>
           <Link
             href="/contact"
-            className="px-6 py-3 bg-[#C61D1F] hover:bg-[#A51719] text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-colors inline-flex items-center space-x-2"
+            className="px-6 py-3 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold font-bold text-xs uppercase tracking-wider rounded-lg transition-colors inline-flex items-center space-x-2"
           >
             <span>Contact Advertising Desk</span>
             <ArrowRight className="w-3.5 h-3.5" />

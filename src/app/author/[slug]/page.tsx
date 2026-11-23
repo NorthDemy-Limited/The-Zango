@@ -38,7 +38,7 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
         <div className="mb-8">
           <Link
             href="/"
-            className="inline-flex items-center space-x-2 text-xs font-bold text-[#535252] hover:text-[#C61D1F] uppercase tracking-wider transition-colors"
+            className="inline-flex items-center space-x-2 text-xs font-bold text-[#535252] hover:text-[#84CC16] uppercase tracking-wider transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Return to Front Page</span>
@@ -50,7 +50,7 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8">
             
             {/* Avatar */}
-            <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden shrink-0 border-3 border-[#C61D1F] shadow-md bg-white">
+            <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden shrink-0 border-3 border-[#84CC16] shadow-md bg-white">
               {author.avatar ? (
                 <Image
                   src={author.avatar}
@@ -61,7 +61,7 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
                   priority
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-[#C61D1F] text-white font-extrabold text-3xl">
+                <div className="w-full h-full flex items-center justify-center bg-[#84CC16] text-black font-bold font-extrabold text-3xl">
                   {author.name.charAt(0)}
                 </div>
               )}
@@ -70,7 +70,7 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
             {/* Info */}
             <div className="flex-1 text-center sm:text-left">
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-2">
-                <span className="inline-flex items-center space-x-1 bg-[#FDF2F2] text-[#C61D1F] text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full">
+                <span className="inline-flex items-center space-x-1 bg-[#F7FEE7] text-[#84CC16] text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>Verified Staff Journalist</span>
                 </span>
@@ -87,7 +87,7 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
                 {author.name}
               </h1>
 
-              <p className="text-xs sm:text-sm font-semibold text-[#C61D1F] uppercase tracking-wide mb-3">
+              <p className="text-xs sm:text-sm font-semibold text-[#84CC16] uppercase tracking-wide mb-3">
                 {author.role}
               </p>
 
@@ -102,7 +102,7 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
                     href={`https://twitter.com/${author.twitter.replace('@', '')}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2 rounded-lg bg-white border border-[#DFDFDF] hover:border-[#C61D1F] text-[#535252] hover:text-[#C61D1F] transition-colors flex items-center space-x-1.5 text-xs font-semibold"
+                    className="p-2 rounded-lg bg-white border border-[#DFDFDF] hover:border-[#84CC16] text-[#535252] hover:text-[#84CC16] transition-colors flex items-center space-x-1.5 text-xs font-semibold"
                   >
                     <TwitterIcon className="w-3.5 h-3.5" />
                     <span>{author.twitter}</span>
@@ -113,7 +113,7 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
                     href={`https://linkedin.com/in/${author.linkedin}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2 rounded-lg bg-white border border-[#DFDFDF] hover:border-[#C61D1F] text-[#535252] hover:text-[#C61D1F] transition-colors flex items-center space-x-1.5 text-xs font-semibold"
+                    className="p-2 rounded-lg bg-white border border-[#DFDFDF] hover:border-[#84CC16] text-[#535252] hover:text-[#84CC16] transition-colors flex items-center space-x-1.5 text-xs font-semibold"
                   >
                     <LinkedinIcon className="w-3.5 h-3.5" />
                     <span>LinkedIn</span>
@@ -137,10 +137,10 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
 
         {/* Stories Section Header */}
         <div className="flex items-center space-x-2.5 pb-3.5 mb-8 border-b border-[#E5E6E8]">
-          <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
+          <span className="w-2.5 h-5 bg-[#84CC16] rounded-xs inline-block" />
           <h2 className="text-xl sm:text-2xl font-extrabold text-[#000000] tracking-wide uppercase flex items-center space-x-2">
             <span>Stories by {author.name}</span>
-            <BookOpen className="w-5 h-5 text-[#C61D1F]" />
+            <BookOpen className="w-5 h-5 text-[#84CC16]" />
           </h2>
         </div>
 
@@ -150,7 +150,7 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
             {authorArticles.map((article) => (
               <article
                 key={article.id}
-                className="group bg-white border border-[#E5E6E8] hover:border-[#C61D1F] rounded-2xl overflow-hidden shadow-2xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
+                className="group bg-white border border-[#E5E6E8] hover:border-[#84CC16] rounded-2xl overflow-hidden shadow-2xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
               >
                 <div>
                   <Link href={`/article/${article.slug}`} className="block relative w-full h-48 overflow-hidden bg-gray-100">
@@ -173,7 +173,7 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
                       <span>{article.readTime}</span>
                     </div>
 
-                    <h3 className="text-base font-bold text-[#000000] group-hover:text-[#C61D1F] transition-colors leading-snug line-clamp-2 mb-2.5">
+                    <h3 className="text-base font-bold text-[#000000] group-hover:text-[#84CC16] transition-colors leading-snug line-clamp-2 mb-2.5">
                       <Link href={`/article/${article.slug}`}>
                         {article.title}
                       </Link>
@@ -192,7 +192,7 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
                     </span>
                     <Link
                       href={`/article/${article.slug}`}
-                      className="inline-flex items-center space-x-1 text-[#C61D1F] font-bold uppercase tracking-wider hover:underline"
+                      className="inline-flex items-center space-x-1 text-[#84CC16] font-bold uppercase tracking-wider hover:underline"
                     >
                       <span>Read Story</span>
                       <ArrowRight className="w-3.5 h-3.5" />

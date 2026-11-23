@@ -55,7 +55,7 @@ export default function ContactPage() {
         
         {/* Header */}
         <div className="max-w-2xl mb-12">
-          <div className="inline-flex items-center space-x-2 text-[#C61D1F] text-xs font-bold uppercase tracking-widest mb-3">
+          <div className="inline-flex items-center space-x-2 text-[#84CC16] text-xs font-bold uppercase tracking-widest mb-3">
             <Mail className="w-3.5 h-3.5" />
             <span>Get In Touch</span>
           </div>
@@ -73,13 +73,13 @@ export default function ContactPage() {
           <div className="lg:col-span-5 space-y-6">
             <div className="p-6 rounded-2xl bg-[#FAFAFA] border border-[#E5E6E8]">
               <div className="flex items-start space-x-4">
-                <div className="w-10 h-10 rounded-xl bg-[#FDF2F2] text-[#C61D1F] flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-[#F7FEE7] text-[#84CC16] flex items-center justify-center shrink-0">
                   <Mail className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-[#000000] mb-1">Newsroom & Tips</h3>
                   <p className="text-xs text-[#707070] mb-2">Send anonymous leads, press releases, and inquiries:</p>
-                  <a href="mailto:tips@thezango.com" className="text-sm font-bold text-[#C61D1F] hover:underline">
+                  <a href="mailto:tips@thezango.com" className="text-sm font-bold text-[#84CC16] hover:underline">
                     tips@thezango.com
                   </a>
                 </div>
@@ -88,7 +88,7 @@ export default function ContactPage() {
 
             <div className="p-6 rounded-2xl bg-[#FAFAFA] border border-[#E5E6E8]">
               <div className="flex items-start space-x-4">
-                <div className="w-10 h-10 rounded-xl bg-[#FDF2F2] text-[#C61D1F] flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-[#F7FEE7] text-[#84CC16] flex items-center justify-center shrink-0">
                   <MapPin className="w-5 h-5" />
                 </div>
                 <div>
@@ -103,7 +103,7 @@ export default function ContactPage() {
 
             <div className="p-6 rounded-2xl bg-[#FAFAFA] border border-[#E5E6E8]">
               <div className="flex items-start space-x-4">
-                <div className="w-10 h-10 rounded-xl bg-[#FDF2F2] text-[#C61D1F] flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-[#F7FEE7] text-[#84CC16] flex items-center justify-center shrink-0">
                   <Phone className="w-5 h-5" />
                 </div>
                 <div>
@@ -116,7 +116,7 @@ export default function ContactPage() {
 
             <div className="p-6 rounded-2xl bg-[#FAFAFA] border border-[#E5E6E8]">
               <div className="flex items-start space-x-4">
-                <div className="w-10 h-10 rounded-xl bg-[#FDF2F2] text-[#C61D1F] flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-[#F7FEE7] text-[#84CC16] flex items-center justify-center shrink-0">
                   <Share2 className="w-5 h-5" />
                 </div>
                 <div>
@@ -127,7 +127,7 @@ export default function ContactPage() {
                       href={SITE_CONFIG.socials.twitter.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-8 h-8 rounded-full bg-white border border-[#E5E6E8] hover:border-[#C61D1F] text-[#535252] hover:text-[#C61D1F] flex items-center justify-center transition-colors"
+                      className="w-8 h-8 rounded-full bg-white border border-[#E5E6E8] hover:border-[#84CC16] text-[#535252] hover:text-[#84CC16] flex items-center justify-center transition-colors"
                       title="Follow on X (Twitter)"
                       aria-label="Follow on X (Twitter)"
                     >
@@ -137,7 +137,7 @@ export default function ContactPage() {
                       href={SITE_CONFIG.socials.linkedin.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-8 h-8 rounded-full bg-white border border-[#E5E6E8] hover:border-[#C61D1F] text-[#535252] hover:text-[#C61D1F] flex items-center justify-center transition-colors"
+                      className="w-8 h-8 rounded-full bg-white border border-[#E5E6E8] hover:border-[#84CC16] text-[#535252] hover:text-[#84CC16] flex items-center justify-center transition-colors"
                       title="Connect on LinkedIn"
                       aria-label="Connect on LinkedIn"
                     >
@@ -147,7 +147,7 @@ export default function ContactPage() {
                       href={SITE_CONFIG.socials.instagram.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-8 h-8 rounded-full bg-white border border-[#E5E6E8] hover:border-[#C61D1F] text-[#535252] hover:text-[#C61D1F] flex items-center justify-center transition-colors"
+                      className="w-8 h-8 rounded-full bg-white border border-[#E5E6E8] hover:border-[#84CC16] text-[#535252] hover:text-[#84CC16] flex items-center justify-center transition-colors"
                       title="Follow on Instagram"
                       aria-label="Follow on Instagram"
                     >
@@ -170,7 +170,7 @@ export default function ContactPage() {
                 </p>
                 <button
                   onClick={() => setSubmitted(false)}
-                  className="px-5 py-2.5 bg-[#C61D1F] text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-[#A51719] transition-colors mt-4 cursor-pointer"
+                  className="px-5 py-2.5 bg-[#84CC16] text-black font-bold rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-[#65A30D] transition-colors mt-4 cursor-pointer"
                 >
                   Send Another Message
                 </button>
@@ -187,7 +187,7 @@ export default function ContactPage() {
                     placeholder="e.g. Amina Garba"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-sm text-[#111111] focus:outline-hidden"
+                    className="w-full px-4 py-3 rounded-xl border border-[#DFDFDF] focus:border-[#84CC16] text-sm text-[#111111] focus:outline-hidden"
                   />
                 </div>
 
@@ -201,7 +201,7 @@ export default function ContactPage() {
                     placeholder="amina@example.com"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-sm text-[#111111] focus:outline-hidden"
+                    className="w-full px-4 py-3 rounded-xl border border-[#DFDFDF] focus:border-[#84CC16] text-sm text-[#111111] focus:outline-hidden"
                   />
                 </div>
 
@@ -214,7 +214,7 @@ export default function ContactPage() {
                     placeholder="News Tip / Editorial / Advertising"
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-sm text-[#111111] focus:outline-hidden"
+                    className="w-full px-4 py-3 rounded-xl border border-[#DFDFDF] focus:border-[#84CC16] text-sm text-[#111111] focus:outline-hidden"
                   />
                 </div>
 
@@ -228,7 +228,7 @@ export default function ContactPage() {
                     placeholder="Write your story tip or message in detail..."
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-sm text-[#111111] focus:outline-hidden resize-none"
+                    className="w-full px-4 py-3 rounded-xl border border-[#DFDFDF] focus:border-[#84CC16] text-sm text-[#111111] focus:outline-hidden resize-none"
                   />
                 </div>
 
@@ -241,7 +241,7 @@ export default function ContactPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-3.5 bg-[#C61D1F] hover:bg-[#A51719] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center space-x-2 shadow-md cursor-pointer disabled:opacity-50"
+                  className="w-full py-3.5 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold font-bold text-xs uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center space-x-2 shadow-md cursor-pointer disabled:opacity-50"
                 >
                   <span>{isSubmitting ? "Delivering..." : "Submit Inquiry"}</span>
                   <Send className="w-4 h-4" />

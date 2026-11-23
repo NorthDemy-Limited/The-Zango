@@ -120,7 +120,7 @@ export default function BreakingNewsTicker({ initialArticles = [] }: BreakingNew
     <div
       role="region"
       aria-label="Breaking News Ticker"
-      className="bg-gradient-to-r from-[#881214] via-[#C61D1F] to-[#A51719] text-white shadow-sm border-b border-red-900/30 overflow-hidden select-none transition-all duration-300"
+      className="bg-black text-white shadow-sm border-b border-[#84CC16]/30 overflow-hidden select-none transition-all duration-300"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -128,19 +128,19 @@ export default function BreakingNewsTicker({ initialArticles = [] }: BreakingNew
         
         {/* Left: Urgent Indicator Badge */}
         <div className="flex items-center space-x-2 shrink-0">
-          <div className="flex items-center space-x-1.5 bg-black/30 backdrop-blur-xs px-2.5 py-1 rounded-md border border-white/20">
+          <div className="flex items-center space-x-1.5 bg-[#84CC16] px-2.5 py-1 rounded-md text-black shadow-xs">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-300 opacity-75" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-black opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
             </span>
-            <span className="font-extrabold tracking-wider uppercase text-[10px] sm:text-[11px] text-white flex items-center gap-1">
-              <Flame className="w-3 h-3 text-amber-300 fill-amber-300" />
+            <span className="font-extrabold tracking-wider uppercase text-[10px] sm:text-[11px] text-black flex items-center gap-1 font-extrabold">
+              <Flame className="w-3 h-3 text-black fill-black" />
               <span>Breaking Dispatch</span>
             </span>
           </div>
 
           {currentArticle.category && (
-            <span className="hidden md:inline-block px-2 py-0.5 rounded-sm bg-white/15 text-[10px] font-bold uppercase tracking-wider text-red-100">
+            <span className="hidden md:inline-block px-2 py-0.5 rounded-sm bg-white/15 text-[10px] font-bold uppercase tracking-wider text-[#ECFCCB]">
               {currentArticle.category}
             </span>
           )}
@@ -150,7 +150,7 @@ export default function BreakingNewsTicker({ initialArticles = [] }: BreakingNew
         <div className="flex-1 min-w-0 flex items-center">
           <Link
             href={`/article/${currentArticle.slug}`}
-            className="group flex items-center space-x-1.5 truncate text-white hover:text-amber-200 transition-colors"
+            className="group flex items-center space-x-1.5 truncate text-white hover:text-[#84CC16] transition-colors"
           >
             <span className="font-bold text-xs sm:text-sm truncate">
               {currentArticle.title}

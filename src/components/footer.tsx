@@ -98,7 +98,7 @@ export default function Footer() {
                 href={SITE_CONFIG.socials.twitter.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#C61D1F] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#84CC16] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
                 aria-label="X (Twitter)"
               >
                 <TwitterIcon className="w-4 h-4" />
@@ -107,7 +107,7 @@ export default function Footer() {
                 href={SITE_CONFIG.socials.linkedin.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#C61D1F] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#84CC16] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
                 aria-label="LinkedIn"
               >
                 <LinkedinIcon className="w-4 h-4" />
@@ -116,7 +116,7 @@ export default function Footer() {
                 href={SITE_CONFIG.socials.instagram.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#C61D1F] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#84CC16] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
                 aria-label="Instagram"
               >
                 <InstagramIcon className="w-4 h-4" />
@@ -125,7 +125,7 @@ export default function Footer() {
                 href={SITE_CONFIG.socials.facebook.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#C61D1F] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#84CC16] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
                 aria-label="Facebook"
               >
                 <FacebookIcon className="w-4 h-4" />
@@ -134,7 +134,7 @@ export default function Footer() {
                 href={SITE_CONFIG.socials.youtube.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#C61D1F] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#84CC16] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
                 aria-label="YouTube"
               >
                 <YoutubeIcon className="w-4 h-4" />
@@ -148,7 +148,7 @@ export default function Footer() {
               <h4 className="text-sm font-extrabold text-[#000000] uppercase tracking-wider mb-1">
                 Categories
               </h4>
-              <span className="w-8 h-0.5 bg-[#C61D1F] block rounded-full" />
+              <span className="w-8 h-0.5 bg-[#84CC16] block rounded-full" />
             </div>
 
             <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
@@ -157,7 +157,7 @@ export default function Footer() {
                   key={cat.name}
                   href={cat.href}
                   prefetch={false}
-                  className="text-xs sm:text-sm text-[#707070] hover:text-[#C61D1F] transition-colors"
+                  className="text-xs sm:text-sm text-[#707070] hover:text-[#84CC16] transition-colors"
                 >
                   {cat.name}
                 </Link>
@@ -171,7 +171,7 @@ export default function Footer() {
               <h4 className="text-sm font-extrabold text-[#000000] uppercase tracking-wider mb-1">
                 Quick Links
               </h4>
-              <span className="w-8 h-0.5 bg-[#C61D1F] block rounded-full" />
+              <span className="w-8 h-0.5 bg-[#84CC16] block rounded-full" />
             </div>
 
             <ul className="space-y-2.5">
@@ -180,7 +180,7 @@ export default function Footer() {
                   <Link
                     href={link.href}
                     prefetch={false}
-                    className="text-xs sm:text-sm text-[#707070] hover:text-[#C61D1F] transition-colors"
+                    className="text-xs sm:text-sm text-[#707070] hover:text-[#84CC16] transition-colors"
                   >
                     {link.name}
                   </Link>
@@ -195,7 +195,7 @@ export default function Footer() {
               <h4 className="text-sm font-extrabold text-[#000000] uppercase tracking-wider mb-1">
                 Newsletter
               </h4>
-              <span className="w-8 h-0.5 bg-[#C61D1F] block rounded-full" />
+              <span className="w-8 h-0.5 bg-[#84CC16] block rounded-full" />
             </div>
 
             <p className="text-xs sm:text-sm text-[#707070] mb-4 leading-relaxed">
@@ -203,13 +203,13 @@ export default function Footer() {
             </p>
 
             {submitted ? (
-              <div className="bg-[#FDF2F2] border border-red-200 rounded-lg p-3 flex items-center space-x-2 text-xs text-[#C61D1F] font-semibold">
+              <div className="bg-[#F7FEE7] border border-red-200 rounded-lg p-3 flex items-center space-x-2 text-xs text-[#84CC16] font-semibold">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
                 <span>Thank you for subscribing!</span>
               </div>
             ) : (
               <form onSubmit={handleSubscribe} className="space-y-2">
-                <div className="flex border border-[#DFDFDF] rounded-lg overflow-hidden bg-white focus-within:border-[#C61D1F]">
+                <div className="flex border border-[#DFDFDF] rounded-lg overflow-hidden bg-white focus-within:border-[#84CC16]">
                   <input
                     type="email"
                     required
@@ -221,7 +221,7 @@ export default function Footer() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="bg-[#C61D1F] hover:bg-[#A51719] text-white px-3.5 py-2 text-xs font-bold uppercase transition-colors shrink-0 cursor-pointer disabled:opacity-50"
+                    className="bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold px-3.5 py-2 text-xs font-bold uppercase transition-colors shrink-0 cursor-pointer disabled:opacity-50"
                   >
                     <Send className="w-3.5 h-3.5" />
                   </button>
@@ -240,16 +240,16 @@ export default function Footer() {
           <p>© 2026 The Zango All Rights Reserved</p>
 
           <div className="flex items-center space-x-6 text-[#535252]">
-            <Link href="/advertise" className="hover:text-[#C61D1F] transition-colors">
+            <Link href="/advertise" className="hover:text-[#84CC16] transition-colors">
               Advertise
             </Link>
-            <Link href="/contact" className="hover:text-[#C61D1F] transition-colors">
+            <Link href="/contact" className="hover:text-[#84CC16] transition-colors">
               Contact
             </Link>
-            <Link href="/privacy" className="hover:text-[#C61D1F] transition-colors">
+            <Link href="/privacy" className="hover:text-[#84CC16] transition-colors">
               Privacy Policy
             </Link>
-            <Link href="/terms" className="hover:text-[#C61D1F] transition-colors">
+            <Link href="/terms" className="hover:text-[#84CC16] transition-colors">
               Terms of Use
             </Link>
           </div>

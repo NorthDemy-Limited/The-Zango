@@ -50,7 +50,7 @@ function SearchContent() {
         
         {/* Search Header */}
         <div className="max-w-3xl mb-10">
-          <div className="inline-flex items-center space-x-2 text-[#C61D1F] text-xs font-bold uppercase tracking-widest mb-2">
+          <div className="inline-flex items-center space-x-2 text-[#84CC16] text-xs font-bold uppercase tracking-widest mb-2">
             <Search className="w-3.5 h-3.5" />
             <span>Search The Zango</span>
           </div>
@@ -65,7 +65,7 @@ function SearchContent() {
               placeholder="Search by keywords, startup name, climate tech..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full px-5 py-4 pl-12 rounded-2xl border-2 border-[#DFDFDF] focus:border-[#C61D1F] text-base text-[#111111] placeholder-[#9C9C9C] focus:outline-hidden shadow-xs transition-colors"
+              className="w-full px-5 py-4 pl-12 rounded-2xl border-2 border-[#DFDFDF] focus:border-[#84CC16] text-base text-[#111111] placeholder-[#9C9C9C] focus:outline-hidden shadow-xs transition-colors"
             />
             <Search className="w-5 h-5 text-[#9C9C9C] absolute left-4 top-1/2 -translate-y-1/2" />
           </div>
@@ -74,7 +74,7 @@ function SearchContent() {
             <span>
               Found <strong className="text-[#000000]">{filteredArticles.length}</strong> {filteredArticles.length === 1 ? "story" : "stories"}
               {query.trim() && (
-                <> for &ldquo;<span className="text-[#C61D1F] font-semibold">{query}</span>&rdquo;</>
+                <> for &ldquo;<span className="text-[#84CC16] font-semibold">{query}</span>&rdquo;</>
               )}
             </span>
           </div>
@@ -86,7 +86,7 @@ function SearchContent() {
             {filteredArticles.map((article) => (
               <article
                 key={article.id}
-                className="group bg-white border border-[#E5E6E8] hover:border-[#C61D1F] rounded-2xl overflow-hidden shadow-2xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
+                className="group bg-white border border-[#E5E6E8] hover:border-[#84CC16] rounded-2xl overflow-hidden shadow-2xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
               >
                 <div>
                   <div className="relative w-full h-48 overflow-hidden bg-gray-100">
@@ -111,7 +111,7 @@ function SearchContent() {
                       <span>{article.readTime}</span>
                     </div>
 
-                    <h2 className="text-base font-bold text-[#000000] group-hover:text-[#C61D1F] transition-colors leading-snug line-clamp-2 mb-2.5">
+                    <h2 className="text-base font-bold text-[#000000] group-hover:text-[#84CC16] transition-colors leading-snug line-clamp-2 mb-2.5">
                       <Link href={`/article/${article.slug}`}>
                         {article.title}
                       </Link>
@@ -140,7 +140,7 @@ function SearchContent() {
                   <div className="pt-3 border-t border-[#E5E6E8] flex items-center justify-between text-xs">
                     <Link
                       href={`/author/${article.author.slug || "editorial-desk"}`}
-                      className="font-semibold text-[#535252] hover:text-[#C61D1F] transition-colors flex items-center space-x-1"
+                      className="font-semibold text-[#535252] hover:text-[#84CC16] transition-colors flex items-center space-x-1"
                     >
                       <User className="w-3.5 h-3.5 text-[#9C9C9C]" />
                       <span>{article.author.name}</span>
@@ -148,7 +148,7 @@ function SearchContent() {
 
                     <Link
                       href={`/article/${article.slug}`}
-                      className="inline-flex items-center space-x-1 text-[#C61D1F] font-bold uppercase tracking-wider hover:underline"
+                      className="inline-flex items-center space-x-1 text-[#84CC16] font-bold uppercase tracking-wider hover:underline"
                     >
                       <span>Read Story</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -169,7 +169,7 @@ function SearchContent() {
             </p>
             <button
               onClick={() => setQuery("")}
-              className="px-5 py-2.5 bg-[#C61D1F] text-white text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#A51719] transition-colors cursor-pointer"
+              className="px-5 py-2.5 bg-[#84CC16] text-black font-bold text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#65A30D] transition-colors cursor-pointer"
             >
               Clear Search
             </button>

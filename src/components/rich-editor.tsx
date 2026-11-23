@@ -66,7 +66,7 @@ export default function RichEditor({
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
-          class: "text-[#C61D1F] underline font-semibold",
+          class: "text-[#84CC16] underline font-semibold",
         },
       }),
       ImageExtension.configure({
@@ -117,7 +117,7 @@ export default function RichEditor({
           "[&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-black [&_h2]:mt-6 [&_h2]:mb-3 [&_h2]:border-b [&_h2]:border-gray-200 [&_h2]:pb-2 " +
           "[&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-black [&_h3]:mt-6 [&_h3]:mb-2 " +
           "[&_p]:mb-4 [&_p]:leading-relaxed sm:[&_p]:leading-loose " +
-          "[&_blockquote]:border-l-4 [&_blockquote]:border-[#C61D1F] [&_blockquote]:bg-[#FDF2F2]/60 [&_blockquote]:pl-5 [&_blockquote]:py-3.5 [&_blockquote]:my-6 [&_blockquote]:italic [&_blockquote]:rounded-r-xl " +
+          "[&_blockquote]:border-l-4 [&_blockquote]:border-[#84CC16] [&_blockquote]:bg-[#F7FEE7]/60 [&_blockquote]:pl-5 [&_blockquote]:py-3.5 [&_blockquote]:my-6 [&_blockquote]:italic [&_blockquote]:rounded-r-xl " +
           "[&_ul]:list-disc [&_ul]:list-inside [&_ul]:my-4 [&_ul]:space-y-1 " +
           "[&_ol]:list-decimal [&_ol]:list-inside [&_ol]:my-4 [&_ol]:space-y-1 " +
           "[&_hr]:my-8 [&_hr]:border-gray-300",
@@ -349,7 +349,7 @@ export default function RichEditor({
           type="button"
           onClick={() => editor.chain().focus().toggleBold().run()}
           className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-            editor.isActive("bold") ? "bg-[#C61D1F] text-white" : "hover:bg-gray-100 text-[#444]"
+            editor.isActive("bold") ? "bg-[#84CC16] text-black font-bold" : "hover:bg-gray-100 text-[#444]"
           }`}
           title="Bold (Ctrl+B)"
         >
@@ -360,7 +360,7 @@ export default function RichEditor({
           type="button"
           onClick={() => editor.chain().focus().toggleItalic().run()}
           className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-            editor.isActive("italic") ? "bg-[#C61D1F] text-white" : "hover:bg-gray-100 text-[#444]"
+            editor.isActive("italic") ? "bg-[#84CC16] text-black font-bold" : "hover:bg-gray-100 text-[#444]"
           }`}
           title="Italic (Ctrl+I)"
         >
@@ -371,7 +371,7 @@ export default function RichEditor({
           type="button"
           onClick={() => editor.chain().focus().toggleUnderline().run()}
           className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-            editor.isActive("underline") ? "bg-[#C61D1F] text-white" : "hover:bg-gray-100 text-[#444]"
+            editor.isActive("underline") ? "bg-[#84CC16] text-black font-bold" : "hover:bg-gray-100 text-[#444]"
           }`}
           title="Underline (Ctrl+U)"
         >
@@ -382,7 +382,7 @@ export default function RichEditor({
           type="button"
           onClick={() => editor.chain().focus().toggleStrike().run()}
           className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-            editor.isActive("strike") ? "bg-[#C61D1F] text-white" : "hover:bg-gray-100 text-[#444]"
+            editor.isActive("strike") ? "bg-[#84CC16] text-black font-bold" : "hover:bg-gray-100 text-[#444]"
           }`}
           title="Strikethrough"
         >
@@ -440,7 +440,7 @@ export default function RichEditor({
           type="button"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-            editor.isActive("bulletList") ? "bg-[#C61D1F] text-white" : "hover:bg-gray-100 text-[#444]"
+            editor.isActive("bulletList") ? "bg-[#84CC16] text-black font-bold" : "hover:bg-gray-100 text-[#444]"
           }`}
           title="Bullet List"
         >
@@ -450,7 +450,7 @@ export default function RichEditor({
           type="button"
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-            editor.isActive("orderedList") ? "bg-[#C61D1F] text-white" : "hover:bg-gray-100 text-[#444]"
+            editor.isActive("orderedList") ? "bg-[#84CC16] text-black font-bold" : "hover:bg-gray-100 text-[#444]"
           }`}
           title="Numbered List"
         >
@@ -464,7 +464,7 @@ export default function RichEditor({
           type="button"
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
           className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-            editor.isActive("blockquote") ? "bg-[#C61D1F] text-white" : "hover:bg-gray-100 text-[#444]"
+            editor.isActive("blockquote") ? "bg-[#84CC16] text-black font-bold" : "hover:bg-gray-100 text-[#444]"
           }`}
           title="Blockquote"
         >
@@ -496,7 +496,7 @@ export default function RichEditor({
           type="button"
           onClick={insertLink}
           className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-            editor.isActive("link") ? "bg-[#C61D1F] text-white" : "hover:bg-gray-100 text-[#444]"
+            editor.isActive("link") ? "bg-[#84CC16] text-black font-bold" : "hover:bg-gray-100 text-[#444]"
           }`}
           title="Insert Link"
         >
@@ -521,7 +521,7 @@ export default function RichEditor({
           title="Upload & Insert Inline Image"
         >
           {isUploadingInline ? (
-            <div className="w-4 h-4 border-2 border-[#C61D1F] border-t-transparent rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-[#84CC16] border-t-transparent rounded-full animate-spin" />
           ) : (
             <UploadCloud className="w-4 h-4 text-blue-600" />
           )}

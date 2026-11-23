@@ -70,7 +70,7 @@ export function ProtectedRoute({
             priority
           />
         </div>
-        <div className="w-9 h-9 rounded-full border-3 border-[#C61D1F] border-t-transparent animate-spin" />
+        <div className="w-9 h-9 rounded-full border-3 border-[#84CC16] border-t-transparent animate-spin" />
         <div className="text-center">
           <h3 className="text-xs font-extrabold uppercase tracking-widest text-slate-800">
             Newsroom Gatekeeper
@@ -120,7 +120,7 @@ export function ProtectedRoute({
           <div className="space-y-2.5 pt-2">
             <Link
               href={roleFallbackDestination}
-              className="w-full py-3 px-4 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center space-x-2 shadow-sm"
+              className="w-full py-3 px-4 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold rounded-2xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center space-x-2 shadow-sm"
             >
               <span>Return to My Authorized Desk</span>
               <ArrowRight className="w-4 h-4" />

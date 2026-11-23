@@ -8,7 +8,7 @@ export default function PrivacyPage() {
         
         {/* Header */}
         <div className="mb-10 pb-6 border-b border-[#E5E6E8]">
-          <div className="inline-flex items-center space-x-2 text-[#C61D1F] text-xs font-bold uppercase tracking-widest mb-3">
+          <div className="inline-flex items-center space-x-2 text-[#84CC16] text-xs font-bold uppercase tracking-widest mb-3">
             <Shield className="w-3.5 h-3.5" />
             <span>Legal Notice</span>
           </div>
@@ -43,7 +43,7 @@ export default function PrivacyPage() {
           <h2 className="text-xl font-bold text-[#000000] pt-4">4. Inquiries</h2>
           <p>
             For privacy-related questions or data deletion requests, email our data officer at{" "}
-            <a href="mailto:privacy@thezango.com" className="text-[#C61D1F] font-semibold hover:underline">
+            <a href="mailto:privacy@thezango.com" className="text-[#84CC16] font-semibold hover:underline">
               privacy@thezango.com
             </a>.
           </p>

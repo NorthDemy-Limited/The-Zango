@@ -15,7 +15,7 @@ export default function MarketplacePage() {
         
         {/* Header */}
         <div className="max-w-3xl mb-12">
-          <div className="inline-flex items-center space-x-2 text-[#C61D1F] text-xs font-bold uppercase tracking-widest mb-3">
+          <div className="inline-flex items-center space-x-2 text-[#84CC16] text-xs font-bold uppercase tracking-widest mb-3">
             <ShoppingBag className="w-3.5 h-3.5" />
             <span>The Zango Marketplace</span>
           </div>
@@ -30,7 +30,7 @@ export default function MarketplacePage() {
         {/* Value Props */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
           <div className="p-6 rounded-2xl border border-[#E5E6E8] bg-[#FAFAFA]">
-            <Store className="w-8 h-8 text-[#C61D1F] mb-4" />
+            <Store className="w-8 h-8 text-[#84CC16] mb-4" />
             <h3 className="text-lg font-bold text-[#000000] mb-2">Verified Regional Merchants</h3>
             <p className="text-xs sm:text-sm text-[#707070] leading-relaxed">
               Every vendor passes rigorous supply chain and business entity verification before listing products.
@@ -38,7 +38,7 @@ export default function MarketplacePage() {
           </div>
 
           <div className="p-6 rounded-2xl border border-[#E5E6E8] bg-[#FAFAFA]">
-            <Zap className="w-8 h-8 text-[#C61D1F] mb-4" />
+            <Zap className="w-8 h-8 text-[#84CC16] mb-4" />
             <h3 className="text-lg font-bold text-[#000000] mb-2">Digital Exports & B2B</h3>
             <p className="text-xs sm:text-sm text-[#707070] leading-relaxed">
               Wholesale agricultural commodities, artisanal leatherware, and engineering talent contracts.
@@ -46,7 +46,7 @@ export default function MarketplacePage() {
           </div>
 
           <div className="p-6 rounded-2xl border border-[#E5E6E8] bg-[#FAFAFA]">
-            <ShieldCheck className="w-8 h-8 text-[#C61D1F] mb-4" />
+            <ShieldCheck className="w-8 h-8 text-[#84CC16] mb-4" />
             <h3 className="text-lg font-bold text-[#000000] mb-2">Escrow Protection</h3>
             <p className="text-xs sm:text-sm text-[#707070] leading-relaxed">
               Seamless local currency and cross-border settlement with milestone escrow protections.
@@ -56,9 +56,9 @@ export default function MarketplacePage() {
 
         {/* Registration Callout Box */}
         <div className="bg-[#000000] text-white rounded-3xl p-8 sm:p-12 text-center max-w-3xl mx-auto shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-[#C61D1F]/20 rounded-full blur-2xl" />
+          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-[#84CC16]/20 rounded-full blur-2xl" />
           
-          <span className="bg-[#C61D1F] text-white px-3 py-1 rounded-sm text-xs font-bold uppercase tracking-wider mb-4 inline-block">
+          <span className="bg-[#84CC16] text-black font-bold px-3 py-1 rounded-sm text-xs font-bold uppercase tracking-wider mb-4 inline-block">
             Beta Cohort Application
           </span>
           <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">
@@ -72,7 +72,7 @@ export default function MarketplacePage() {
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="px-6 py-3.5 bg-[#C61D1F] hover:bg-[#A51719] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md hover:shadow-lg inline-flex items-center space-x-2 cursor-pointer"
+              className="px-6 py-3.5 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md hover:shadow-lg inline-flex items-center space-x-2 cursor-pointer"
             >
               <Store className="w-4 h-4" />
               <span>Register as a Merchant</span>

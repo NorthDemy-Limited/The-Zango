@@ -148,7 +148,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#E5E6E8]">
           <Link
             href="/"
-            className="inline-flex items-center space-x-2 text-xs font-bold text-[#535252] hover:text-[#C61D1F] uppercase tracking-wider transition-colors"
+            className="inline-flex items-center space-x-2 text-xs font-bold text-[#535252] hover:text-[#84CC16] uppercase tracking-wider transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Home</span>
@@ -156,7 +156,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
           <Link
             href={`/category/${articleCategoryLower}`}
-            className="inline-block bg-[#FDF2F2] text-[#C61D1F] hover:bg-[#C61D1F] hover:text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-sm transition-colors"
+            className="inline-block bg-[#F7FEE7] text-[#84CC16] hover:bg-[#84CC16] hover:text-black font-semibold text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-sm transition-colors"
           >
             {articleCategory}
           </Link>
@@ -178,7 +178,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             href={`/author/${authorSlug}`}
             className="flex items-center space-x-3.5 group cursor-pointer"
           >
-            <div className="relative w-11 h-11 rounded-full overflow-hidden bg-gray-100 border border-[#DFDFDF] group-hover:border-[#C61D1F] transition-colors">
+            <div className="relative w-11 h-11 rounded-full overflow-hidden bg-gray-100 border border-[#DFDFDF] group-hover:border-[#84CC16] transition-colors">
               {authorAvatar ? (
                 <Image
                   src={authorAvatar}
@@ -188,13 +188,13 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                   className="object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-[#C61D1F] text-white font-bold text-sm">
+                <div className="w-full h-full flex items-center justify-center bg-[#84CC16] text-black font-bold font-bold text-sm">
                   {authorName.charAt(0)}
                 </div>
               )}
             </div>
             <div>
-              <span className="text-sm font-bold text-[#000000] group-hover:text-[#C61D1F] transition-colors block">
+              <span className="text-sm font-bold text-[#000000] group-hover:text-[#84CC16] transition-colors block">
                 {authorName}
               </span>
               <span className="text-xs text-[#707070]">
@@ -235,14 +235,14 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         {articleTags && articleTags.length > 0 && (
           <div className="mt-8 pt-6 border-t border-[#E5E6E8] flex flex-wrap items-center gap-2">
             <span className="text-xs font-bold text-[#707070] uppercase flex items-center space-x-1 mr-1">
-              <Tag className="w-3 h-3 text-[#C61D1F]" />
+              <Tag className="w-3 h-3 text-[#84CC16]" />
               <span>Topic Tags:</span>
             </span>
             {articleTags.map((tag) => (
               <Link
                 key={tag}
                 href={`/search?q=${encodeURIComponent(tag)}`}
-                className="text-xs bg-gray-100 hover:bg-[#FDF2F2] hover:text-[#C61D1F] text-[#535252] px-3 py-1 rounded-full font-medium transition-colors"
+                className="text-xs bg-gray-100 hover:bg-[#F7FEE7] hover:text-[#84CC16] text-[#535252] px-3 py-1 rounded-full font-medium transition-colors"
               >
                 #{tag}
               </Link>
@@ -259,7 +259,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         <div className="mt-10 p-6 rounded-2xl bg-[#FAFAFA] border border-[#E5E6E8] flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-5 text-center sm:text-left">
           <Link
             href={`/author/${authorSlug}`}
-            className="relative w-16 h-16 rounded-full overflow-hidden shrink-0 border border-[#DFDFDF] hover:border-[#C61D1F] transition-colors"
+            className="relative w-16 h-16 rounded-full overflow-hidden shrink-0 border border-[#DFDFDF] hover:border-[#84CC16] transition-colors"
           >
             {authorAvatar ? (
               <Image
@@ -270,18 +270,18 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 className="object-cover"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-[#C61D1F] text-white font-bold text-xl">
+              <div className="w-full h-full flex items-center justify-center bg-[#84CC16] text-black font-bold font-bold text-xl">
                 {authorName.charAt(0)}
               </div>
             )}
           </Link>
           <div className="flex-1">
-            <span className="text-xs font-bold text-[#C61D1F] uppercase tracking-wider block mb-1">
+            <span className="text-xs font-bold text-[#84CC16] uppercase tracking-wider block mb-1">
               About the Author
             </span>
             <Link
               href={`/author/${authorSlug}`}
-              className="text-base font-bold text-[#000000] hover:text-[#C61D1F] transition-colors mb-1 inline-block"
+              className="text-base font-bold text-[#000000] hover:text-[#84CC16] transition-colors mb-1 inline-block"
             >
               {authorName}
             </Link>
@@ -290,7 +290,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             </p>
             <Link
               href={`/author/${authorSlug}`}
-              className="text-xs font-bold text-[#C61D1F] hover:underline"
+              className="text-xs font-bold text-[#84CC16] hover:underline"
             >
               View all articles by {authorName} →
             </Link>
@@ -303,7 +303,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         {/* Related Stories */}
         <div className="mt-16 pt-10 border-t border-[#E5E6E8]">
           <div className="flex items-center space-x-2.5 mb-8">
-            <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
+            <span className="w-2.5 h-5 bg-[#84CC16] rounded-xs inline-block" />
             <h3 className="text-xl font-extrabold text-[#000000] uppercase tracking-wide">
               Related Stories
             </h3>
@@ -328,10 +328,10 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                     />
                   </div>
                   <div className="p-4">
-                    <span className="text-[11px] font-bold text-[#C61D1F] block mb-1">
+                    <span className="text-[11px] font-bold text-[#84CC16] block mb-1">
                       {rel.publishedAt}
                     </span>
-                    <h4 className="text-sm font-bold text-[#000000] group-hover:text-[#C61D1F] transition-colors leading-snug line-clamp-2">
+                    <h4 className="text-sm font-bold text-[#000000] group-hover:text-[#84CC16] transition-colors leading-snug line-clamp-2">
                       {rel.title}
                     </h4>
                   </div>

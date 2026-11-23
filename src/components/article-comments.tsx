@@ -75,10 +75,10 @@ export default function ArticleComments({ articleSlug }: ArticleCommentsProps) {
       {/* Comments Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center space-x-2.5">
-          <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
+          <span className="w-2.5 h-5 bg-[#84CC16] rounded-xs inline-block" />
           <h3 className="text-xl font-extrabold text-[#000000] uppercase tracking-wide flex items-center space-x-2">
             <span>Reader Perspectives</span>
-            <span className="text-sm font-bold text-[#C61D1F] bg-[#FDF2F2] px-2.5 py-0.5 rounded-full">
+            <span className="text-sm font-bold text-[#84CC16] bg-[#F7FEE7] px-2.5 py-0.5 rounded-full">
               {comments.length}
             </span>
           </h3>
@@ -109,7 +109,7 @@ export default function ArticleComments({ articleSlug }: ArticleCommentsProps) {
               placeholder="e.g. Usman Bello"
               value={authorName}
               onChange={(e) => setAuthorName(e.target.value)}
-              className="w-full sm:w-80 px-3.5 py-2.5 text-xs rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-[#111111] focus:outline-hidden bg-white"
+              className="w-full sm:w-80 px-3.5 py-2.5 text-xs rounded-xl border border-[#DFDFDF] focus:border-[#84CC16] text-[#111111] focus:outline-hidden bg-white"
             />
           </div>
 
@@ -123,14 +123,14 @@ export default function ArticleComments({ articleSlug }: ArticleCommentsProps) {
               placeholder="Share constructive insights or local context relating to this story..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="w-full px-4 py-3 text-sm rounded-xl border border-[#DFDFDF] focus:border-[#C61D1F] text-[#111111] focus:outline-hidden bg-white resize-y leading-relaxed"
+              className="w-full px-4 py-3 text-sm rounded-xl border border-[#DFDFDF] focus:border-[#84CC16] text-[#111111] focus:outline-hidden bg-white resize-y leading-relaxed"
             />
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-6 py-3 bg-[#C61D1F] hover:bg-[#A51719] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors flex items-center space-x-2 shadow-sm cursor-pointer disabled:opacity-50"
+            className="px-6 py-3 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold font-bold text-xs uppercase tracking-wider rounded-xl transition-colors flex items-center space-x-2 shadow-sm cursor-pointer disabled:opacity-50"
           >
             <span>{isSubmitting ? "Posting..." : "Post Perspective"}</span>
             <Send className="w-3.5 h-3.5" />
@@ -167,7 +167,7 @@ export default function ArticleComments({ articleSlug }: ArticleCommentsProps) {
               <div className="pl-10.5 flex items-center space-x-4">
                 <button
                   onClick={() => handleLike(comment.id)}
-                  className="inline-flex items-center space-x-1.5 text-xs text-[#707070] hover:text-[#C61D1F] transition-colors cursor-pointer"
+                  className="inline-flex items-center space-x-1.5 text-xs text-[#707070] hover:text-[#84CC16] transition-colors cursor-pointer"
                 >
                   <ThumbsUp className="w-3.5 h-3.5" />
                   <span>{comment.likes || 0} Helpful</span>

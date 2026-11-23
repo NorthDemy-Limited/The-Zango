@@ -92,7 +92,7 @@ export default function ImageUploader({
         <button
           type="button"
           onClick={() => setShowPresets(!showPresets)}
-          className="text-xs font-semibold text-[#C61D1F] hover:underline cursor-pointer flex items-center space-x-1"
+          className="text-xs font-semibold text-[#84CC16] hover:underline cursor-pointer flex items-center space-x-1"
         >
           <ImageIcon className="w-3.5 h-3.5" />
           <span>{showPresets ? "Hide Editorial Stock" : "Choose from Editorial Stock"}</span>
@@ -130,7 +130,7 @@ export default function ImageUploader({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="p-1.5 bg-white text-[#111111] hover:text-[#C61D1F] rounded-md text-xs font-bold shadow-md cursor-pointer flex items-center space-x-1"
+                  className="p-1.5 bg-white text-[#111111] hover:text-[#84CC16] rounded-md text-xs font-bold shadow-md cursor-pointer flex items-center space-x-1"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   <span>Replace</span>
@@ -157,7 +157,7 @@ export default function ImageUploader({
           className={`sm:col-span-7 border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
             isDragging
               ? "border-emerald-600 bg-emerald-50/50 ring-2 ring-emerald-200"
-              : "border-[#DFDFDF] hover:border-[#C61D1F] bg-[#FAFAFA] hover:bg-[#FDF2F2]/30"
+              : "border-[#DFDFDF] hover:border-[#84CC16] bg-[#FAFAFA] hover:bg-[#F7FEE7]/30"
           }`}
         >
           {isUploading ? (
@@ -168,7 +168,7 @@ export default function ImageUploader({
           ) : (
             <>
               <UploadCloud
-                className={`w-7 h-7 mb-1.5 ${isDragging ? "text-emerald-600" : "text-[#C61D1F]"}`}
+                className={`w-7 h-7 mb-1.5 ${isDragging ? "text-emerald-600" : "text-[#84CC16]"}`}
               />
               <span className="text-xs font-bold text-[#111111] block mb-0.5">
                 {isDragging ? "Drop image to upload" : "Click to upload or drag image here"}
@@ -211,7 +211,7 @@ export default function ImageUploader({
                   onChange(preset.url);
                   setShowPresets(false);
                 }}
-                className={`relative h-16 rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${value === preset.url ? "border-[#C61D1F] ring-2 ring-red-200" : "border-transparent hover:border-gray-400"
+                className={`relative h-16 rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${value === preset.url ? "border-[#84CC16] ring-2 ring-red-200" : "border-transparent hover:border-gray-400"
                   }`}
               >
                 <Image

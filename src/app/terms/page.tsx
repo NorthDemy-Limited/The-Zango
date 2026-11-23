@@ -11,7 +11,7 @@ export default function TermsPage() {
         <div className="mb-8">
           <Link
             href="/"
-            className="inline-flex items-center space-x-2 text-xs font-bold text-[#535252] hover:text-[#C61D1F] uppercase tracking-wider transition-colors"
+            className="inline-flex items-center space-x-2 text-xs font-bold text-[#535252] hover:text-[#84CC16] uppercase tracking-wider transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Return to Front Page</span>
@@ -20,7 +20,7 @@ export default function TermsPage() {
 
         {/* Header */}
         <div className="mb-10 pb-6 border-b border-[#E5E6E8]">
-          <div className="inline-flex items-center space-x-2 text-[#C61D1F] text-xs font-bold uppercase tracking-widest mb-3">
+          <div className="inline-flex items-center space-x-2 text-[#84CC16] text-xs font-bold uppercase tracking-widest mb-3">
             <FileText className="w-3.5 h-3.5" />
             <span>Editorial & Commercial Policies</span>
           </div>
