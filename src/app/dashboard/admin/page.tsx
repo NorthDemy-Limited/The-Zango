@@ -1254,49 +1254,6 @@ function AdminDashboardContent() {
         </div>
       </header>
 
-      {/* Mobile Sticky Tab Strip for 1-Tap Switching */}
-      <div className="md:hidden bg-white/95 backdrop-blur-md border-b border-slate-200/80 sticky top-16 z-30 px-3 py-2 overflow-x-auto no-scrollbar flex items-center space-x-1.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.02)]">
-        {[
-          { id: "overview" as const, label: "Dashboard", count: null },
-          { id: "dispatches" as const, label: "Dispatches", count: articles.length },
-          { id: "reviewQueue" as const, label: "Queue", count: pendingSubmissions.length, alert: pendingSubmissions.length > 0 },
-          { id: "merchants" as const, label: "Merchants", count: pendingMerchants.length, alert: pendingMerchants.length > 0 },
-          { id: "team" as const, label: "Staff", count: teamMembers.length },
-          { id: "desks" as const, label: "Desks", count: 11 },
-          { id: "subscribers" as const, label: "Subscribers", count: subscribers.length },
-          { id: "settings" as const, label: "Settings", count: null },
-        ].map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => handleTabSelect(tab.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center space-x-1.5 shrink-0 cursor-pointer ${
-                isActive
-                  ? "bg-[#84CC16] text-black font-extrabold shadow-xs"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              }`}
-            >
-              <span>{tab.label}</span>
-              {tab.count !== null && (
-                <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                    isActive
-                      ? "bg-black/15 text-black font-extrabold"
-                      : tab.alert
-                      ? "bg-amber-100 text-amber-800"
-                      : "bg-slate-200/80 text-slate-600"
-                  }`}
-                >
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
       {/* Mobile Slide-Over Navigation Drawer */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 md:hidden flex">
