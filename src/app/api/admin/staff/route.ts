@@ -111,7 +111,7 @@ export async function POST(request: Request) {
         credentials: {
           username: assignedUsername,
           defaultPassword,
-          emailSent: emailResult.success,
+          emailSent: emailResult.success && !emailResult.simulated,
           simulated: !!emailResult.simulated,
         },
       },

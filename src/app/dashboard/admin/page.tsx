@@ -4165,14 +4165,28 @@ function AdminDashboardContent() {
               </div>
 
               {/* Email Status Indicator */}
-              <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex items-start space-x-2.5">
-                <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <div
+                className={`p-3.5 rounded-2xl border flex items-start space-x-2.5 ${
+                  staffCredentialsModal.emailSent
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+                    : "bg-amber-50 border-amber-200 text-amber-900"
+                }`}
+              >
+                {staffCredentialsModal.emailSent ? (
+                  <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                )}
                 <div className="space-y-0.5">
-                  <p className="font-bold">Automated Onboarding Dispatch</p>
-                  <p className="text-[11px] text-emerald-700">
+                  <p className="font-bold">
+                    {staffCredentialsModal.emailSent
+                      ? "Automated Onboarding Email Dispatched"
+                      : "Email Pending — SMTP Not Configured"}
+                  </p>
+                  <p className={`text-[11px] ${staffCredentialsModal.emailSent ? "text-emerald-700" : "text-amber-700"}`}>
                     {staffCredentialsModal.emailSent
                       ? `Official welcome email with login instructions has been dispatched to ${staffCredentialsModal.email}.`
-                      : `Clearance generated for ${staffCredentialsModal.email}. Dispatched to server log for immediate testing.`}
+                      : `Live SMTP credentials are not yet configured in environment variables. Please copy the temporary credentials below and share them directly with ${staffCredentialsModal.memberName}.`}
                   </p>
                 </div>
               </div>
