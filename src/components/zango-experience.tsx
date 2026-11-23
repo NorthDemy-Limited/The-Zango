@@ -10,7 +10,7 @@ export default function ZangoExperience() {
         
         {/* Header */}
         <div className="flex items-center space-x-2.5 pb-3.5 mb-8 border-b border-[#E5E6E8]">
-          <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
+          <span className="w-2.5 h-5 bg-[#84CC16] rounded-xs inline-block" />
           <h2 className="text-xl sm:text-2xl font-extrabold text-[#000000] tracking-wide uppercase">
             The Zango Experience
           </h2>
@@ -30,7 +30,7 @@ export default function ZangoExperience() {
 
             {/* Content overlay */}
             <div className="absolute inset-0 p-6 sm:p-10 lg:p-14 flex flex-col justify-center max-w-2xl text-white">
-              <div className="inline-flex items-center space-x-2 bg-[#C61D1F] text-white px-3 py-1 rounded-sm text-xs font-bold uppercase tracking-wider mb-4 w-fit shadow-xs">
+              <div className="inline-flex items-center space-x-2 bg-[#84CC16] text-black font-bold px-3 py-1 rounded-sm text-xs font-bold uppercase tracking-wider mb-4 w-fit shadow-xs">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Multimedia & Deep Dives</span>
               </div>
@@ -46,7 +46,7 @@ export default function ZangoExperience() {
               <div className="flex flex-wrap items-center gap-4">
                 <Link
                   href="/scope"
-                  className="px-6 py-3 bg-[#C61D1F] hover:bg-[#A51719] text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-colors flex items-center space-x-2 shadow-md cursor-pointer"
+                  className="px-6 py-3 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold text-xs font-bold uppercase tracking-wider rounded-lg transition-colors flex items-center space-x-2 shadow-md cursor-pointer"
                 >
                   <span>Explore Zango Scope</span>
                   <ArrowRight className="w-3.5 h-3.5" />

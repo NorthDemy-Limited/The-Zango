@@ -1,19 +1,78 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Wifi, WifiOff, RefreshCw, X } from "lucide-react";
 import { useOnlineStatus } from "@/lib/offline-sync";
 
-export default function OfflineManager() {
-  const { isOnline, wasOffline, pendingCount, isSyncing, syncNow, dismissWasOffline } = useOnlineStatus();
-  const [dismissedOffline, setDismissedOffline] = useState(false);
-  const [prevIsOnline, setPrevIsOnline] = useState(isOnline);
+const OFFLINE_DISMISSED_KEY = "thezango_offline_toast_dismissed";
 
-  // Reset dismiss state when online status transitions (standard React pattern)
+export default function OfflineManager() {
+  const {
+    isOnline,
+    wasOffline,
+    pendingCount,
+    isSyncing,
+    syncNow,
+    dismissWasOffline,
+    checkConnectivity,
+  } = useOnlineStatus();
+
+  const [dismissedOffline, setDismissedOffline] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return sessionStorage.getItem(OFFLINE_DISMISSED_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  const [isRetrying, setIsRetrying] = useState(false);
+
+  // Auto-dismiss "Connection Restored" after 3.5 seconds
+  useEffect(() => {
+    if (wasOffline) {
+      const timer = setTimeout(() => {
+        dismissWasOffline();
+      }, 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [wasOffline, dismissWasOffline]);
+
+  const [prevIsOnline, setPrevIsOnline] = useState(isOnline);
   if (prevIsOnline !== isOnline) {
     setPrevIsOnline(isOnline);
-    setDismissedOffline(false);
+    if (isOnline) {
+      setDismissedOffline(false);
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.removeItem(OFFLINE_DISMISSED_KEY);
+        } catch {
+          // ignore
+        }
+      }
+    }
   }
+
+  const handleDismissOffline = () => {
+    setDismissedOffline(true);
+    try {
+      sessionStorage.setItem(OFFLINE_DISMISSED_KEY, "1");
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleRetry = useCallback(async () => {
+    setIsRetrying(true);
+    try {
+      const online = await checkConnectivity();
+      if (online) {
+        setDismissedOffline(false);
+      }
+    } finally {
+      setIsRetrying(false);
+    }
+  }, [checkConnectivity]);
 
   // Register service worker in production browser environments
   useEffect(() => {
@@ -31,12 +90,12 @@ export default function OfflineManager() {
     }
   }, []);
 
-  // If online and wasn't offline, render nothing
+  // If online and wasOffline is resolved, render nothing
   if (isOnline && !wasOffline) {
     return null;
   }
 
-  // If offline but user explicitly dismissed the floating pill
+  // If offline but user explicitly dismissed it for this session, render nothing
   if (!isOnline && dismissedOffline) {
     return null;
   }
@@ -66,19 +125,17 @@ export default function OfflineManager() {
           </div>
           <div className="flex items-center space-x-1.5 pl-2 border-l border-slate-800">
             <button
-              onClick={() => {
-                if (typeof window !== "undefined") {
-                  window.location.reload();
-                }
-              }}
-              className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 font-bold text-[11px] transition-colors cursor-pointer"
+              onClick={handleRetry}
+              disabled={isRetrying}
+              className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 font-bold text-[11px] transition-colors cursor-pointer flex items-center space-x-1 disabled:opacity-50"
               title="Test connection"
             >
-              Retry
+              {isRetrying && <RefreshCw className="w-3 h-3 animate-spin" />}
+              <span>{isRetrying ? "Checking..." : "Retry"}</span>
             </button>
             <button
-              onClick={() => setDismissedOffline(true)}
-              className="text-slate-400 hover:text-slate-200 p-1 rounded-md"
+              onClick={handleDismissOffline}
+              className="text-slate-400 hover:text-slate-200 p-1 rounded-md cursor-pointer"
               title="Dismiss banner"
             >
               <X className="w-3.5 h-3.5" />
@@ -86,15 +143,16 @@ export default function OfflineManager() {
           </div>
         </div>
       ) : wasOffline ? (
-        <div className="flex items-center space-x-3 bg-emerald-950/95 text-white px-4 py-3 rounded-2xl shadow-2xl border border-emerald-800/80 backdrop-blur-md text-xs">
-          <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+        <div className="flex items-center space-x-3 bg-slate-900/95 text-white px-4 py-3 rounded-2xl shadow-2xl border border-[#84CC16]/40 backdrop-blur-md text-xs">
+          <div className="w-8 h-8 rounded-xl bg-[#84CC16]/20 text-[#84CC16] flex items-center justify-center shrink-0">
             <Wifi className="w-4 h-4" />
           </div>
           <div className="space-y-0.5 pr-1">
-            <p className="font-bold text-emerald-100">
-              Connection Restored
+            <p className="font-bold text-slate-100 flex items-center space-x-1.5">
+              <span>Connection Restored</span>
+              <span className="w-2 h-2 rounded-full bg-[#84CC16] inline-block animate-pulse" />
             </p>
-            <p className="text-[11px] text-emerald-300/80">
+            <p className="text-[11px] text-slate-300">
               {isSyncing
                 ? "Synchronising offline queue with newsroom..."
                 : pendingCount > 0
@@ -102,12 +160,12 @@ export default function OfflineManager() {
                 : "All drafts and dispatches synchronised."}
             </p>
           </div>
-          <div className="flex items-center space-x-1.5 pl-2 border-l border-emerald-900/60">
+          <div className="flex items-center space-x-1.5 pl-2 border-l border-slate-800">
             {pendingCount > 0 && (
               <button
                 onClick={syncNow}
                 disabled={isSyncing}
-                className="px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-600 rounded-lg text-white font-bold text-[11px] transition-colors cursor-pointer flex items-center space-x-1"
+                className="px-2.5 py-1.5 bg-[#84CC16] hover:bg-[#65A30D] rounded-lg text-black font-bold text-[11px] transition-colors cursor-pointer flex items-center space-x-1"
               >
                 <RefreshCw className={`w-3 h-3 ${isSyncing ? "animate-spin" : ""}`} />
                 <span>Sync</span>
@@ -115,7 +173,7 @@ export default function OfflineManager() {
             )}
             <button
               onClick={dismissWasOffline}
-              className="text-emerald-400 hover:text-emerald-200 p-1 rounded-md"
+              className="text-slate-400 hover:text-slate-200 p-1 rounded-md cursor-pointer"
               title="Dismiss"
             >
               <X className="w-3.5 h-3.5" />

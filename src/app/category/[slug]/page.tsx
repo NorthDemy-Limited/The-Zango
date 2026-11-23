@@ -44,17 +44,17 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         <div className="flex items-center justify-between mb-8">
           <Link
             href="/categories"
-            className="inline-flex items-center space-x-2 text-xs font-bold text-[#535252] hover:text-[#C61D1F] uppercase tracking-wider transition-colors"
+            className="inline-flex items-center space-x-2 text-xs font-bold text-[#535252] hover:text-[#84CC16] uppercase tracking-wider transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Browse All Desks</span>
           </Link>
 
           {/* Real-time Desk Status Indicator */}
-          <div className="inline-flex items-center space-x-2 bg-[#FDF2F2] border border-red-200/80 px-3 py-1 rounded-full text-xs font-bold text-[#C61D1F]">
+          <div className="inline-flex items-center space-x-2 bg-[#F7FEE7] border border-red-200/80 px-3 py-1 rounded-full text-xs font-bold text-[#84CC16]">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#C61D1F]"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#84CC16]"></span>
             </span>
             <span className="uppercase tracking-wider">
               {category.status === "breaking" ? "Breaking Coverage Active" : "Live News Desk"}
@@ -64,9 +64,9 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         </div>
 
         {/* Category Header Banner */}
-        <div className="bg-[#FDF2F2] border border-red-100 rounded-3xl p-6 sm:p-10 mb-10 shadow-2xs">
+        <div className="bg-[#F7FEE7] border border-red-100 rounded-3xl p-6 sm:p-10 mb-10 shadow-2xs">
           <div className="max-w-3xl">
-            <div className="inline-flex items-center space-x-2 text-[#C61D1F] text-xs font-bold uppercase tracking-widest mb-2">
+            <div className="inline-flex items-center space-x-2 text-[#84CC16] text-xs font-bold uppercase tracking-widest mb-2">
               <Tag className="w-3.5 h-3.5" />
               <span>Editorial Desk</span>
             </div>
@@ -78,7 +78,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
             </p>
             
             <div className="flex flex-wrap items-center gap-3">
-              <span className="inline-flex items-center space-x-1.5 bg-white text-[#C61D1F] border border-red-200 text-xs font-bold px-3 py-1 rounded-full shadow-2xs">
+              <span className="inline-flex items-center space-x-1.5 bg-white text-[#84CC16] border border-red-200 text-xs font-bold px-3 py-1 rounded-full shadow-2xs">
                 <span>{articles.length}</span>
                 <span>{articles.length === 1 ? "Story Filed" : "Stories Filed"}</span>
               </span>
@@ -96,7 +96,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
             {articles.map((article) => (
               <article
                 key={article.id}
-                className="group bg-white border border-[#E5E6E8] hover:border-[#C61D1F] rounded-2xl overflow-hidden shadow-2xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
+                className="group bg-white border border-[#E5E6E8] hover:border-[#84CC16] rounded-2xl overflow-hidden shadow-2xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
               >
                 <div>
                   {/* Thumbnail */}
@@ -121,7 +121,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                       <span>{article.readTime}</span>
                     </div>
 
-                    <h2 className="text-base font-bold text-[#000000] group-hover:text-[#C61D1F] transition-colors leading-snug line-clamp-2 mb-2.5">
+                    <h2 className="text-base font-bold text-[#000000] group-hover:text-[#84CC16] transition-colors leading-snug line-clamp-2 mb-2.5">
                       <Link href={`/article/${article.slug}`}>
                         {article.title}
                       </Link>
@@ -138,13 +138,13 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                   <div className="pt-3 border-t border-[#E5E6E8] flex items-center justify-between text-xs">
                     <Link
                       href={`/author/${article.author.slug}`}
-                      className="font-semibold text-[#535252] hover:text-[#C61D1F] transition-colors"
+                      className="font-semibold text-[#535252] hover:text-[#84CC16] transition-colors"
                     >
                       By {article.author.name}
                     </Link>
                     <Link
                       href={`/article/${article.slug}`}
-                      className="inline-flex items-center space-x-1 text-[#C61D1F] font-bold uppercase tracking-wider hover:underline"
+                      className="inline-flex items-center space-x-1 text-[#84CC16] font-bold uppercase tracking-wider hover:underline"
                     >
                       <span>Read</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -165,7 +165,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
             </p>
             <Link
               href="/"
-              className="px-5 py-2.5 bg-[#C61D1F] text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-[#A51719] transition-colors inline-block"
+              className="px-5 py-2.5 bg-[#84CC16] text-black font-bold rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-[#65A30D] transition-colors inline-block"
             >
               Return to Front Page
             </Link>
@@ -175,7 +175,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         {/* Quick Desk Switcher Navigation Bar */}
         <div className="pt-8 border-t border-[#E5E6E8]">
           <div className="flex items-center space-x-2 mb-4">
-            <Layers className="w-4 h-4 text-[#C61D1F]" />
+            <Layers className="w-4 h-4 text-[#84CC16]" />
             <h3 className="text-xs font-bold text-[#000000] uppercase tracking-wider">
               Explore Other Desks
             </h3>
@@ -189,8 +189,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                   href={`/category/${cat.slug}`}
                   className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all ${
                     isCurrent
-                      ? "bg-[#C61D1F] text-white border-[#C61D1F] shadow-xs"
-                      : "bg-white text-[#535252] border-[#E5E6E8] hover:border-[#C61D1F] hover:text-[#C61D1F]"
+                      ? "bg-[#84CC16] text-black font-bold border-[#84CC16] shadow-xs"
+                      : "bg-white text-[#535252] border-[#E5E6E8] hover:border-[#84CC16] hover:text-[#84CC16]"
                   }`}
                 >
                   {cat.name}

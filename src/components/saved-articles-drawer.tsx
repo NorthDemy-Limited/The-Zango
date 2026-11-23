@@ -93,7 +93,7 @@ export default function SavedArticlesDrawer({ isOpen, onClose }: SavedArticlesDr
           {/* Header */}
           <div className="p-5 border-b border-[#E5E6E8] flex items-center justify-between bg-slate-50/80">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-lg bg-[#C61D1F] text-white flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-[#84CC16] text-black font-bold flex items-center justify-center">
                 <Bookmark className="w-4 h-4 fill-white" />
               </div>
               <div>
@@ -152,7 +152,7 @@ export default function SavedArticlesDrawer({ isOpen, onClose }: SavedArticlesDr
                   {/* Info */}
                   <div className="flex-1 min-w-0 flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center justify-between text-[10px] font-bold text-[#C61D1F] uppercase tracking-wider mb-1">
+                      <div className="flex items-center justify-between text-[10px] font-bold text-[#84CC16] uppercase tracking-wider mb-1">
                         <span>{article.category}</span>
                         <button
                           onClick={(e) => {
@@ -169,7 +169,7 @@ export default function SavedArticlesDrawer({ isOpen, onClose }: SavedArticlesDr
                       <Link
                         href={`/article/${article.slug}`}
                         onClick={onClose}
-                        className="text-xs font-bold text-slate-900 group-hover:text-[#C61D1F] transition-colors line-clamp-2 leading-snug"
+                        className="text-xs font-bold text-slate-900 group-hover:text-[#84CC16] transition-colors line-clamp-2 leading-snug"
                       >
                         {article.title}
                       </Link>
@@ -202,7 +202,7 @@ export default function SavedArticlesDrawer({ isOpen, onClose }: SavedArticlesDr
               <button
                 type="button"
                 onClick={onClose}
-                className="py-2 px-4 rounded-xl bg-[#000000] hover:bg-[#C61D1F] text-white text-xs font-bold uppercase tracking-wider transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs"
+                className="py-2 px-4 rounded-xl bg-[#000000] hover:bg-[#84CC16] hover:text-black text-white text-xs font-bold uppercase tracking-wider transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs"
               >
                 <span>Continue Reading</span>
                 <ArrowRight className="w-3.5 h-3.5" />

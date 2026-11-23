@@ -88,14 +88,14 @@ export default function ArticleReaderToolbar({ title, slug }: ArticleReaderToolb
     <>
       {/* Sticky Top Reading Progress Bar */}
       <div
-        className="fixed top-0 left-0 right-0 h-1 bg-[#C61D1F] z-50 transition-all duration-150"
+        className="fixed top-0 left-0 right-0 h-1 bg-[#84CC16] z-50 transition-all duration-150"
         style={{ width: `${scrollProgress}%` }}
       />
 
       {/* Share & Bookmark Actions Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 py-4 border-t border-[#E5E6E8]">
         <div className="flex items-center space-x-2">
-          <Share2 className="w-4 h-4 text-[#C61D1F]" />
+          <Share2 className="w-4 h-4 text-[#84CC16]" />
           <span className="text-xs font-bold text-[#000000] uppercase tracking-wider">
             Share Story:
           </span>
@@ -105,7 +105,7 @@ export default function ArticleReaderToolbar({ title, slug }: ArticleReaderToolb
           {/* Quick Web Share / Copy Link Button */}
           <button
             onClick={handleShare}
-            className="px-3.5 py-1.5 rounded-md bg-[#000000] hover:bg-[#C61D1F] text-white text-xs font-semibold flex items-center space-x-1.5 transition-colors cursor-pointer"
+            className="px-3.5 py-1.5 rounded-md bg-[#000000] hover:bg-[#84CC16] hover:text-black text-white text-xs font-semibold flex items-center space-x-1.5 transition-colors cursor-pointer"
           >
             {copied ? (
               <>
@@ -137,7 +137,7 @@ export default function ArticleReaderToolbar({ title, slug }: ArticleReaderToolb
             href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(articleUrl)}&via=thezangong&hashtags=TheZango,NorthernNigeria,News`}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 py-1.5 rounded-md bg-[#F5F5F5] hover:bg-[#C61D1F] hover:text-white text-xs font-semibold text-[#535252] flex items-center space-x-1.5 transition-colors"
+            className="px-3 py-1.5 rounded-md bg-[#F5F5F5] hover:bg-[#84CC16] hover:text-black font-semibold text-xs font-semibold text-[#535252] flex items-center space-x-1.5 transition-colors"
             title="Share on X (Twitter)"
           >
             <TwitterIcon className="w-3.5 h-3.5" />
@@ -149,7 +149,7 @@ export default function ArticleReaderToolbar({ title, slug }: ArticleReaderToolb
             href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 py-1.5 rounded-md bg-[#F5F5F5] hover:bg-[#C61D1F] hover:text-white text-xs font-semibold text-[#535252] flex items-center space-x-1.5 transition-colors"
+            className="px-3 py-1.5 rounded-md bg-[#F5F5F5] hover:bg-[#84CC16] hover:text-black font-semibold text-xs font-semibold text-[#535252] flex items-center space-x-1.5 transition-colors"
             title="Share on Facebook"
           >
             <FacebookIcon className="w-3.5 h-3.5" />
@@ -161,7 +161,7 @@ export default function ArticleReaderToolbar({ title, slug }: ArticleReaderToolb
             href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(articleUrl)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 py-1.5 rounded-md bg-[#F5F5F5] hover:bg-[#C61D1F] hover:text-white text-xs font-semibold text-[#535252] flex items-center space-x-1.5 transition-colors"
+            className="px-3 py-1.5 rounded-md bg-[#F5F5F5] hover:bg-[#84CC16] hover:text-black font-semibold text-xs font-semibold text-[#535252] flex items-center space-x-1.5 transition-colors"
             title="Share on LinkedIn"
           >
             <LinkedinIcon className="w-3.5 h-3.5" />
@@ -174,8 +174,8 @@ export default function ArticleReaderToolbar({ title, slug }: ArticleReaderToolb
             aria-label="Bookmark story"
             title={isBookmarked ? "Saved in Reading List" : "Bookmark this dispatch"}
             className={`p-1.5 rounded-md border transition-colors cursor-pointer ${isBookmarked
-                ? "bg-[#FDF2F2] border-[#C61D1F] text-[#C61D1F]"
-                : "bg-white border-[#DFDFDF] text-[#707070] hover:text-[#C61D1F]"
+                ? "bg-[#F7FEE7] border-[#84CC16] text-[#84CC16]"
+                : "bg-white border-[#DFDFDF] text-[#707070] hover:text-[#84CC16]"
               }`}
           >
             <Bookmark className={`w-4 h-4 ${isBookmarked ? "fill-current" : ""}`} />
@@ -189,7 +189,7 @@ export default function ArticleReaderToolbar({ title, slug }: ArticleReaderToolb
               <button
                 type="button"
                 onClick={() => setDrawerOpen(true)}
-                className="text-[#C61D1F] hover:underline ml-1 cursor-pointer"
+                className="text-[#84CC16] hover:underline ml-1 cursor-pointer"
               >
                 View
               </button>

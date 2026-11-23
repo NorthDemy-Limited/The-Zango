@@ -10,7 +10,7 @@ export default function AboutPage() {
         
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center space-x-2 text-[#C61D1F] text-xs font-bold uppercase tracking-widest mb-3">
+          <div className="inline-flex items-center space-x-2 text-[#84CC16] text-xs font-bold uppercase tracking-widest mb-3">
             <Globe2 className="w-3.5 h-3.5" />
             <span>Our Mission</span>
           </div>
@@ -36,7 +36,7 @@ export default function AboutPage() {
         {/* Pillars */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
           <div className="p-8 rounded-2xl border border-[#E5E6E8] bg-[#FAFAFA]">
-            <Target className="w-8 h-8 text-[#C61D1F] mb-4" />
+            <Target className="w-8 h-8 text-[#84CC16] mb-4" />
             <h3 className="text-lg font-bold text-[#000000] mb-2">Rigorous Fact-Checking</h3>
             <p className="text-xs sm:text-sm text-[#707070] leading-relaxed">
               We uphold uncompromising journalistic standards. Our newsroom independently verifies economic data, company announcements, and public disclosures.
@@ -44,7 +44,7 @@ export default function AboutPage() {
           </div>
 
           <div className="p-8 rounded-2xl border border-[#E5E6E8] bg-[#FAFAFA]">
-            <Users className="w-8 h-8 text-[#C61D1F] mb-4" />
+            <Users className="w-8 h-8 text-[#84CC16] mb-4" />
             <h3 className="text-lg font-bold text-[#000000] mb-2">Ground-Level Perspective</h3>
             <p className="text-xs sm:text-sm text-[#707070] leading-relaxed">
               Our network of correspondents lives and works directly within communities from Sokoto, Kano, and Maiduguri to Kaduna, Jos, and Abuja.
@@ -52,7 +52,7 @@ export default function AboutPage() {
           </div>
 
           <div className="p-8 rounded-2xl border border-[#E5E6E8] bg-[#FAFAFA]">
-            <ShieldCheck className="w-8 h-8 text-[#C61D1F] mb-4" />
+            <ShieldCheck className="w-8 h-8 text-[#84CC16] mb-4" />
             <h3 className="text-lg font-bold text-[#000000] mb-2">Editorial Independence</h3>
             <p className="text-xs sm:text-sm text-[#707070] leading-relaxed">
               Our reporting is free from commercial or political censorship. We serve our readers first, delivering transparent insights without bias.
@@ -70,7 +70,7 @@ export default function AboutPage() {
           </p>
           <Link
             href="/contact"
-            className="px-6 py-3 bg-[#C61D1F] hover:bg-[#A51719] text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-colors inline-flex items-center space-x-2"
+            className="px-6 py-3 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold font-bold text-xs uppercase tracking-wider rounded-lg transition-colors inline-flex items-center space-x-2"
           >
             <span>Contact the Newsroom</span>
             <ArrowRight className="w-3.5 h-3.5" />

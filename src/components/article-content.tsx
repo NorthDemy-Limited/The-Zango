@@ -66,7 +66,7 @@ export default function ArticleContent({ content }: ArticleContentProps) {
           return (
             <div
               key={`html-block-${idx}`}
-              className="[&>p]:mb-6 [&>p]:leading-relaxed sm:[&>p]:leading-loose [&>h2]:text-2xl sm:[&>h2]:text-3xl [&>h2]:font-extrabold [&>h2]:mt-10 [&>h2]:mb-4 [&>h2]:border-b [&>h2]:border-[#E5E6E8] [&>h2]:pb-2 [&>h3]:text-xl sm:[&>h3]:text-2xl [&>h3]:font-bold [&>h3]:mt-8 [&>h3]:mb-3 [&>blockquote]:my-8 [&>blockquote]:pl-5 sm:[&>blockquote]:pl-7 [&>blockquote]:border-l-4 [&>blockquote]:border-[#C61D1F] [&>blockquote]:bg-[#FDF2F2]/60 [&>blockquote]:py-4 [&>blockquote]:px-5 [&>blockquote]:rounded-r-2xl [&>blockquote]:italic [&>blockquote]:text-lg [&>ul]:list-disc [&>ul]:list-inside [&>ul]:my-5 [&>ul]:space-y-2 [&>ol]:list-decimal [&>ol]:list-inside [&>ol]:my-5 [&>ol]:space-y-2 [&>img]:rounded-2xl [&>img]:shadow-xs [&>img]:my-6 [&>img]:max-w-full [&>table]:w-full [&>table]:border-collapse [&>table]:my-6 [&_th]:bg-gray-100 [&_th]:p-3 [&_td]:p-3 [&_td]:border [&_td]:border-gray-200"
+              className="[&>p]:mb-6 [&>p]:leading-relaxed sm:[&>p]:leading-loose [&>h2]:text-2xl sm:[&>h2]:text-3xl [&>h2]:font-extrabold [&>h2]:mt-10 [&>h2]:mb-4 [&>h2]:border-b [&>h2]:border-[#E5E6E8] [&>h2]:pb-2 [&>h3]:text-xl sm:[&>h3]:text-2xl [&>h3]:font-bold [&>h3]:mt-8 [&>h3]:mb-3 [&>blockquote]:my-8 [&>blockquote]:pl-5 sm:[&>blockquote]:pl-7 [&>blockquote]:border-l-4 [&>blockquote]:border-[#84CC16] [&>blockquote]:bg-[#F7FEE7]/60 [&>blockquote]:py-4 [&>blockquote]:px-5 [&>blockquote]:rounded-r-2xl [&>blockquote]:italic [&>blockquote]:text-lg [&>ul]:list-disc [&>ul]:list-inside [&>ul]:my-5 [&>ul]:space-y-2 [&>ol]:list-decimal [&>ol]:list-inside [&>ol]:my-5 [&>ol]:space-y-2 [&>img]:rounded-2xl [&>img]:shadow-xs [&>img]:my-6 [&>img]:max-w-full [&>table]:w-full [&>table]:border-collapse [&>table]:my-6 [&_th]:bg-gray-100 [&_th]:p-3 [&_td]:p-3 [&_td]:border [&_td]:border-gray-200"
               dangerouslySetInnerHTML={{ __html: chunk }}
             />
           );
@@ -173,9 +173,9 @@ export default function ArticleContent({ content }: ArticleContentProps) {
           return (
             <blockquote
               key={`quote-${index}`}
-              className="my-8 pl-5 sm:pl-7 border-l-4 border-[#C61D1F] bg-[#FDF2F2]/60 py-4 px-5 rounded-r-2xl italic text-[#111111] text-lg sm:text-xl font-medium"
+              className="my-8 pl-5 sm:pl-7 border-l-4 border-[#84CC16] bg-[#F7FEE7]/60 py-4 px-5 rounded-r-2xl italic text-[#111111] text-lg sm:text-xl font-medium"
             >
-              <Quote className="w-5 h-5 text-[#C61D1F] mb-2 fill-current opacity-70" />
+              <Quote className="w-5 h-5 text-[#84CC16] mb-2 fill-current opacity-70" />
               <p>{quoteText}</p>
             </blockquote>
           );

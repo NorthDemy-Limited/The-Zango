@@ -14,7 +14,7 @@ const jakarta = localFont({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#C61D1F",
+  themeColor: "#84CC16",
 };
 
 export const metadata: Metadata = {

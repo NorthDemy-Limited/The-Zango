@@ -39,7 +39,7 @@ export default function HeroSection({ featuredArticle, latestNews }: HeroSection
                   
                   {/* Category / Featured Pill */}
                   <div className="mb-3">
-                    <span className="inline-block bg-[#C61D1F] text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-sm shadow-sm">
+                    <span className="inline-block bg-[#84CC16] text-black font-bold text-[11px] sm:text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-sm shadow-sm">
                       FEATURED
                     </span>
                   </div>
@@ -79,7 +79,7 @@ export default function HeroSection({ featuredArticle, latestNews }: HeroSection
                     {/* Read More CTA */}
                     <Link
                       href={`/article/${featuredArticle.slug}`}
-                      className="inline-flex items-center space-x-2 bg-white text-[#111111] hover:bg-[#C61D1F] hover:text-white px-4 py-2 rounded-full font-semibold text-xs transition-colors duration-200 cursor-pointer"
+                      className="inline-flex items-center space-x-2 bg-white text-[#111111] hover:bg-[#84CC16] hover:text-black font-semibold px-4 py-2 rounded-full font-semibold text-xs transition-colors duration-200 cursor-pointer"
                     >
                       <span>Read More</span>
                       <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
@@ -97,19 +97,19 @@ export default function HeroSection({ featuredArticle, latestNews }: HeroSection
               {/* Section Header */}
               <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-[#E5E6E8]">
                 <div className="flex items-center space-x-2.5">
-                  <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
+                  <span className="w-2.5 h-5 bg-[#84CC16] rounded-xs inline-block" />
                   <h2 className="text-lg font-bold text-[#000000] tracking-wide uppercase">
                     Latest News
                   </h2>
                 </div>
                 <Link
                   href="/category/news"
-                  className="text-xs font-bold text-[#C61D1F] hover:text-[#A51719] flex items-center space-x-1 uppercase tracking-wider"
+                  className="text-xs font-bold text-[#84CC16] hover:text-[#65A30D] flex items-center space-x-1 uppercase tracking-wider"
                 >
                   <span>Live</span>
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C61D1F] opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#C61D1F]"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#84CC16] opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#84CC16]"></span>
                   </span>
                 </Link>
               </div>
@@ -130,11 +130,11 @@ export default function HeroSection({ featuredArticle, latestNews }: HeroSection
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <span className="text-[11px] font-bold text-[#C61D1F] tracking-wide block mb-1">
+                        <span className="text-[11px] font-bold text-[#84CC16] tracking-wide block mb-1">
                           {item.publishedAt}
                         </span>
                         
-                        <h3 className="text-[13.5px] sm:text-[14px] font-semibold text-[#000000] group-hover:text-[#C61D1F] transition-colors leading-snug line-clamp-2">
+                        <h3 className="text-[13.5px] sm:text-[14px] font-semibold text-[#000000] group-hover:text-[#84CC16] transition-colors leading-snug line-clamp-2">
                           {item.title}
                         </h3>
                       </div>
@@ -148,7 +148,7 @@ export default function HeroSection({ featuredArticle, latestNews }: HeroSection
             <div className="pt-4 mt-4 border-t border-[#E5E6E8]">
               <Link
                 href="/category/news"
-                className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 rounded-lg bg-[#FDF2F2] hover:bg-[#C61D1F] text-[#C61D1F] hover:text-white font-bold text-xs uppercase tracking-wider transition-colors duration-200"
+                className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 rounded-lg bg-[#F7FEE7] hover:bg-[#84CC16] text-[#84CC16] hover:text-white font-bold text-xs uppercase tracking-wider transition-colors duration-200"
               >
                 <span>View All News</span>
                 <ArrowRight className="w-3.5 h-3.5" />

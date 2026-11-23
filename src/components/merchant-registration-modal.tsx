@@ -138,11 +138,11 @@ export default function MerchantRegistrationModal({
         {/* Header */}
         <div className="flex items-center justify-between p-6 sm:p-7 border-b border-slate-100 bg-[#FDFBF7]">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#FDF2F2] text-[#C61D1F] flex items-center justify-center border border-red-100 shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-[#F7FEE7] text-[#84CC16] flex items-center justify-center border border-red-100 shrink-0">
               <Store className="w-5 h-5" />
             </div>
             <div>
-              <div className="inline-flex items-center space-x-1.5 text-[10px] font-extrabold uppercase tracking-widest text-[#C61D1F]">
+              <div className="inline-flex items-center space-x-1.5 text-[10px] font-extrabold uppercase tracking-widest text-[#84CC16]">
                 <Sparkles className="w-3 h-3" />
                 <span>Marketplace Onboarding</span>
               </div>
@@ -186,7 +186,7 @@ export default function MerchantRegistrationModal({
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="px-6 py-2.5 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-sm cursor-pointer"
+                  className="px-6 py-2.5 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-sm cursor-pointer"
                 >
                   Done
                 </button>
@@ -214,7 +214,7 @@ export default function MerchantRegistrationModal({
                       placeholder="e.g. Sahel Agro Commodities Ltd"
                       value={formData.businessName}
                       onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs font-semibold text-slate-900 focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all"
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#84CC16] text-xs font-semibold text-slate-900 focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all"
                     />
                   </div>
                 </div>
@@ -231,7 +231,7 @@ export default function MerchantRegistrationModal({
                       placeholder="e.g. Aliyu Mustapha"
                       value={formData.contactName}
                       onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
-                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs font-semibold text-slate-900 focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all"
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#84CC16] text-xs font-semibold text-slate-900 focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all"
                     />
                   </div>
                 </div>
@@ -251,7 +251,7 @@ export default function MerchantRegistrationModal({
                       placeholder="orders@yourbrand.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs font-semibold text-slate-900 focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all"
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#84CC16] text-xs font-semibold text-slate-900 focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all"
                     />
                   </div>
                 </div>
@@ -268,7 +268,7 @@ export default function MerchantRegistrationModal({
                       placeholder="+234 803 000 0000"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs font-semibold text-slate-900 focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all"
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#84CC16] text-xs font-semibold text-slate-900 focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all"
                     />
                   </div>
                 </div>
@@ -285,7 +285,7 @@ export default function MerchantRegistrationModal({
                     <select
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full pl-10 pr-8 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs font-semibold text-slate-900 focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all cursor-pointer"
+                      className="w-full pl-10 pr-8 py-2.5 rounded-xl border border-slate-200 focus:border-[#84CC16] text-xs font-semibold text-slate-900 focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all cursor-pointer"
                     >
                       {MERCHANT_CATEGORIES.map((cat) => (
                         <option key={cat} value={cat}>
@@ -305,7 +305,7 @@ export default function MerchantRegistrationModal({
                     <select
                       value={formData.location}
                       onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      className="w-full pl-10 pr-8 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs font-semibold text-slate-900 focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all cursor-pointer"
+                      className="w-full pl-10 pr-8 py-2.5 rounded-xl border border-slate-200 focus:border-[#84CC16] text-xs font-semibold text-slate-900 focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all cursor-pointer"
                     >
                       {NORTHERN_STATES.map((st) => (
                         <option key={st} value={st}>
@@ -330,7 +330,7 @@ export default function MerchantRegistrationModal({
                     placeholder="Describe what your brand produces, monthly capacity, packaging standards, and target buyers..."
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs font-semibold text-slate-900 focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all resize-none"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#84CC16] text-xs font-semibold text-slate-900 focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all resize-none"
                   />
                 </div>
               </div>
@@ -347,7 +347,7 @@ export default function MerchantRegistrationModal({
                     placeholder="https://yourbrand.com or https://instagram.com/yourbrand"
                     value={formData.website}
                     onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs font-semibold text-slate-900 focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#84CC16] text-xs font-semibold text-slate-900 focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all"
                   />
                 </div>
               </div>
@@ -357,7 +357,7 @@ export default function MerchantRegistrationModal({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-md hover:shadow-lg flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
+                  className="w-full py-3 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-md hover:shadow-lg flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
                 >
                   <span>{loading ? "Submitting Application..." : "Submit Merchant Application"}</span>
                   <ArrowRight className="w-4 h-4" />

@@ -125,13 +125,13 @@ function LoginContent() {
     <div className="min-h-screen bg-[#F8F9FA] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
       
       {/* Subtle Background Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-b from-[#C61D1F]/10 via-transparent to-transparent rounded-full blur-3xl -z-10 pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-b from-[#84CC16]/10 via-transparent to-transparent rounded-full blur-3xl -z-10 pointer-events-none" />
 
       {/* Top Back Link & Security Badge */}
       <div className="max-w-md w-full mx-auto mb-6 flex items-center justify-between">
         <Link
           href="/"
-          className="inline-flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-[#C61D1F] transition-colors group cursor-pointer"
+          className="inline-flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-[#84CC16] transition-colors group cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
           <span>Back to Front Page</span>
@@ -161,7 +161,7 @@ function LoginContent() {
             </div>
           </Link>
           
-          <div className="inline-flex items-center space-x-1.5 px-3 py-0.5 bg-red-50 text-[#C61D1F] rounded-full text-[10px] font-extrabold uppercase tracking-wider mb-2 border border-red-100">
+          <div className="inline-flex items-center space-x-1.5 px-3 py-0.5 bg-red-50 text-[#84CC16] rounded-full text-[10px] font-extrabold uppercase tracking-wider mb-2 border border-red-100">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>Editorial Gatekeeper</span>
           </div>
@@ -243,7 +243,7 @@ function LoginContent() {
                   placeholder="editor1, author1, or admin@thezango.org"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 focus:border-[#C61D1F] text-xs font-semibold focus:outline-hidden transition-all bg-slate-50/60 focus:bg-white text-slate-900"
+                  className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 focus:border-[#84CC16] text-xs font-semibold focus:outline-hidden transition-all bg-slate-50/60 focus:bg-white text-slate-900"
                 />
               </div>
             </div>
@@ -263,7 +263,7 @@ function LoginContent() {
                   placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-10 py-3 rounded-2xl border border-slate-200 focus:border-[#C61D1F] text-xs font-semibold focus:outline-hidden transition-all bg-slate-50/60 focus:bg-white text-slate-900"
+                  className="w-full pl-10 pr-10 py-3 rounded-2xl border border-slate-200 focus:border-[#84CC16] text-xs font-semibold focus:outline-hidden transition-all bg-slate-50/60 focus:bg-white text-slate-900"
                 />
                 <button
                   type="button"
@@ -282,7 +282,7 @@ function LoginContent() {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="rounded border-slate-300 text-[#C61D1F] focus:ring-[#C61D1F] w-4 h-4"
+                  className="rounded border-slate-300 text-[#84CC16] focus:ring-[#84CC16] w-4 h-4"
                 />
                 <span>Remember this terminal</span>
               </label>
@@ -290,7 +290,7 @@ function LoginContent() {
               <button
                 type="button"
                 onClick={() => setActiveTab("fastAccess")}
-                className="text-xs font-semibold text-[#C61D1F] hover:underline cursor-pointer"
+                className="text-xs font-semibold text-[#84CC16] hover:underline cursor-pointer"
               >
                 Use Fast Access
               </button>
@@ -299,7 +299,7 @@ function LoginContent() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 px-4 bg-gradient-to-r from-[#C61D1F] to-[#A51719] hover:from-[#A51719] hover:to-[#881214] text-white rounded-2xl text-xs font-extrabold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer mt-3 disabled:opacity-50"
+              className="w-full py-3.5 px-4 bg-gradient-to-r from-[#84CC16] to-[#65A30D] hover:from-[#65A30D] hover:to-[#4D7C0F] text-white rounded-2xl text-xs font-extrabold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer mt-3 disabled:opacity-50"
             >
               {loading ? (
                 <>
@@ -367,12 +367,12 @@ function LoginContent() {
               className="w-full p-3.5 rounded-2xl border border-red-200/90 bg-gradient-to-r from-red-50/70 to-red-50/30 hover:from-red-100/80 hover:to-red-50 transition-all flex items-center justify-between text-left cursor-pointer group shadow-2xs hover:shadow-sm"
             >
               <div className="flex items-center space-x-3 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-[#C61D1F] text-white flex items-center justify-center shrink-0 shadow-xs">
+                <div className="w-9 h-9 rounded-xl bg-[#84CC16] text-black font-bold flex items-center justify-center shrink-0 shadow-xs">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center space-x-2">
-                    <span className="text-xs font-extrabold text-slate-900 group-hover:text-[#C61D1F] transition-colors truncate">
+                    <span className="text-xs font-extrabold text-slate-900 group-hover:text-[#84CC16] transition-colors truncate">
                       Usman Bello
                     </span>
                     <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-red-100 text-red-900 border border-red-200">
@@ -386,9 +386,9 @@ function LoginContent() {
               </div>
 
               {loadingRole === "admin" ? (
-                <RefreshCw className="w-4 h-4 text-[#C61D1F] animate-spin shrink-0 ml-2" />
+                <RefreshCw className="w-4 h-4 text-[#84CC16] animate-spin shrink-0 ml-2" />
               ) : (
-                <ArrowRight className="w-4 h-4 text-red-400 group-hover:translate-x-1 group-hover:text-[#C61D1F] transition-all shrink-0 ml-2" />
+                <ArrowRight className="w-4 h-4 text-red-400 group-hover:translate-x-1 group-hover:text-[#84CC16] transition-all shrink-0 ml-2" />
               )}
             </button>
 

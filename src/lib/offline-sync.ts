@@ -237,20 +237,44 @@ export function clearOfflineDraft(key: string): void {
  * React Hook for tracking online status and offline synchronization queue
  */
 export function useOnlineStatus() {
-  const [isOnline, setIsOnline] = useState<boolean>(() => {
-    return typeof navigator !== "undefined" ? navigator.onLine : true;
-  });
+  const [isOnline, setIsOnline] = useState<boolean>(true);
   const [wasOffline, setWasOffline] = useState<boolean>(false);
   const [pendingCount, setPendingCount] = useState<number>(() => getOfflineQueueCount());
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [lastSyncedCount, setLastSyncedCount] = useState<number>(0);
+
+  const checkConnectivity = useCallback(async (): Promise<boolean> => {
+    if (typeof window === "undefined") return true;
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const res = await fetch("/api/health", {
+        method: "HEAD",
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      const healthy = res.ok || res.status < 500;
+      if (healthy) {
+        setIsOnline(true);
+        return true;
+      }
+    } catch {
+      // If network request failed but navigator explicitly says online, don't hastily declare offline
+      if (typeof navigator !== "undefined" && navigator.onLine) {
+        return true;
+      }
+    }
+    setIsOnline(false);
+    return false;
+  }, []);
 
   const refreshCount = useCallback(() => {
     setPendingCount(getOfflineQueueCount());
   }, []);
 
   const triggerSync = useCallback(async () => {
-    if (!navigator.onLine || isSyncing) return;
+    if (isSyncing) return;
     setIsSyncing(true);
     try {
       const res = await syncOfflineQueue();
@@ -264,16 +288,32 @@ export function useOnlineStatus() {
   }, [isSyncing, refreshCount]);
 
   useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      setWasOffline(true);
-      // Automatically attempt background sync when network returns
-      void triggerSync();
+    if (typeof window === "undefined") return;
+
+    let timer: NodeJS.Timeout | undefined;
+
+    const handleOnline = async () => {
+      const reallyOnline = await checkConnectivity();
+      if (reallyOnline) {
+        setIsOnline(true);
+        setWasOffline(true);
+        void triggerSync();
+
+        // Auto-dismiss Connection Restored notice after 3.5s
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+          setWasOffline(false);
+        }, 3500);
+      }
     };
 
     const handleOffline = () => {
-      setIsOnline(false);
-      setWasOffline(false);
+      void checkConnectivity().then((online) => {
+        if (!online) {
+          setIsOnline(false);
+          setWasOffline(false);
+        }
+      });
     };
 
     const handleQueueChange = () => {
@@ -285,11 +325,12 @@ export function useOnlineStatus() {
     window.addEventListener("thezango_offline_queue_changed", handleQueueChange);
 
     return () => {
+      if (timer) clearTimeout(timer);
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
       window.removeEventListener("thezango_offline_queue_changed", handleQueueChange);
     };
-  }, [refreshCount, triggerSync]);
+  }, [checkConnectivity, refreshCount, triggerSync]);
 
   return {
     isOnline,
@@ -297,6 +338,7 @@ export function useOnlineStatus() {
     pendingCount,
     isSyncing,
     lastSyncedCount,
+    checkConnectivity,
     syncNow: triggerSync,
     clearQueue: clearOfflineQueue,
     dismissWasOffline: () => setWasOffline(false),

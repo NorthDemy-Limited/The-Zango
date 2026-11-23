@@ -17,7 +17,7 @@ export default function EditorsPicks({ articles }: EditorsPicksProps) {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 pb-3 border-b border-[#E5E6E8]">
           <div>
             <div className="flex items-center space-x-2">
-              <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
+              <span className="w-2.5 h-5 bg-[#84CC16] rounded-xs inline-block" />
               <h2 className="text-xl sm:text-2xl font-extrabold text-[#000000] tracking-wide uppercase">
                 Editor&apos;s Picks
               </h2>
@@ -29,7 +29,7 @@ export default function EditorsPicks({ articles }: EditorsPicksProps) {
 
           <Link
             href="/category/features"
-            className="mt-3 sm:mt-0 inline-flex items-center space-x-1.5 text-xs font-bold text-[#000000] hover:text-[#C61D1F] uppercase tracking-wider transition-colors"
+            className="mt-3 sm:mt-0 inline-flex items-center space-x-1.5 text-xs font-bold text-[#000000] hover:text-[#84CC16] uppercase tracking-wider transition-colors"
           >
             <span>View All</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -66,7 +66,7 @@ export default function EditorsPicks({ articles }: EditorsPicksProps) {
                     {article.publishedAt}
                   </span>
 
-                  <h3 className="text-[15px] font-bold text-[#000000] group-hover:text-[#C61D1F] transition-colors leading-snug line-clamp-2 mb-2.5">
+                  <h3 className="text-[15px] font-bold text-[#000000] group-hover:text-[#84CC16] transition-colors leading-snug line-clamp-2 mb-2.5">
                     <Link href={`/article/${article.slug}`}>
                       {article.title}
                     </Link>
@@ -82,7 +82,7 @@ export default function EditorsPicks({ articles }: EditorsPicksProps) {
               <div className="p-4 pt-0 sm:p-5 sm:pt-0">
                 <Link
                   href={`/article/${article.slug}`}
-                  className="inline-flex items-center space-x-1.5 text-xs font-bold text-[#C61D1F] hover:text-[#A51719] uppercase tracking-wider transition-colors pt-3 border-t border-[#E5E6E8]/60 w-full"
+                  className="inline-flex items-center space-x-1.5 text-xs font-bold text-[#84CC16] hover:text-[#65A30D] uppercase tracking-wider transition-colors pt-3 border-t border-[#E5E6E8]/60 w-full"
                 >
                   <span>Read More</span>
                   <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />

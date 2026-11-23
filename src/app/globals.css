@@ -5,9 +5,12 @@
   --foreground: #111111;
 
   /* Zango Brand Tokens */
-  --zango-red: #C61D1F;
-  --zango-red-dark: #A51719;
-  --zango-red-light: #FDF2F2;
+  --zango-lime: #84CC16;
+  --zango-red: #84CC16;
+  --zango-lime-dark: #65A30D;
+  --zango-red-dark: #65A30D;
+  --zango-lime-light: #F7FEE7;
+  --zango-red-light: #F7FEE7;
   --zango-black: #000000;
   --zango-gray-dark: #535252;
   --zango-gray-mid: #707070;
@@ -48,9 +51,9 @@ body {
   background: #f1f1f1;
 }
 ::-webkit-scrollbar-thumb {
-  background: #C61D1F;
+  background: #84CC16;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #A51719;
+  background: #65A30D;
 }

@@ -1420,7 +1420,7 @@ function EditorDashboardContent() {
                                 type="button"
                                 onClick={() => handleToggleFlag(article.id, "isTrending")}
                                 className={`p-1 rounded-md transition-colors ${
-                                  article.isTrending ? "bg-red-100 text-red-700" : "text-slate-300 hover:text-slate-600"
+                                  article.isTrending ? "bg-lime-100 text-lime-800" : "text-slate-300 hover:text-slate-600"
                                 }`}
                                 title="Toggle Trending"
                               >
@@ -1825,19 +1825,19 @@ function EditorDashboardContent() {
                 </div>
 
                 {/* Breaking News Dispatch Banner Toggle */}
-                <label className="flex items-center space-x-3 p-3 rounded-2xl border border-red-200 bg-red-50/50 hover:bg-red-50 cursor-pointer transition-colors">
+                <label className="flex items-center space-x-3 p-3 rounded-2xl border border-lime-200 bg-lime-50/50 hover:bg-lime-50 cursor-pointer transition-colors">
                   <input
                     type="checkbox"
                     checked={formData.isBreaking}
                     onChange={(e) => setFormData({ ...formData, isBreaking: e.target.checked })}
-                    className="w-4 h-4 text-red-600 rounded-sm border-red-300 focus:ring-red-500"
+                    className="w-4 h-4 text-[#65A30D] rounded-sm border-lime-300 focus:ring-[#84CC16]"
                   />
                   <div className="text-xs">
-                    <span className="font-extrabold text-red-900 block flex items-center space-x-1.5">
-                      <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse inline-block" />
+                    <span className="font-extrabold text-lime-900 block flex items-center space-x-1.5">
+                      <span className="w-2 h-2 rounded-full bg-[#84CC16] animate-pulse inline-block" />
                       <span>Breaking News Dispatch</span>
                     </span>
-                    <span className="text-[11px] text-red-700">Display in top broadcast ticker banner across the site</span>
+                    <span className="text-[11px] text-lime-700">Display in top broadcast ticker banner across the site</span>
                   </div>
                 </label>
               </div>

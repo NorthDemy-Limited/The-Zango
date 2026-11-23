@@ -952,7 +952,7 @@ function AdminDashboardContent() {
   const leadFeaturedArticle = articles.find((a) => a.isFeatured) || articles[0];
 
   return (
-    <div className="min-h-screen bg-slate-50/70 flex flex-col font-sans selection:bg-[#C61D1F]/15 selection:text-[#C61D1F]">
+    <div className="min-h-screen bg-slate-50/70 flex flex-col font-sans selection:bg-[#84CC16]/15 selection:text-[#84CC16]">
       
       {/* 1. TOP HEADER (Modern, Glassmorphic, Elevated) */}
       <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-40 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] h-16">
@@ -971,7 +971,7 @@ function AdminDashboardContent() {
                   priority
                 />
               </div>
-              <span className="hidden sm:inline-flex items-center text-[10px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-md bg-red-50 text-[#C61D1F] border border-red-100">
+              <span className="hidden sm:inline-flex items-center text-[10px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-md bg-lime-50 text-[#3F6212] border border-lime-200">
                 CHIEF CMS
               </span>
             </Link>
@@ -1018,7 +1018,7 @@ function AdminDashboardContent() {
               placeholder="Search stories, journalists, desks..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-14 py-2 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden bg-slate-50/70 focus:bg-white transition-all placeholder:text-slate-400"
+              className="w-full pl-9 pr-14 py-2 rounded-xl border border-slate-200 focus:border-[#84CC16] text-xs focus:outline-hidden bg-slate-50/70 focus:bg-white transition-all placeholder:text-slate-400"
             />
             {searchQuery ? (
               <button 
@@ -1040,7 +1040,7 @@ function AdminDashboardContent() {
             {/* Global Quick Action: Direct + New Story Button */}
             <button
               onClick={handleOpenCreateModal}
-              className="px-3.5 py-1.5 sm:px-4 sm:py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs hover:shadow-md flex items-center space-x-1.5 cursor-pointer shrink-0"
+              className="px-3.5 py-1.5 sm:px-4 sm:py-2 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs hover:shadow-md flex items-center space-x-1.5 cursor-pointer shrink-0"
               title="Publish New Story Dispatch"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -1052,14 +1052,14 @@ function AdminDashboardContent() {
               <button 
                 onClick={() => setNotificationMenuOpen(!notificationMenuOpen)}
                 className={`relative p-2 rounded-xl transition-colors cursor-pointer ${
-                  notificationMenuOpen ? "text-[#C61D1F] bg-red-50" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                  notificationMenuOpen ? "text-[#3F6212] bg-lime-50" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
                 }`}
                 title="Newsroom Activity & Notifications"
                 aria-label="Notifications"
               >
                 <Bell className="w-4 h-4" />
                 {totalAlerts > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#C61D1F] text-white text-[10px] font-extrabold flex items-center justify-center ring-2 ring-white animate-pulse">
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#84CC16] text-black font-bold text-[10px] font-extrabold flex items-center justify-center ring-2 ring-white animate-pulse">
                     {totalAlerts}
                   </span>
                 )}
@@ -1075,7 +1075,7 @@ function AdminDashboardContent() {
                   <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
                     <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between">
                       <div className="flex items-center space-x-2">
-                        <Bell className="w-4 h-4 text-[#C61D1F]" />
+                        <Bell className="w-4 h-4 text-[#84CC16]" />
                         <span className="font-extrabold text-xs uppercase tracking-wider">Newsroom Activity Hub</span>
                       </div>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/15 text-white">
@@ -1086,9 +1086,9 @@ function AdminDashboardContent() {
                     <div className="max-h-96 overflow-y-auto divide-y divide-slate-100">
                       {/* Merchant Applications Section */}
                       {pendingMerchants.length > 0 && (
-                        <div className="p-3 bg-red-50/40">
+                        <div className="p-3 bg-lime-50/50">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] font-extrabold uppercase text-[#C61D1F] tracking-wider flex items-center space-x-1.5">
+                            <span className="text-[10px] font-extrabold uppercase text-[#84CC16] tracking-wider flex items-center space-x-1.5">
                               <Store className="w-3.5 h-3.5" />
                               <span>Merchant Registrations ({pendingMerchants.length})</span>
                             </span>
@@ -1098,7 +1098,7 @@ function AdminDashboardContent() {
                                 setMerchantFilter("pending");
                                 setNotificationMenuOpen(false);
                               }}
-                              className="text-[10px] font-bold text-[#C61D1F] hover:underline cursor-pointer"
+                              className="text-[10px] font-bold text-[#84CC16] hover:underline cursor-pointer"
                             >
                               View All
                             </button>
@@ -1112,7 +1112,7 @@ function AdminDashboardContent() {
                                   setActiveTab("merchants");
                                   setNotificationMenuOpen(false);
                                 }}
-                                className="p-2.5 bg-white rounded-xl border border-red-200/60 hover:border-[#C61D1F] hover:shadow-xs transition-all cursor-pointer"
+                                className="p-2.5 bg-white rounded-xl border border-lime-200/60 hover:border-[#84CC16] hover:shadow-xs transition-all cursor-pointer"
                               >
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="font-bold text-xs text-slate-900 truncate">
@@ -1127,7 +1127,7 @@ function AdminDashboardContent() {
                                 </div>
                                 <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
                                   <span>{merchant.location}</span>
-                                  <span className="font-medium text-[#C61D1F]">Review & Onboard →</span>
+                                  <span className="font-medium text-[#84CC16]">Review & Onboard →</span>
                                 </div>
                               </div>
                             ))}
@@ -1207,7 +1207,7 @@ function AdminDashboardContent() {
                 <div className="font-extrabold text-xs text-slate-900 leading-tight">
                   {user?.name || "Usman Bello"}
                 </div>
-                <div className="text-[9px] font-extrabold uppercase text-[#C61D1F] tracking-wider">
+                <div className="text-[9px] font-extrabold uppercase text-[#84CC16] tracking-wider">
                   {user?.badge || "CHIEF ADMIN"}
                 </div>
               </div>
@@ -1282,7 +1282,7 @@ function AdminDashboardContent() {
               onClick={() => setActiveTab("overview")}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "overview"
-                  ? "bg-[#C61D1F] text-white shadow-sm"
+                  ? "bg-[#84CC16] text-black font-bold shadow-sm"
                   : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
               }`}
             >
@@ -1297,7 +1297,7 @@ function AdminDashboardContent() {
               onClick={() => setActiveTab("dispatches")}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "dispatches"
-                  ? "bg-[#C61D1F] text-white shadow-sm"
+                  ? "bg-[#84CC16] text-black font-bold shadow-sm"
                   : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
               }`}
             >
@@ -1317,7 +1317,7 @@ function AdminDashboardContent() {
               onClick={() => setActiveTab("reviewQueue")}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "reviewQueue"
-                  ? "bg-[#C61D1F] text-white shadow-sm"
+                  ? "bg-[#84CC16] text-black font-bold shadow-sm"
                   : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
               }`}
             >
@@ -1327,7 +1327,7 @@ function AdminDashboardContent() {
               </div>
               {pendingSubmissions.length > 0 ? (
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-extrabold ${
-                  activeTab === "reviewQueue" ? "bg-white text-[#C61D1F]" : "bg-amber-100 text-amber-900 border border-amber-200"
+                  activeTab === "reviewQueue" ? "bg-white text-[#84CC16]" : "bg-amber-100 text-amber-900 border border-amber-200"
                 }`}>
                   {pendingSubmissions.length}
                 </span>
@@ -1345,7 +1345,7 @@ function AdminDashboardContent() {
               onClick={() => setActiveTab("merchants")}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "merchants"
-                  ? "bg-[#C61D1F] text-white shadow-sm"
+                  ? "bg-[#84CC16] text-black font-bold shadow-sm"
                   : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
               }`}
             >
@@ -1355,7 +1355,7 @@ function AdminDashboardContent() {
               </div>
               {pendingMerchants.length > 0 ? (
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-extrabold ${
-                  activeTab === "merchants" ? "bg-white text-[#C61D1F]" : "bg-red-100 text-[#C61D1F] border border-red-200"
+                  activeTab === "merchants" ? "bg-white text-[#84CC16]" : "bg-lime-100 text-[#3F6212] border border-lime-200"
                 }`}>
                   {pendingMerchants.length}
                 </span>
@@ -1383,7 +1383,7 @@ function AdminDashboardContent() {
               }}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "team" && !showTeamModal
-                  ? "bg-[#C61D1F] text-white shadow-sm"
+                  ? "bg-[#84CC16] text-black font-bold shadow-sm"
                   : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
               }`}
             >
@@ -1404,7 +1404,7 @@ function AdminDashboardContent() {
                 setActiveTab("team");
                 setShowTeamModal(true);
               }}
-              className="w-full flex items-center space-x-2.5 px-3.5 py-2 rounded-2xl text-xs font-bold text-[#C61D1F] bg-red-50/70 hover:bg-red-100/90 transition-all border border-red-200/70 cursor-pointer"
+              className="w-full flex items-center space-x-2.5 px-3.5 py-2 rounded-2xl text-xs font-bold text-[#3F6212] bg-lime-50/70 hover:bg-red-100/90 transition-all border border-red-200/70 cursor-pointer"
             >
               <UserPlus className="w-3.5 h-3.5 shrink-0" />
               <span>+ Add Newsroom Staff</span>
@@ -1415,7 +1415,7 @@ function AdminDashboardContent() {
               onClick={() => setActiveTab("desks")}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "desks"
-                  ? "bg-[#C61D1F] text-white shadow-sm"
+                  ? "bg-[#84CC16] text-black font-bold shadow-sm"
                   : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
               }`}
             >
@@ -1442,7 +1442,7 @@ function AdminDashboardContent() {
               onClick={() => setActiveTab("subscribers")}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "subscribers"
-                  ? "bg-[#C61D1F] text-white shadow-sm"
+                  ? "bg-[#84CC16] text-black font-bold shadow-sm"
                   : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
               }`}
             >
@@ -1462,7 +1462,7 @@ function AdminDashboardContent() {
               onClick={() => setActiveTab("settings")}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "settings"
-                  ? "bg-[#C61D1F] text-white shadow-sm"
+                  ? "bg-[#84CC16] text-black font-bold shadow-sm"
                   : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
               }`}
             >
@@ -1540,7 +1540,7 @@ function AdminDashboardContent() {
               <div className="rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-[#1c0809] p-6 sm:p-8 text-white relative overflow-hidden shadow-xl border border-slate-800/80 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                 
                 {/* Background ambient lighting */}
-                <div className="absolute -right-8 -bottom-8 w-80 h-80 bg-[#C61D1F]/20 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute -right-8 -bottom-8 w-80 h-80 bg-[#84CC16]/20 rounded-full blur-3xl pointer-events-none" />
                 <div className="absolute top-0 right-1/4 w-40 h-40 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
 
                 <div className="space-y-3 z-10 max-w-xl">
@@ -1560,7 +1560,7 @@ function AdminDashboardContent() {
                   <div className="flex flex-wrap items-center gap-3 pt-2">
                     <button
                       onClick={handleOpenCreateModal}
-                      className="px-5 py-2.5 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-extrabold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center space-x-2 cursor-pointer"
+                      className="px-5 py-2.5 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold rounded-xl text-xs font-extrabold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center space-x-2 cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Publish Story</span>
@@ -1572,7 +1572,7 @@ function AdminDashboardContent() {
                     >
                       <span>Review Manuscripts</span>
                       {pendingSubmissions.length > 0 && (
-                        <span className="w-5 h-5 rounded-full bg-[#C61D1F] text-white text-[10px] font-extrabold flex items-center justify-center">
+                        <span className="w-5 h-5 rounded-full bg-[#84CC16] text-black font-bold text-[10px] font-extrabold flex items-center justify-center">
                           {pendingSubmissions.length}
                         </span>
                       )}
@@ -1599,7 +1599,7 @@ function AdminDashboardContent() {
                         r="40"
                         stroke="currentColor"
                         strokeWidth="8"
-                        className="text-[#C61D1F]"
+                        className="text-[#84CC16]"
                         fill="transparent"
                         strokeDasharray={2 * Math.PI * 40}
                         strokeDashoffset={2 * Math.PI * 40 * (1 - 0.84)}
@@ -1678,11 +1678,11 @@ function AdminDashboardContent() {
                   className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:border-slate-300 transition-all cursor-pointer group"
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <div className="w-10 h-10 rounded-2xl bg-red-50 text-[#C61D1F] flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-2xl bg-lime-50 text-[#3F6212] flex items-center justify-center">
                       <Store className="w-5 h-5" />
                     </div>
                     {pendingMerchants.length > 0 ? (
-                      <span className="text-[10px] font-extrabold text-red-800 bg-red-100 px-2 py-0.5 rounded-full animate-pulse">
+                      <span className="text-[10px] font-extrabold text-[#3F6212] bg-lime-100 px-2 py-0.5 rounded-full animate-pulse">
                         Action needed
                       </span>
                     ) : (
@@ -1695,7 +1695,7 @@ function AdminDashboardContent() {
                     <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider block">
                       Marketplace
                     </span>
-                    <span className="text-xl sm:text-2xl font-extrabold text-slate-900 group-hover:text-[#C61D1F] transition-colors">
+                    <span className="text-xl sm:text-2xl font-extrabold text-slate-900 group-hover:text-[#84CC16] transition-colors">
                       {merchants.length}
                     </span>
                     <span className="text-[11px] text-slate-500 block mt-0.5">
@@ -1782,9 +1782,9 @@ function AdminDashboardContent() {
 
               {/* URGENT MERCHANT REGISTRATION ALERT BANNER (Shows only if pending merchants exist) */}
               {pendingMerchants.length > 0 && (
-                <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200/90 rounded-3xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
+                <div className="bg-gradient-to-r from-lime-50 to-emerald-50 border border-lime-200 rounded-3xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
                   <div className="flex items-center space-x-3.5">
-                    <div className="w-10 h-10 rounded-2xl bg-[#C61D1F] text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <div className="w-10 h-10 rounded-2xl bg-[#84CC16] text-black font-bold flex items-center justify-center shrink-0 shadow-xs">
                       <Store className="w-5 h-5" />
                     </div>
                     <div>
@@ -1802,7 +1802,7 @@ function AdminDashboardContent() {
                       setActiveTab("merchants");
                       setMerchantFilter("pending");
                     }}
-                    className="px-4 py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer shrink-0"
+                    className="px-4 py-2 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer shrink-0"
                   >
                     Review Applications →
                   </button>
@@ -1819,7 +1819,7 @@ function AdminDashboardContent() {
                     <button
                       type="button"
                       onClick={() => handleOpenEdit(leadFeaturedArticle)}
-                      className="text-xs font-bold text-[#C61D1F] hover:underline flex items-center space-x-1 cursor-pointer"
+                      className="text-xs font-bold text-[#84CC16] hover:underline flex items-center space-x-1 cursor-pointer"
                     >
                       <Edit3 className="w-3 h-3" />
                       <span>Edit Headline</span>
@@ -1836,7 +1836,7 @@ function AdminDashboardContent() {
                         sizes="260px"
                         className="object-cover"
                       />
-                      <span className="absolute top-2.5 left-2.5 bg-[#C61D1F] text-white text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md shadow-xs">
+                      <span className="absolute top-2.5 left-2.5 bg-[#84CC16] text-black font-bold text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md shadow-xs">
                         {leadFeaturedArticle.category}
                       </span>
                     </div>
@@ -1845,7 +1845,7 @@ function AdminDashboardContent() {
                       <div className="text-[11px] font-semibold text-slate-400">
                         Lead Headline • {leadFeaturedArticle.publishedAt} • {leadFeaturedArticle.readTime}
                       </div>
-                      <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 hover:text-[#C61D1F] transition-colors line-clamp-2">
+                      <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 hover:text-[#84CC16] transition-colors line-clamp-2">
                         {leadFeaturedArticle.title}
                       </h3>
                       <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
@@ -1879,13 +1879,13 @@ function AdminDashboardContent() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div 
                   onClick={() => setActiveTab("dispatches")}
-                  className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:border-[#C61D1F] transition-all cursor-pointer group"
+                  className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:border-[#84CC16] transition-all cursor-pointer group"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-slate-900 group-hover:text-[#C61D1F]">
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-slate-900 group-hover:text-[#84CC16]">
                       Manage All Dispatches ({articles.length})
                     </span>
-                    <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#C61D1F] group-hover:translate-x-1 transition-all" />
+                    <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#84CC16] group-hover:translate-x-1 transition-all" />
                   </div>
                   <p className="text-xs text-slate-600">
                     Review and modify headlines, hero display tags, and category beats across 11 Northern Nigeria desks.
@@ -1894,13 +1894,13 @@ function AdminDashboardContent() {
 
                 <div 
                   onClick={() => setActiveTab("team")}
-                  className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:border-[#C61D1F] transition-all cursor-pointer group"
+                  className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:border-[#84CC16] transition-all cursor-pointer group"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-slate-900 group-hover:text-[#C61D1F]">
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-slate-900 group-hover:text-[#84CC16]">
                       Newsroom Personnel Roster ({teamMembers.length})
                     </span>
-                    <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#C61D1F] group-hover:translate-x-1 transition-all" />
+                    <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#84CC16] group-hover:translate-x-1 transition-all" />
                   </div>
                   <p className="text-xs text-slate-600">
                     Configure staff permissions, assign beat divisions, and invite regional correspondents.
@@ -1926,7 +1926,7 @@ function AdminDashboardContent() {
                     placeholder="Filter stories by headline, author..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 text-xs border border-slate-200 rounded-xl focus:border-[#C61D1F] focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all"
+                    className="w-full pl-9 pr-4 py-2 text-xs border border-slate-200 rounded-xl focus:border-[#84CC16] focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all"
                   />
                 </div>
 
@@ -1935,7 +1935,7 @@ function AdminDashboardContent() {
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full sm:w-48 px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-[#C61D1F] focus:outline-hidden bg-white cursor-pointer font-medium"
+                    className="w-full sm:w-48 px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-[#84CC16] focus:outline-hidden bg-white cursor-pointer font-medium"
                   >
                     <option value="all">All Desks (11)</option>
                     {CATEGORIES.map((cat) => (
@@ -1947,7 +1947,7 @@ function AdminDashboardContent() {
 
                   <button
                     onClick={handleOpenCreateModal}
-                    className="px-4 py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs flex items-center space-x-1.5 cursor-pointer shrink-0"
+                    className="px-4 py-2 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs flex items-center space-x-1.5 cursor-pointer shrink-0"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>+ Publish</span>
@@ -1991,7 +1991,7 @@ function AdminDashboardContent() {
                                   />
                                 </div>
                                 <div className="max-w-md">
-                                  <div className="font-bold text-slate-900 line-clamp-1 hover:text-[#C61D1F] transition-colors">
+                                  <div className="font-bold text-slate-900 line-clamp-1 hover:text-[#84CC16] transition-colors">
                                     {article.title}
                                   </div>
                                   <div className="text-[11px] text-slate-400 mt-0.5">
@@ -2017,7 +2017,7 @@ function AdminDashboardContent() {
                                   onClick={() => handleToggleFlag(article.id, "isFeatured")}
                                   className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase transition-colors cursor-pointer ${
                                     article.isFeatured
-                                      ? "bg-red-600 text-white"
+                                      ? "bg-[#84CC16] text-black font-extrabold"
                                       : "bg-slate-100 text-slate-400 hover:bg-slate-200"
                                   }`}
                                   title="Toggle Lead Hero Headline"
@@ -2135,7 +2135,7 @@ function AdminDashboardContent() {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <span className="bg-red-50 text-[#C61D1F] text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md">
+                          <span className="bg-lime-50 text-[#3F6212] text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md">
                             {sub.category}
                           </span>
                           <span className="text-slate-300">•</span>
@@ -2212,7 +2212,7 @@ function AdminDashboardContent() {
 
                           <button
                             onClick={() => handleApproveSubmission(sub.id, sub.title)}
-                            className="px-4 py-1.5 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
+                            className="px-4 py-1.5 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
                           >
                             Approve & Publish Live
                           </button>
@@ -2233,7 +2233,7 @@ function AdminDashboardContent() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/80">
                   <div>
                     <div className="flex items-center space-x-2">
-                      <span className="w-2 h-4 bg-[#C61D1F] rounded-xs inline-block" />
+                      <span className="w-2 h-4 bg-[#84CC16] rounded-xs inline-block" />
                       <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wide">
                         Sahel Commercial Directory & Merchant Applications
                       </h3>
@@ -2318,7 +2318,7 @@ function AdminDashboardContent() {
                       placeholder="Search business, contact, location..."
                       value={merchantSearchQuery}
                       onChange={(e) => setMerchantSearchQuery(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2 text-xs border border-slate-200 rounded-xl focus:border-[#C61D1F] focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all"
+                      className="w-full pl-9 pr-4 py-2 text-xs border border-slate-200 rounded-xl focus:border-[#84CC16] focus:outline-hidden bg-slate-50/50 focus:bg-white transition-all"
                     />
                   </div>
                 </div>
@@ -2384,7 +2384,7 @@ function AdminDashboardContent() {
                                   href={merchant.website.startsWith("http") ? merchant.website : `https://${merchant.website}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-slate-600 hover:text-[#C61D1F] flex items-center space-x-1"
+                                  className="text-slate-600 hover:text-[#84CC16] flex items-center space-x-1"
                                 >
                                   <span>{merchant.website.replace(/^https?:\/\//, "")}</span>
                                   <ExternalLink className="w-2.5 h-2.5" />
@@ -2488,7 +2488,7 @@ function AdminDashboardContent() {
                             <button
                               disabled={updatingMerchantId === merchant.id}
                               onClick={() => handleUpdateMerchantStatus(merchant.id, "approved")}
-                              className="px-4 py-1.5 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
+                              className="px-4 py-1.5 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
                             >
                               <CheckCircle2 className="w-3.5 h-3.5" />
                               <span>Approve & Verify</span>
@@ -2510,7 +2510,7 @@ function AdminDashboardContent() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/80">
                   <div>
                     <div className="flex items-center space-x-2">
-                      <span className="w-2 h-4 bg-[#C61D1F] rounded-xs inline-block" />
+                      <span className="w-2 h-4 bg-[#84CC16] rounded-xs inline-block" />
                       <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wide">
                         Newsroom Personnel & Staff Architecture
                       </h3>
@@ -2522,7 +2522,7 @@ function AdminDashboardContent() {
 
                   <button
                     onClick={() => setShowTeamModal(true)}
-                    className="px-4 py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs flex items-center space-x-2 cursor-pointer shrink-0"
+                    className="px-4 py-2 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs flex items-center space-x-2 cursor-pointer shrink-0"
                   >
                     <UserPlus className="w-3.5 h-3.5" />
                     <span>+ Add Staff Member</span>
@@ -2545,7 +2545,7 @@ function AdminDashboardContent() {
                     <button
                       onClick={() => setTeamFilter("admin")}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                        teamFilter === "admin" ? "bg-red-600 text-white" : "bg-red-50 text-red-700 hover:bg-red-100"
+                        teamFilter === "admin" ? "bg-[#84CC16] text-black font-extrabold" : "bg-lime-50 text-[#3F6212] hover:bg-lime-100"
                       }`}
                     >
                       👑 Chief Admins ({teamMembers.filter(m => m.role === "admin").length})
@@ -2578,7 +2578,7 @@ function AdminDashboardContent() {
                       placeholder="Search staff by name or email..."
                       value={staffSearchQuery}
                       onChange={(e) => setStaffSearchQuery(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:border-[#C61D1F] focus:outline-hidden"
+                      className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:border-[#84CC16] focus:outline-hidden"
                     />
                   </div>
                 </div>
@@ -2631,7 +2631,7 @@ function AdminDashboardContent() {
                           <td className="py-4 px-6">
                             <div className="flex items-center space-x-2">
                               {member.role === "admin" && (
-                                <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-md font-bold text-[10px] uppercase">
+                                <span className="px-2 py-0.5 bg-lime-100 text-[#3F6212] rounded-md font-bold text-[10px] uppercase">
                                   Chief Admin
                                 </span>
                               )}
@@ -2721,11 +2721,11 @@ function AdminDashboardContent() {
                 {CATEGORIES.map((desk) => (
                   <div
                     key={desk.id}
-                    className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-2 hover:border-[#C61D1F] transition-all group"
+                    className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-2 hover:border-[#84CC16] transition-all group"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-sm text-slate-900 group-hover:text-[#C61D1F] transition-colors">{desk.name}</span>
-                      <span className="bg-red-50 text-[#C61D1F] text-[10px] font-extrabold px-2 py-0.5 rounded-md uppercase">
+                      <span className="font-extrabold text-sm text-slate-900 group-hover:text-[#84CC16] transition-colors">{desk.name}</span>
+                      <span className="bg-lime-50 text-[#3F6212] text-[10px] font-extrabold px-2 py-0.5 rounded-md uppercase">
                         {desk.count} stories
                       </span>
                     </div>
@@ -2738,7 +2738,7 @@ function AdminDashboardContent() {
                           setSelectedCategory(desk.name);
                           setActiveTab("dispatches");
                         }}
-                        className="text-[#C61D1F] font-bold hover:underline cursor-pointer"
+                        className="text-[#84CC16] font-bold hover:underline cursor-pointer"
                       >
                         Manage Dispatches →
                       </button>
@@ -2779,7 +2779,7 @@ function AdminDashboardContent() {
                       type="text"
                       value={profileName}
                       onChange={(e) => setProfileName(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:border-[#C61D1F] focus:outline-hidden"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:border-[#84CC16] focus:outline-hidden"
                     />
                   </div>
 
@@ -2810,7 +2810,7 @@ function AdminDashboardContent() {
                     <select
                       value={profileDesk}
                       onChange={(e) => setProfileDesk(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:border-[#C61D1F] focus:outline-hidden bg-white"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:border-[#84CC16] focus:outline-hidden bg-white"
                     >
                       {CATEGORIES.map((c) => (
                         <option key={c.id} value={c.name}>{c.name}</option>
@@ -2826,7 +2826,7 @@ function AdminDashboardContent() {
                       value={profileBio}
                       onChange={(e) => setProfileBio(e.target.value)}
                       placeholder="Brief background on journalistic coverage across Northern Nigeria & Sahel..."
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden resize-none"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-[#84CC16] text-xs focus:outline-hidden resize-none"
                     />
                     <p className="text-[11px] text-slate-400 mt-1">
                       This biography and photo will appear under &ldquo;About the Author&rdquo; on all articles you publish.
@@ -2837,11 +2837,11 @@ function AdminDashboardContent() {
                     <label className="block text-xs font-bold uppercase text-slate-700 mb-1.5">Editorial Notifications</label>
                     <div className="space-y-2">
                       <label className="flex items-center space-x-2 text-xs text-slate-700 cursor-pointer">
-                        <input type="checkbox" defaultChecked className="rounded text-[#C61D1F] focus:ring-[#C61D1F]" />
+                        <input type="checkbox" defaultChecked className="rounded text-[#84CC16] focus:ring-[#84CC16]" />
                         <span>Email alert whenever a correspondent submits a pitch</span>
                       </label>
                       <label className="flex items-center space-x-2 text-xs text-slate-700 cursor-pointer">
-                        <input type="checkbox" defaultChecked className="rounded text-[#C61D1F] focus:ring-[#C61D1F]" />
+                        <input type="checkbox" defaultChecked className="rounded text-[#84CC16] focus:ring-[#84CC16]" />
                         <span>Daily subscriber briefing summary at 6:00 AM</span>
                       </label>
                     </div>
@@ -2853,7 +2853,7 @@ function AdminDashboardContent() {
                 <button
                   type="button"
                   onClick={handleSaveProfile}
-                  className="px-6 py-2.5 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
+                  className="px-6 py-2.5 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
                 >
                   Save Profile Changes
                 </button>
@@ -2883,7 +2883,7 @@ function AdminDashboardContent() {
 
                 <button
                   onClick={exportSubscribersCSV}
-                  className="px-4 py-2 bg-slate-900 hover:bg-[#C61D1F] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors flex items-center space-x-2 cursor-pointer shadow-xs"
+                  className="px-4 py-2 bg-slate-900 hover:bg-[#84CC16] hover:text-black text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors flex items-center space-x-2 cursor-pointer shadow-xs"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Export CSV</span>
@@ -2930,7 +2930,7 @@ function AdminDashboardContent() {
             {/* Pinned Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 shrink-0 bg-white">
               <div className="flex items-center space-x-2.5">
-                <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
+                <span className="w-2.5 h-5 bg-[#84CC16] rounded-xs inline-block" />
                 <h3 className="text-base sm:text-lg font-extrabold text-slate-900 uppercase tracking-wide">
                   {editingArticle ? "Edit Story Dispatch" : "Publish New Story Dispatch"}
                 </h3>
@@ -2987,7 +2987,7 @@ function AdminDashboardContent() {
                   placeholder="e.g. Kano Agritech Hub Secures $1.5M Seed Round"
                   value={formData.title}
                   onChange={(e) => handleHeadlineChange(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-sm focus:outline-hidden"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#84CC16] text-sm focus:outline-hidden"
                 />
               </div>
 
@@ -3029,7 +3029,7 @@ function AdminDashboardContent() {
                   )}
                 </div>
 
-                <div className="flex items-center rounded-xl border border-slate-200 bg-white overflow-hidden focus-within:border-[#C61D1F]">
+                <div className="flex items-center rounded-xl border border-slate-200 bg-white overflow-hidden focus-within:border-[#84CC16]">
                   <span className="px-3 text-slate-400 text-xs font-mono select-none bg-slate-50 border-r border-slate-200 py-2">
                     /article/
                   </span>
@@ -3057,7 +3057,7 @@ function AdminDashboardContent() {
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden bg-white"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#84CC16] text-xs focus:outline-hidden bg-white"
                   >
                     {desksList.map((cat) => (
                       <option key={cat.id} value={cat.name}>
@@ -3076,7 +3076,7 @@ function AdminDashboardContent() {
                     value={formData.authorName}
                     onChange={(e) => setFormData({ ...formData, authorName: e.target.value })}
                     placeholder="Select or enter byline..."
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#84CC16] text-xs focus:outline-hidden"
                   />
                   <datalist id="author-byline-options">
                     <option value="The Zango Bureau" />
@@ -3094,7 +3094,7 @@ function AdminDashboardContent() {
                     type="text"
                     value={formData.readTime}
                     onChange={(e) => setFormData({ ...formData, readTime: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#84CC16] text-xs focus:outline-hidden"
                   />
                 </div>
               </div>
@@ -3109,7 +3109,7 @@ function AdminDashboardContent() {
                   placeholder="e.g. Northern Nigeria, Kano, Venture Capital, Agribusiness"
                   value={formData.tags}
                   onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#84CC16] text-xs focus:outline-hidden"
                 />
                 {availableTags.length > 0 && (
                   <div className="flex flex-wrap items-center gap-1.5 pt-2">
@@ -3150,7 +3150,7 @@ function AdminDashboardContent() {
                   placeholder="Short 2-line summary for front page cards and search snippets..."
                   value={formData.excerpt}
                   onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden resize-none"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-[#84CC16] text-xs focus:outline-hidden resize-none"
                 />
               </div>
 
@@ -3173,7 +3173,7 @@ function AdminDashboardContent() {
                       type="checkbox"
                       checked={formData.isFeatured}
                       onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
-                      className="rounded text-[#C61D1F] focus:ring-[#C61D1F]"
+                      className="rounded text-[#84CC16] focus:ring-[#84CC16]"
                     />
                     <span className="font-semibold text-slate-800">Hero Headline</span>
                   </label>
@@ -3183,7 +3183,7 @@ function AdminDashboardContent() {
                       type="checkbox"
                       checked={formData.isLatest}
                       onChange={(e) => setFormData({ ...formData, isLatest: e.target.checked })}
-                      className="rounded text-[#C61D1F] focus:ring-[#C61D1F]"
+                      className="rounded text-[#84CC16] focus:ring-[#84CC16]"
                     />
                     <span className="font-semibold text-slate-800">Latest Breaking</span>
                   </label>
@@ -3193,7 +3193,7 @@ function AdminDashboardContent() {
                       type="checkbox"
                       checked={formData.isTrending}
                       onChange={(e) => setFormData({ ...formData, isTrending: e.target.checked })}
-                      className="rounded text-[#C61D1F] focus:ring-[#C61D1F]"
+                      className="rounded text-[#84CC16] focus:ring-[#84CC16]"
                     />
                     <span className="font-semibold text-slate-800">Trending Velocity</span>
                   </label>
@@ -3203,7 +3203,7 @@ function AdminDashboardContent() {
                       type="checkbox"
                       checked={formData.isEditorsPick}
                       onChange={(e) => setFormData({ ...formData, isEditorsPick: e.target.checked })}
-                      className="rounded text-[#C61D1F] focus:ring-[#C61D1F]"
+                      className="rounded text-[#84CC16] focus:ring-[#84CC16]"
                     />
                     <span className="font-semibold text-slate-800">Editor&apos;s Pick</span>
                   </label>
@@ -3231,7 +3231,7 @@ function AdminDashboardContent() {
                 <button
                   type="submit"
                   form="story-dispatch-form"
-                  className="px-6 py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
+                  className="px-6 py-2 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
                 >
                   {editingArticle ? "Save Changes" : "Publish Dispatch"}
                 </button>
@@ -3249,7 +3249,7 @@ function AdminDashboardContent() {
             
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 shrink-0 bg-white">
               <div className="flex items-center space-x-2.5">
-                <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
+                <span className="w-2.5 h-5 bg-[#84CC16] rounded-xs inline-block" />
                 <div>
                   <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wide">
                     Add Newsroom Staff Member
@@ -3277,7 +3277,7 @@ function AdminDashboardContent() {
                   placeholder="e.g. Zainab Aliyu"
                   value={newMemberForm.name}
                   onChange={(e) => setNewMemberForm({ ...newMemberForm, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-sm focus:outline-hidden"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#84CC16] text-sm focus:outline-hidden"
                 />
               </div>
 
@@ -3289,7 +3289,7 @@ function AdminDashboardContent() {
                   placeholder="e.g. zainab.aliyu@thezango.org"
                   value={newMemberForm.email}
                   onChange={(e) => setNewMemberForm({ ...newMemberForm, email: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-sm focus:outline-hidden"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#84CC16] text-sm focus:outline-hidden"
                 />
               </div>
 
@@ -3299,7 +3299,7 @@ function AdminDashboardContent() {
                   <select
                     value={newMemberForm.role}
                     onChange={(e) => setNewMemberForm({ ...newMemberForm, role: e.target.value as NewsroomRole })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden bg-white"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#84CC16] text-xs focus:outline-hidden bg-white"
                   >
                     <option value="writer">Staff Writer (Submit Manuscripts)</option>
                     <option value="editor">Desk Editor (Review & Publish)</option>
@@ -3312,7 +3312,7 @@ function AdminDashboardContent() {
                   <select
                     value={newMemberForm.desk}
                     onChange={(e) => setNewMemberForm({ ...newMemberForm, desk: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden bg-white"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#84CC16] text-xs focus:outline-hidden bg-white"
                   >
                     {CATEGORIES.map((c) => (
                       <option key={c.id} value={c.name}>{c.name}</option>
@@ -3337,7 +3337,7 @@ function AdminDashboardContent() {
                   placeholder="Brief editorial background, focus areas, and geographic beat coverage..."
                   value={newMemberForm.bio}
                   onChange={(e) => setNewMemberForm({ ...newMemberForm, bio: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden resize-none"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-[#84CC16] text-xs focus:outline-hidden resize-none"
                 />
               </div>
             </form>
@@ -3355,7 +3355,7 @@ function AdminDashboardContent() {
                 <button
                   type="submit"
                   form="team-member-form"
-                  className="px-6 py-2 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
+                  className="px-6 py-2 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
                 >
                   Confirm & Add Staff
                 </button>
@@ -3436,7 +3436,7 @@ function AdminDashboardContent() {
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center space-x-2">
-                <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
+                <span className="w-2.5 h-5 bg-[#84CC16] rounded-xs inline-block" />
                 <h3 className="text-sm font-extrabold text-slate-900 uppercase">
                   Merchant Dossier & Verification
                 </h3>
@@ -3510,7 +3510,7 @@ function AdminDashboardContent() {
                   placeholder="e.g. CAC verified, inspected products at Dala industrial area..."
                   value={merchantReviewNotes}
                   onChange={(e) => setMerchantReviewNotes(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-[#C61D1F] text-xs focus:outline-hidden resize-none"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-[#84CC16] text-xs focus:outline-hidden resize-none"
                 />
               </div>
             </div>
@@ -3545,7 +3545,7 @@ function AdminDashboardContent() {
                   type="button"
                   disabled={updatingMerchantId === selectedMerchant.id}
                   onClick={() => handleUpdateMerchantStatus(selectedMerchant.id, "approved", merchantReviewNotes)}
-                  className="px-4 py-1.5 bg-[#C61D1F] hover:bg-[#A51719] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
+                  className="px-4 py-1.5 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
                 >
                   Approve Vendor
                 </button>
@@ -3560,7 +3560,7 @@ function AdminDashboardContent() {
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-lg w-full flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="bg-gradient-to-r from-[#C61D1F] to-[#991517] p-6 text-white text-center relative">
+            <div className="bg-gradient-to-r from-[#84CC16] to-[#3F6212] p-6 text-white text-center relative">
               <button
                 type="button"
                 onClick={() => {
@@ -3591,7 +3591,7 @@ function AdminDashboardContent() {
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Clearance</span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-red-100 text-[#C61D1F] font-bold text-[11px] uppercase">
+                  <span className="px-2.5 py-0.5 rounded-full bg-lime-100 text-[#3F6212] font-bold text-[11px] uppercase">
                     {staffCredentialsModal.role}
                   </span>
                 </div>
@@ -3657,7 +3657,7 @@ function AdminDashboardContent() {
                     setStaffCredentialsModal(null);
                     setCopiedCredentials(false);
                   }}
-                  className="w-full sm:w-auto py-2.5 px-6 bg-[#C61D1F] hover:bg-[#A51719] text-white font-bold rounded-xl uppercase tracking-wider transition-all cursor-pointer text-xs"
+                  className="w-full sm:w-auto py-2.5 px-6 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold font-bold rounded-xl uppercase tracking-wider transition-all cursor-pointer text-xs"
                 >
                   Done
                 </button>

@@ -17,7 +17,7 @@ async function TrendingList() {
       {trendingArticles.map((article, idx) => (
         <article
           key={article.id}
-          className="group bg-white border border-[#E5E6E8] hover:border-[#C61D1F] rounded-2xl overflow-hidden shadow-2xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
+          className="group bg-white border border-[#E5E6E8] hover:border-[#84CC16] rounded-2xl overflow-hidden shadow-2xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
         >
           <div>
             <div className="relative w-full h-48 overflow-hidden bg-gray-100">
@@ -45,7 +45,7 @@ async function TrendingList() {
                 <span>{article.readTime}</span>
               </div>
 
-              <h2 className="text-base font-bold text-[#000000] group-hover:text-[#C61D1F] transition-colors leading-snug line-clamp-2 mb-2.5">
+              <h2 className="text-base font-bold text-[#000000] group-hover:text-[#84CC16] transition-colors leading-snug line-clamp-2 mb-2.5">
                 <Link href={`/article/${article.slug}`}>
                   {article.title}
                 </Link>
@@ -61,13 +61,13 @@ async function TrendingList() {
             <div className="pt-3 border-t border-[#E5E6E8] flex items-center justify-between text-xs">
               <Link
                 href={`/author/${article.author.slug || "editorial-desk"}`}
-                className="font-semibold text-[#535252] hover:text-[#C61D1F] transition-colors"
+                className="font-semibold text-[#535252] hover:text-[#84CC16] transition-colors"
               >
                 By {article.author.name}
               </Link>
               <Link
                 href={`/article/${article.slug}`}
-                className="inline-flex items-center space-x-1 text-[#C61D1F] font-bold uppercase tracking-wider hover:underline"
+                className="inline-flex items-center space-x-1 text-[#84CC16] font-bold uppercase tracking-wider hover:underline"
               >
                 <span>Read Story</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -89,7 +89,7 @@ export default function TrendingPage() {
         <div className="mb-8">
           <Link
             href="/"
-            className="inline-flex items-center space-x-2 text-xs font-bold text-[#535252] hover:text-[#C61D1F] uppercase tracking-wider transition-colors"
+            className="inline-flex items-center space-x-2 text-xs font-bold text-[#535252] hover:text-[#84CC16] uppercase tracking-wider transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Return to Front Page</span>
@@ -98,8 +98,8 @@ export default function TrendingPage() {
 
         {/* Header */}
         <div className="max-w-3xl mb-12">
-          <div className="inline-flex items-center space-x-2 text-[#C61D1F] text-xs font-bold uppercase tracking-widest mb-3">
-            <Flame className="w-4 h-4 text-[#C61D1F]" />
+          <div className="inline-flex items-center space-x-2 text-[#84CC16] text-xs font-bold uppercase tracking-widest mb-3">
+            <Flame className="w-4 h-4 text-[#84CC16]" />
             <span>Real-time Velocity</span>
           </div>
           <h1 className="text-3xl sm:text-5xl font-extrabold text-[#000000] tracking-tight leading-tight mb-4">

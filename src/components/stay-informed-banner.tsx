@@ -81,7 +81,7 @@ export default function StayInformedBanner() {
           <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E6E8] p-6 shadow-xs flex flex-col justify-between">
             <div>
               <div className="flex items-center space-x-2.5 pb-3 mb-5 border-b border-[#E5E6E8]">
-                <span className="w-2.5 h-5 bg-[#C61D1F] rounded-xs inline-block" />
+                <span className="w-2.5 h-5 bg-[#84CC16] rounded-xs inline-block" />
                 <h3 className="text-lg font-bold text-[#000000] uppercase tracking-wide">
                   Follow Us
                 </h3>
@@ -96,7 +96,7 @@ export default function StayInformedBanner() {
                       href={s.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-between p-3.5 rounded-xl border border-[#E5E6E8] hover:border-[#C61D1F] group transition-all duration-200 hover:shadow-2xs"
+                      className="flex items-center justify-between p-3.5 rounded-xl border border-[#E5E6E8] hover:border-[#84CC16] group transition-all duration-200 hover:shadow-2xs"
                     >
                       <div className="flex items-center space-x-3.5">
                         <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${s.bgColor}`}>
@@ -106,7 +106,7 @@ export default function StayInformedBanner() {
                           {s.label}
                         </span>
                       </div>
-                      <span className="text-xs font-bold text-[#9C9C9C] group-hover:text-[#C61D1F] transition-colors">
+                      <span className="text-xs font-bold text-[#9C9C9C] group-hover:text-[#84CC16] transition-colors">
                         →
                       </span>
                     </a>
@@ -126,13 +126,13 @@ export default function StayInformedBanner() {
           <div className="lg:col-span-7 bg-[#000000] text-white rounded-2xl p-6 sm:p-10 shadow-xl flex flex-col justify-between relative overflow-hidden">
             <div className="absolute top-6 right-6 flex items-center space-x-2">
               <span className="w-3 h-3 rounded-full bg-white opacity-40 inline-block" />
-              <span className="w-3 h-3 rounded-full bg-[#C61D1F] inline-block animate-pulse" />
+              <span className="w-3 h-3 rounded-full bg-[#84CC16] inline-block animate-pulse" />
             </div>
 
             <div>
               <div className="flex items-center space-x-2 text-red-500 mb-2">
-                <Mail className="w-5 h-5 text-[#C61D1F]" />
-                <span className="text-xs font-bold uppercase tracking-widest text-[#C61D1F]">
+                <Mail className="w-5 h-5 text-[#84CC16]" />
+                <span className="text-xs font-bold uppercase tracking-widest text-[#84CC16]">
                   Daily Briefing
                 </span>
               </div>
@@ -162,13 +162,13 @@ export default function StayInformedBanner() {
                         placeholder="Enter your email..."
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-4 py-3.5 rounded-lg bg-white text-[#111111] placeholder-[#9C9C9C] text-sm focus:outline-hidden focus:ring-2 focus:ring-[#C61D1F] shadow-inner"
+                        className="w-full px-4 py-3.5 rounded-lg bg-white text-[#111111] placeholder-[#9C9C9C] text-sm focus:outline-hidden focus:ring-2 focus:ring-[#84CC16] shadow-inner"
                       />
                     </div>
                     <button
                       type="submit"
                       disabled={loading}
-                      className="px-6 py-3.5 rounded-lg bg-[#C61D1F] hover:bg-[#A51719] text-white font-bold text-xs uppercase tracking-wider transition-colors duration-200 flex items-center justify-center space-x-2 shrink-0 cursor-pointer shadow-md disabled:opacity-50"
+                      className="px-6 py-3.5 rounded-lg bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold font-bold text-xs uppercase tracking-wider transition-colors duration-200 flex items-center justify-center space-x-2 shrink-0 cursor-pointer shadow-md disabled:opacity-50"
                     >
                       <span>{loading ? "Subscribing..." : "Subscribe"}</span>
                       <Send className="w-3.5 h-3.5" />
