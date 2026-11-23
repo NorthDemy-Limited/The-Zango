@@ -83,7 +83,7 @@ export default function Footer() {
             </Link>
 
             <p className="text-sm text-[#707070] leading-relaxed max-w-sm">
-              The Zango is Your trusted source for innovation insights happening up North.
+              The Zango is Your trusted source for innovation insights happening up North, and stories that matter to you.
             </p>
 
             {/* Social Icons */}
