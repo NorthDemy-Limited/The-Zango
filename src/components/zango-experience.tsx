@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Headphones, Video, Sparkles } from "lucide-react";
+import { ArrowRight, FileText, Sparkles } from "lucide-react";
 
 export default function ZangoExperience() {
   return (
@@ -32,7 +32,7 @@ export default function ZangoExperience() {
             <div className="absolute inset-0 p-6 sm:p-10 lg:p-14 flex flex-col justify-center max-w-2xl text-white">
               <div className="inline-flex items-center space-x-2 bg-[#84CC16] text-black font-bold px-3 py-1 rounded-sm text-xs font-bold uppercase tracking-wider mb-4 w-fit shadow-xs">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Multimedia & Deep Dives</span>
+                <span>Investigative Deep Dives</span>
               </div>
 
               <h3 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight mb-3">
@@ -40,7 +40,7 @@ export default function ZangoExperience() {
               </h3>
 
               <p className="text-sm sm:text-base text-gray-200 leading-relaxed mb-6">
-                Go beyond headlines. Experience serialized investigative podcasts, video field essays, and interactive data infographics documenting Africa&apos;s cultural and technological revolution.
+                Go beyond headlines. Experience serialized investigative dossiers, long-form field dispatches, and comprehensive data analysis documenting Northern Nigeria&apos;s cultural and technological evolution.
               </p>
 
               <div className="flex flex-wrap items-center gap-4">
@@ -54,13 +54,13 @@ export default function ZangoExperience() {
 
                 <div className="flex items-center space-x-4 text-xs font-semibold text-gray-300">
                   <span className="flex items-center space-x-1.5">
-                    <Headphones className="w-4 h-4 text-red-400" />
-                    <span>Audio Podcasts</span>
+                    <FileText className="w-4 h-4 text-[#84CC16]" />
+                    <span>Special Dispatches</span>
                   </span>
                   <span>•</span>
                   <span className="flex items-center space-x-1.5">
-                    <Video className="w-4 h-4 text-red-400" />
-                    <span>Video Essays</span>
+                    <Sparkles className="w-4 h-4 text-[#84CC16]" />
+                    <span>In-Depth Reporting</span>
                   </span>
                 </div>
               </div>

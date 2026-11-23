@@ -120,10 +120,10 @@ export default function TrendingPopular({ trendingArticle, popularArticles }: Tr
 
             <div className="mt-6 pt-5 border-t border-[#E5E6E8] bg-[#F7FEE7] rounded-xl p-4 text-center">
               <p className="text-xs font-bold text-[#84CC16] uppercase tracking-wider mb-1">
-                Never Miss a Story
+                Labarin Zango
               </p>
               <p className="text-xs text-[#535252]">
-                Join 25,000+ readers getting our daily briefing.
+                Join 25,000+ readers getting Labarin Zango innovation dispatches.
               </p>
             </div>
 

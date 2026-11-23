@@ -44,15 +44,9 @@ export default function Footer() {
 
   const categories = [
     { name: "News", href: "/category/news" },
-    { name: "Business", href: "/category/business" },
-    { name: "Technology", href: "/category/technology" },
-    { name: "Lifestyle", href: "/category/lifestyle" },
-    { name: "Sports", href: "/category/sports" },
-    { name: "Opinion", href: "/category/opinion" },
-    { name: "Politics", href: "/category/politics" },
-    { name: "Entertainment", href: "/category/entertainment" },
-    { name: "Health", href: "/category/health" },
-    { name: "Education", href: "/category/education" },
+    { name: "Features", href: "/category/features" },
+    { name: "Zango Scope", href: "/scope" },
+    { name: "Marketplace", href: "/marketplace" },
   ];
 
   const quickLinks = [
@@ -89,7 +83,7 @@ export default function Footer() {
             </Link>
 
             <p className="text-sm text-[#707070] leading-relaxed max-w-sm">
-              The Zango is Your trusted source for breaking news, insightful analysis, and stories that matter to you.
+              The Zango is Your trusted source for innovation insights happening up North.
             </p>
 
             {/* Social Icons */}
@@ -193,19 +187,19 @@ export default function Footer() {
           <div className="lg:col-span-3">
             <div className="mb-4">
               <h4 className="text-sm font-extrabold text-[#000000] uppercase tracking-wider mb-1">
-                Newsletter
+                Labarin Zango
               </h4>
               <span className="w-8 h-0.5 bg-[#84CC16] block rounded-full" />
             </div>
 
             <p className="text-xs sm:text-sm text-[#707070] mb-4 leading-relaxed">
-              Subscribe to our newsletter and get the latest news updates delivered to your inbox.
+              Subscribe to Labarin Zango and get the latest innovation insights delivered directly to your inbox.
             </p>
 
             {submitted ? (
               <div className="bg-[#F7FEE7] border border-red-200 rounded-lg p-3 flex items-center space-x-2 text-xs text-[#84CC16] font-semibold">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
-                <span>Thank you for subscribing!</span>
+                <span>Thank you for subscribing to Labarin Zango!</span>
               </div>
             ) : (
               <form onSubmit={handleSubscribe} className="space-y-2">

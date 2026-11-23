@@ -76,17 +76,10 @@ export const AUTHORS: Author[] = [
 ];
 
 export const CATEGORIES: Category[] = [
-  { id: "news", name: "News", slug: "news", description: "Breaking news, political updates and current affairs from across Northern Nigeria and beyond.", count: 24, status: "breaking", lastUpdated: "Just now", isLive: true },
-  { id: "business", name: "Business", slug: "business", description: "Economic insights, market dynamics, venture funding and startup growth.", count: 18, status: "live", lastUpdated: "12m ago", isLive: true },
-  { id: "technology", name: "Technology", slug: "technology", description: "Digital innovation, software engineering, climate tech, and tech ecosystems.", count: 32, status: "live", lastUpdated: "25m ago", isLive: true },
-  { id: "opinion", name: "Opinion", slug: "opinion", description: "Critical analysis, thoughtful commentary, and perspective essays from leading voices.", count: 14, status: "updated", lastUpdated: "1h ago", isLive: false },
-  { id: "lifestyle", name: "Lifestyle", slug: "lifestyle", description: "Culture, arts, health, culinary traditions, and youth trends.", count: 11, status: "active", lastUpdated: "2h ago", isLive: false },
-  { id: "sports", name: "Sports", slug: "sports", description: "National and regional athletics, football leagues, and sporting achievements.", count: 9, status: "active", lastUpdated: "3h ago", isLive: false },
-  { id: "features", name: "Features", slug: "features", description: "Long-form journalism, human interest stories, and investigative reports.", count: 15, status: "live", lastUpdated: "40m ago", isLive: true },
-  { id: "politics", name: "Politics", slug: "politics", description: "Governance, policy analysis, legislative developments, and civic accountability.", count: 12, status: "breaking", lastUpdated: "5m ago", isLive: true },
-  { id: "entertainment", name: "Entertainment", slug: "entertainment", description: "Cinema, Kannywood culture, contemporary music, and performing arts.", count: 8, status: "active", lastUpdated: "4h ago", isLive: false },
-  { id: "health", name: "Health", slug: "health", description: "Public health initiatives, maternal care innovations, and medical technology.", count: 7, status: "live", lastUpdated: "18m ago", isLive: true },
-  { id: "education", name: "Education", slug: "education", description: "STEM curricula, university research breakthroughs, and vocational literacy.", count: 10, status: "active", lastUpdated: "2h ago", isLive: false },
+  { id: "news", name: "News", slug: "news", description: "Breaking news, political updates, and current affairs from across Northern Nigeria and beyond.", count: 24, status: "breaking", lastUpdated: "Just now", isLive: true },
+  { id: "features", name: "Features", slug: "features", description: "Long-form journalism, human interest stories, in-depth investigations, and essays.", count: 18, status: "live", lastUpdated: "40m ago", isLive: true },
+  { id: "scope", name: "Zango Scope", slug: "scope", description: "In-depth investigative journalism, special dispatches, and policy deep-dives.", count: 15, status: "live", lastUpdated: "12m ago", isLive: true },
+  { id: "marketplace", name: "Marketplace", slug: "marketplace", description: "Regional commerce, vendor directory, business opportunities, and products.", count: 12, status: "active", lastUpdated: "1h ago", isLive: true },
 ];
 
 export const INITIAL_COMMENTS: Comment[] = [
@@ -143,7 +136,7 @@ Key lessons learned by northern founders in H1 2026:
 As the northern tech corridor continues to expand, founders who master the nuanced psychology of investment will be the ones who build enduring, cross-border African institutions.
     `,
     coverImage: "/assets/hero-featured.jpg",
-    category: "Business",
+    category: "Zango Scope",
     tags: ["Venture Capital", "Northern Startups", "Founders", "Funding"],
     author: AUTHORS[0],
     publishedAt: "May 19, 2026",
@@ -165,7 +158,7 @@ Operating out of Kaduna State, Tomato Jos has pioneered an integrated model brid
 Simultaneously, agricultural fintech platform Agriarche secured $3.5 million in strategic debt and equity to bolster its grain trade logistics and warehousing receipt infrastructure throughout Kano, Jigawa, and Bauchi states.
     `,
     coverImage: "/assets/news-tomato-jos.jpg",
-    category: "Business",
+    category: "News",
     tags: ["Agriculture", "Investment", "Food Security", "Kaduna"],
     author: AUTHORS[1],
     publishedAt: "July 14, 2026",
@@ -188,7 +181,7 @@ Northern communities are facing a dual threat. While rising temperatures contrib
 Yet, amidst these ecological hurdles, a new generation of climate-tech startups is turning environmental vulnerability into scalable technological innovation. From solar-powered cold storage hubs in rural marketplaces to AI-driven drought forecasting tools tailored for Hausa-speaking farmers, innovation is thriving where adversity is highest.
     `,
     coverImage: "/assets/trending-hero.jpg",
-    category: "Technology",
+    category: "Zango Scope",
     tags: ["Climate Tech", "Sustainability", "Agritech", "Green Energy"],
     author: AUTHORS[2],
     publishedAt: "July 13, 2024",
@@ -211,7 +204,7 @@ GITEX Nigeria has officially announced its return, establishing a multi-city pre
 With the federal government’s drive toward digital exports and AI adoption, this year's summit promises unprecedented exposure for homegrown northern innovators and technology hubs.
     `,
     coverImage: "/assets/news-gitex.jpg",
-    category: "Technology",
+    category: "News",
     tags: ["Conferences", "Global Tech", "GITEX", "Abuja"],
     author: AUTHORS[3],
     publishedAt: "June 22, 2024",
@@ -275,7 +268,7 @@ Startup Kano, one of Northern Nigeria’s premier incubation and acceleration hu
 The initiative aims to nurture early-stage climate innovators with seed micro-grants, prototyping spaces, and direct links to international climate finance syndicates. As the Sahelian desertification creeps southward, local engineering initiatives are providing practical, community-owned solutions.
     `,
     coverImage: "/assets/news-startup-kano.png",
-    category: "Technology",
+    category: "Zango Scope",
     tags: ["Startup Kano", "Incubation", "Ecosystem", "Kano"],
     author: AUTHORS[5],
     publishedAt: "July 14, 2026",
@@ -315,7 +308,7 @@ Nigeria currently expends hundreds of millions of dollars annually importing pro
 By backing Tomato Jos's state-of-the-art cold chain and processing hub, Sabou Capital is setting a benchmark for catalytic private equity that blends healthy commercial returns with verifiable food security impact.
     `,
     coverImage: "/assets/news-sabou-capital.jpg",
-    category: "Business",
+    category: "Marketplace",
     tags: ["Agribusiness", "Industrialization", "Private Equity", "Kaduna"],
     author: AUTHORS[1],
     publishedAt: "July 14, 2026",
@@ -361,7 +354,7 @@ Digital sovereignty is not merely a question of server locations; it is a questi
 True independence will not be purchased through multinational cloud contracts. It will be coded, line by line, by Sahelian engineers building systems that reflect their own physical and economic realities.
     `,
     coverImage: "/assets/trending-hero.jpg",
-    category: "Opinion",
+    category: "Features",
     tags: ["Digital Sovereignty", "Policy", "Open Source", "Infrastructure"],
     author: AUTHORS[0],
     publishedAt: "July 15, 2026",
@@ -382,7 +375,7 @@ At the heart of the ancient city of Kano, a quiet culinary renaissance is underw
 From artisanal Danwake crafted with high-protein indigenous legumes to sparkling hibiscus infusions aged in clay vessels, northern culinary heritage is emerging as a dynamic driver of creative exports and gastro-tourism.
     `,
     coverImage: "/assets/news-hausa-digital.png",
-    category: "Lifestyle",
+    category: "Marketplace",
     tags: ["Culinary", "Heritage", "Artisan", "Lifestyle"],
     author: AUTHORS[4],
     publishedAt: "July 15, 2026",
@@ -403,7 +396,7 @@ The Northern Athletics Syndicate, an initiative backed by regional sporting phil
 "Talent is evenly distributed, but scientific coaching and nutritional programming historically were not," remarks academy director Coach Sani Garba. With three academy alumni recently signing professional contracts with European top-flight clubs, the northern talent pipeline is proving that disciplined sports science creates generational opportunities.
     `,
     coverImage: "/assets/news-oxford-skoll.jpg",
-    category: "Sports",
+    category: "Marketplace",
     tags: ["Athletics", "Youth Development", "Football", "Talent"],
     author: AUTHORS[5],
     publishedAt: "July 15, 2026",
@@ -424,7 +417,7 @@ By transitioning from manual cash collection to interoperable digital treasury s
 "Fiscal sovereignty requires transparency," notes public finance analyst Aliyu Mahmud. "When taxpayers see their automated tax payments immediately reflected in public health clinic renovations and solar street lighting, compliance transforms from coercion to civic pride."
     `,
     coverImage: "/assets/hero-featured.jpg",
-    category: "Politics",
+    category: "News",
     tags: ["Governance", "Public Finance", "Policy", "Fiscal Federalism"],
     author: AUTHORS[1],
     publishedAt: "July 16, 2026",
@@ -445,7 +438,7 @@ Studios based in Jos and Kano are producing animated series inspired by pre-colo
 "Our stories have universal appeal," says lead animator Zainab Kabir. "Audiences worldwide are yearning for authentic mythologies that have never been seen in mainstream cinema. We are using Unreal Engine and Blender to give our ancestors' voices modern cinematic power."
     `,
     coverImage: "/assets/news-startup-kano.png",
-    category: "Entertainment",
+    category: "Features",
     tags: ["Animation", "Gaming", "Creative Economy", "Entertainment"],
     author: AUTHORS[4],
     publishedAt: "July 16, 2026",
@@ -466,7 +459,7 @@ A joint consortium of maternal health NGOs and local clean-tech engineers has de
 "Before the solar cold units arrived, our community had to transport expectant mothers over 40 kilometers of unpaved road for routine obstetric care," says head midwife Maryam Al-Hassan. "Today, our clinic delivers safe, refrigerated interventions on demand."
     `,
     coverImage: "/assets/news-climate-startup.jpg",
-    category: "Health",
+    category: "Zango Scope",
     tags: ["Public Health", "Maternal Care", "Solar Tech", "Rural Healthcare"],
     author: AUTHORS[2],
     publishedAt: "July 16, 2026",
@@ -487,7 +480,7 @@ Unlike shallow bootcamp models, the curriculum emphasizes low-level systems prog
 "We are preparing engineers who can build enduring infrastructure, not just frontend mockups," emphasizes program director Ibrahim Bello. Over 65% of last year's cohort have already secured remote engineering contracts with European and North American technology enterprises, injecting millions of dollars into regional household economies.
     `,
     coverImage: "/assets/news-hausa-barrier.jpg",
-    category: "Education",
+    category: "Features",
     tags: ["Software Engineering", "Education", "Tech Talents", "STEM"],
     author: AUTHORS[3],
     publishedAt: "July 16, 2026",

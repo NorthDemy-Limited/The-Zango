@@ -109,7 +109,12 @@ export default function ContactPage() {
                 <div>
                   <h3 className="text-sm font-bold text-[#000000] mb-1">Direct Line</h3>
                   <p className="text-xs text-[#707070] mb-1">Operational desk (9 AM - 6 PM WAT):</p>
-                  <p className="text-sm font-bold text-[#000000]">+234 (0) 800-ZANGO-NEWS</p>
+                  <a
+                    href="tel:+2347052164371"
+                    className="text-sm font-bold text-[#000000] hover:text-[#84CC16] transition-colors"
+                  >
+                    +234 705 216 4371
+                  </a>
                 </div>
               </div>
             </div>
