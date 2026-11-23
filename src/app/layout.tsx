@@ -20,7 +20,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL("https://thezango.com"),
   title: "The Zango — Your Trusted Voice for Northern Nigeria & African Innovation",
-  description: "The Zango is Your trusted source for innovation insights happening up North.",
+  description: "The Zango is Your trusted source for innovation insights happening up North, and stories that matter to you.",
   keywords: ["The Zango", "Northern Nigeria News", "African Startups", "Technology", "Climate Tech", "Business News"],
   authors: [{ name: "The Zango Editorial Team" }],
   icons: {
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   manifest: "/site.webmanifest",
   openGraph: {
     title: "The Zango — Your Trusted Voice for Northern Nigeria & African Innovation",
-    description: "The Zango is Your trusted source for innovation insights happening up North.",
+    description: "The Zango is Your trusted source for innovation insights happening up North, and stories that matter to you.",
     url: "https://thezango.com",
     siteName: "The Zango",
     images: [
