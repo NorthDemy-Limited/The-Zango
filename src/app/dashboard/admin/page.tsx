@@ -567,7 +567,20 @@ function AdminDashboardContent() {
     triggerToast("Staff member added to newsroom roster!");
   };
 
+  const refreshStaffList = async () => {
+    const staffRes = await fetch("/api/admin/staff").then((r) => r.json()).catch(() => null);
+    if (staffRes?.success && staffRes.members) {
+      setTeamMembers(staffRes.members);
+    } else {
+      const members = await getTeamMembers();
+      setTeamMembers([...members]);
+    }
+  };
+
   const handleUpdateRole = async (id: string, targetRole: NewsroomRole, name: string) => {
+    setTeamMembers((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, role: targetRole } : m))
+    );
     try {
       const res = await fetch(`/api/admin/staff/${id}`, {
         method: "PATCH",
@@ -576,7 +589,7 @@ function AdminDashboardContent() {
       });
       const data = await res.json();
       if (data.success) {
-        await loadData();
+        await refreshStaffList();
         triggerToast("Updated role for " + name + " to " + targetRole.toUpperCase());
         return;
       }
@@ -584,12 +597,15 @@ function AdminDashboardContent() {
       // fallback
     }
     await updateTeamMemberRole(id, targetRole);
-    await loadData();
+    await refreshStaffList();
     triggerToast("Updated role for " + name + " to " + targetRole.toUpperCase());
   };
 
   const handleToggleMemberStatus = async (id: string, currentStatus: "active" | "inactive", name: string) => {
     const nextStatus = currentStatus === "active" ? "inactive" : "active";
+    setTeamMembers((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, status: nextStatus } : m))
+    );
     try {
       const res = await fetch(`/api/admin/staff/${id}`, {
         method: "PATCH",
@@ -598,7 +614,7 @@ function AdminDashboardContent() {
       });
       const data = await res.json();
       if (data.success) {
-        await loadData();
+        await refreshStaffList();
         triggerToast(name + " status updated to " + nextStatus);
         return;
       }
@@ -606,26 +622,40 @@ function AdminDashboardContent() {
       // fallback
     }
     await updateTeamMemberStatus(id, nextStatus);
-    await loadData();
+    await refreshStaffList();
     triggerToast(name + " status updated to " + nextStatus);
   };
 
   const handleDeleteMember = async (id: string, name: string) => {
     if (confirm("Are you sure you want to remove " + name + " from newsroom staff?")) {
+      const previousMembers = [...teamMembers];
+      // Optimistic update: instantly remove from view
+      setTeamMembers((prev) => prev.filter((m) => m.id !== id));
       try {
         const res = await fetch(`/api/admin/staff/${id}`, { method: "DELETE" });
         const data = await res.json();
         if (data.success) {
-          await loadData();
+          await refreshStaffList();
           triggerToast("Removed " + name + " from newsroom roster.");
+          return;
+        } else {
+          // Rollback on rejection (e.g. protected root admin)
+          setTeamMembers(previousMembers);
+          triggerToast(data.message || "Failed to remove staff member");
           return;
         }
       } catch {
-        // fallback
+        // fallback to direct db deletion
+        try {
+          await deleteTeamMember(id);
+          await refreshStaffList();
+          triggerToast("Removed " + name + " from newsroom roster.");
+          return;
+        } catch {
+          setTeamMembers(previousMembers);
+          triggerToast("Failed to remove " + name);
+        }
       }
-      await deleteTeamMember(id);
-      await loadData();
-      triggerToast("Removed " + name + " from newsroom roster.");
     }
   };
 
