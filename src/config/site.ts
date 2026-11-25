@@ -1,7 +1,7 @@
 export const SITE_CONFIG = {
   name: "The Zango",
   description: "Your trusted voice for Northern Nigeria & African innovation, reporting, and commerce.",
-  url: process.env.NEXT_PUBLIC_SITE_URL || "https://thezango.org",
+  url: process.env.NEXT_PUBLIC_SITE_URL || "https://thezango.com",
   socials: {
     twitter: {
       name: "X (Twitter)",

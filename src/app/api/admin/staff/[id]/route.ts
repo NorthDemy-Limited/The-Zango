@@ -11,7 +11,7 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-const PROTECTED_ADMIN_EMAILS = ["usman.bello@thezango.org"];
+const PROTECTED_ADMIN_EMAILS = ["inquiry@thezango.com", "usman.bello@thezango.org"];
 const PROTECTED_ADMIN_IDS = ["usr-admin-1", "member-1"];
 
 export async function GET(request: Request, { params }: RouteParams) {

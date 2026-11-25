@@ -240,7 +240,7 @@ function LoginContent() {
                 <input
                   type="text"
                   required
-                  placeholder="editor1, author1, or admin@thezango.org"
+                  placeholder="editor1, author1, or inquiry@thezango.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 focus:border-[#84CC16] text-xs font-semibold focus:outline-hidden transition-all bg-slate-50/60 focus:bg-white text-slate-900"

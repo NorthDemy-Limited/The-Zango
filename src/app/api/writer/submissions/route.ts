@@ -74,7 +74,7 @@ export async function POST(request: Request) {
       content,
       category: category || "Technology",
       authorName: authorName || "Fatima Sanusi",
-      authorEmail: authorEmail || "fatima.sanusi@thezango.org",
+      authorEmail: authorEmail || "fatima.sanusi@thezango.com",
       coverImage: coverImage || "/assets/hero-featured.jpg",
       wordCount: words,
       readTime: computedReadTime,

@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
   const rawCover = article.coverImage || "/assets/hero-featured.jpg";
   const imageUrl = rawCover.startsWith("http")
     ? rawCover
-    : "https://thezango.org" + rawCover;
+    : "https://thezango.com" + rawCover;
 
   const authorName = article.author?.name || "The Zango Bureau";
   const articleCategory = article.category || "News";
@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     authors: [{ name: authorName }],
     keywords: articleTags,
     alternates: {
-      canonical: `https://thezango.org/article/${slug}`,
+      canonical: `https://thezango.com/article/${slug}`,
     },
     openGraph: {
       title: article.title,
@@ -100,7 +100,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   const articleImageUrl = coverImg.startsWith("http")
     ? coverImg
-    : `https://thezango.org${coverImg}`;
+    : `https://thezango.com${coverImg}`;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -115,21 +115,21 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         "@type": "Person",
         name: authorName,
         jobTitle: authorRole,
-        url: `https://thezango.org/author/${authorSlug}`,
+        url: `https://thezango.com/author/${authorSlug}`,
       },
     ],
     publisher: {
       "@type": "NewsMediaOrganization",
       name: "The Zango",
-      url: "https://thezango.org",
+      url: "https://thezango.com",
       logo: {
         "@type": "ImageObject",
-        url: "https://thezango.org/assets/logo.png",
+        url: "https://thezango.com/assets/logo.png",
       },
     },
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `https://thezango.org/article/${article.slug}`,
+      "@id": `https://thezango.com/article/${article.slug}`,
     },
     articleSection: articleCategory,
     keywords: articleTags.join(", "),

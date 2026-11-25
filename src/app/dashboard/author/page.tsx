@@ -127,7 +127,7 @@ function AuthorStudioContent() {
 
   // Load Writer Submissions, Published Articles, and Stats via API routes (with local fallback)
   const loadWriterData = useCallback(async () => {
-    const authorEmail = user?.email || "fatima.sanusi@thezango.org";
+    const authorEmail = user?.email || "fatima.sanusi@thezango.com";
     const authorName = user?.name || "Fatima Sanusi";
 
     try {
@@ -409,7 +409,7 @@ function AuthorStudioContent() {
         content,
         category,
         authorName: user?.name || "Fatima Sanusi",
-        authorEmail: user?.email || "fatima.sanusi@thezango.org",
+        authorEmail: user?.email || "fatima.sanusi@thezango.com",
         coverImage,
         tags,
         wordCount,
@@ -511,7 +511,7 @@ function AuthorStudioContent() {
           content,
           category,
           authorName: user?.name || "Fatima Sanusi",
-          authorEmail: user?.email || "fatima.sanusi@thezango.org",
+          authorEmail: user?.email || "fatima.sanusi@thezango.com",
           coverImage,
           tags,
           wordCount,
@@ -567,7 +567,7 @@ function AuthorStudioContent() {
           content,
           category,
           authorName: user?.name || "Fatima Sanusi",
-          authorEmail: user?.email || "fatima.sanusi@thezango.org",
+          authorEmail: user?.email || "fatima.sanusi@thezango.com",
           coverImage,
           tags,
           wordCount,
@@ -1210,7 +1210,7 @@ function AuthorStudioContent() {
                       <div className="flex items-center space-x-1.5 text-[11px] text-slate-500 font-mono mt-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/60">
                         <span className="text-slate-400 font-sans font-bold">Public URL Preview:</span>
                         <span className="text-emerald-700 font-semibold truncate">
-                          thezango.org/article/{computedSlug || "story-slug"}
+                          thezango.com/article/{computedSlug || "story-slug"}
                         </span>
                       </div>
                     )}
@@ -1823,7 +1823,7 @@ function AuthorStudioContent() {
                     </label>
                     <input
                       type="email"
-                      value={user?.email || "fatima.sanusi@thezango.org"}
+                      value={user?.email || "fatima.sanusi@thezango.com"}
                       disabled
                       className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed font-medium"
                     />
