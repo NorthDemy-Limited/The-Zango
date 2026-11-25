@@ -74,7 +74,7 @@ export async function POST(request: Request) {
       content,
       category: category || "Business",
       authorName: authorName || "Correspondent",
-      authorEmail: authorEmail || "correspondent@thezango.org",
+      authorEmail: authorEmail || "correspondent@thezango.com",
       coverImage: coverImage || "/assets/hero-featured.jpg",
       wordCount: words,
       readTime: computedReadTime,

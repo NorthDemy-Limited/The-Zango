@@ -1663,7 +1663,7 @@ function EditorDashboardContent() {
 
                 <div className="flex items-center rounded-xl border border-slate-200 bg-white overflow-hidden focus-within:border-blue-600">
                   <span className="px-3 text-slate-400 text-xs font-mono select-none bg-slate-50 border-r border-slate-200 py-2">
-                    thezango.org/article/
+                    thezango.com/article/
                   </span>
                   <input
                     type="text"

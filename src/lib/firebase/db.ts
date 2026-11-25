@@ -913,7 +913,7 @@ let localTeamMembersStore: NewsroomMember[] = [
   {
     id: "member-1",
     name: "Usman Bello",
-    email: "usman.bello@thezango.org",
+    email: "inquiry@thezango.com",
     username: "admin",
     role: "admin",
     desk: "Executive & Investigation",

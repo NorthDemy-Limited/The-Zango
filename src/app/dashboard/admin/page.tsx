@@ -3090,7 +3090,7 @@ function AdminDashboardContent() {
                                   Staff Writer
                                 </span>
                               )}
-                              {(member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) ? (
+                              {(member.email === "inquiry@thezango.com" || member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) ? (
                                 <span className="px-2 py-0.5 bg-slate-900 text-white rounded-md font-extrabold text-[10px] uppercase tracking-wider flex items-center space-x-1 shadow-2xs">
                                   <span>🔒 Permanent Bureau Chief</span>
                                 </span>
@@ -3108,7 +3108,7 @@ function AdminDashboardContent() {
                             </div>
                           </td>
                           <td className="py-4 px-6">
-                            {(member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) ? (
+                            {(member.email === "inquiry@thezango.com" || member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) ? (
                               <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
                                 ● Always Active
                               </span>
@@ -3126,7 +3126,7 @@ function AdminDashboardContent() {
                             )}
                           </td>
                           <td className="py-4 px-6 text-right">
-                            {(member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) ? (
+                            {(member.email === "inquiry@thezango.com" || member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) ? (
                               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Root Admin</span>
                             ) : (
                               <button
@@ -3172,7 +3172,7 @@ function AdminDashboardContent() {
                               <div className="text-[11px] text-slate-400 truncate">{member.email}</div>
                             </div>
                           </div>
-                          {(member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) ? (
+                          {(member.email === "inquiry@thezango.com" || member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) ? (
                             <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
                               ● Active
                             </span>
@@ -3197,7 +3197,7 @@ function AdminDashboardContent() {
                           </span>
 
                           <div className="flex items-center space-x-2">
-                            {(member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) ? (
+                            {(member.email === "inquiry@thezango.com" || member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) ? (
                               <span className="px-2 py-0.5 bg-slate-900 text-white rounded-md font-extrabold text-[9px] uppercase tracking-wider">
                                 Chief
                               </span>
@@ -3213,7 +3213,7 @@ function AdminDashboardContent() {
                               </select>
                             )}
 
-                            {!(member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) && (
+                            {!(member.email === "inquiry@thezango.com" || member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) && (
                               <button
                                 type="button"
                                 onClick={() => handleDeleteMember(member.id, member.name)}
@@ -3317,7 +3317,7 @@ function AdminDashboardContent() {
                     <label className="block text-xs font-bold uppercase text-slate-700 mb-1.5">Bureau Email</label>
                     <input
                       type="email"
-                      value={user?.email || "usman.bello@thezango.org"}
+                      value={user?.email || "inquiry@thezango.com"}
                       disabled
                       className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed font-medium"
                     />
@@ -3837,7 +3837,7 @@ function AdminDashboardContent() {
                 <input
                   type="email"
                   required
-                  placeholder="e.g. zainab.aliyu@thezango.org"
+                  placeholder="e.g. zainab.aliyu@thezango.com"
                   value={newMemberForm.email}
                   onChange={(e) => setNewMemberForm({ ...newMemberForm, email: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#84CC16] text-sm focus:outline-hidden"

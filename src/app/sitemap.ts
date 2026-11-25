@@ -3,7 +3,7 @@ import { getArticles } from "@/lib/firebase/db";
 import { CATEGORIES } from "@/data/mock-articles";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://thezango.org";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://thezango.com";
   const articles = await getArticles();
 
   const articleEntries: MetadataRoute.Sitemap = articles.map((article) => ({

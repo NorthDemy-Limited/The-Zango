@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getArticles } from "@/lib/firebase/db";
 
 export async function GET() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://thezango.org";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://thezango.com";
   const articles = await getArticles();
 
   const itemsXml = articles

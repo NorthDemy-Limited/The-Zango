@@ -32,7 +32,7 @@ export const PRESET_USERS: Record<string, AuthUser> = {
   "admin": {
     id: "usr-admin-1",
     name: "Usman Bello",
-    email: "usman.bello@thezango.org",
+    email: "inquiry@thezango.com",
     username: "admin",
     role: "admin",
     desk: "Executive & Investigation",
@@ -43,7 +43,7 @@ export const PRESET_USERS: Record<string, AuthUser> = {
   "editor": {
     id: "usr-editor-2",
     name: "Aisha Dahiru",
-    email: "aisha.dahiru@thezango.org",
+    email: "aisha.dahiru@thezango.com",
     username: "editor1",
     role: "editor",
     desk: "Business & Capital Markets",
@@ -54,7 +54,7 @@ export const PRESET_USERS: Record<string, AuthUser> = {
   "writer": {
     id: "usr-writer-3",
     name: "Fatima Sanusi",
-    email: "fatima.sanusi@thezango.org",
+    email: "fatima.sanusi@thezango.com",
     username: "author1",
     role: "writer",
     desk: "Technology & Digital Economy",
