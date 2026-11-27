@@ -210,20 +210,72 @@ function buildWelcomeHtmlTemplate(params: SendStaffWelcomeEmailParams): string {
   `.trim();
 }
 
-/**
- * Dispatches an automated onboarding email containing username and temporary passcode.
- * If SMTP environment variables are configured, sends real email via SMTP.
- * If not configured, gracefully logs credentials to server output and returns simulation status.
- */
-export async function sendStaffWelcomeEmail(params: SendStaffWelcomeEmailParams): Promise<EmailDispatchResult> {
-  const { to, name, username, defaultPassword } = params;
-
+async function dispatchEmailWithFallback(params: {
+  to: string;
+  name: string;
+  subject: string;
+  textContent: string;
+  htmlContent: string;
+  username: string;
+  defaultPassword: string;
+}): Promise<EmailDispatchResult> {
+  const { to, name, subject, textContent, htmlContent, username, defaultPassword } = params;
   const host = process.env.SMTP_HOST;
   const port = parseInt(process.env.SMTP_PORT || "465", 10);
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
   const from = process.env.SMTP_FROM || '"The Zango Bureau" <inquiry@thezango.com>';
 
+  if (host && user && pass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure: port === 465,
+        auth: { user, pass },
+      });
+
+      const info = await transporter.sendMail({
+        from,
+        to,
+        subject,
+        text: textContent,
+        html: htmlContent,
+      });
+
+      console.info(`[Email Dispatch] Email successfully dispatched to ${to} (Message ID: ${info.messageId})`);
+      return {
+        success: true,
+        messageId: info.messageId,
+        simulated: false,
+      };
+    } catch (err: unknown) {
+      console.warn("[Email Dispatch] SMTP dispatch failed, falling back to simulation:", err);
+    }
+  }
+
+  console.info(`
+========================================================================
+[MOCK/DEV EMAIL DISPATCHER]
+To: ${to} (${name})
+Subject: ${subject}
+Login Username: ${username}
+Temporary Password: ${defaultPassword}
+Status: Recorded for immediate testing & administrative confirmation.
+========================================================================
+  `);
+
+  return {
+    success: true,
+    simulated: true,
+  };
+}
+
+/**
+ * Dispatches an automated onboarding email containing username and temporary passcode.
+ */
+export async function sendStaffWelcomeEmail(params: SendStaffWelcomeEmailParams): Promise<EmailDispatchResult> {
+  const { to, name, username, defaultPassword } = params;
   const htmlContent = buildWelcomeHtmlTemplate(params);
   const textContent = `
 Assalamu Alaikum ${name},
@@ -238,50 +290,49 @@ Your newsroom clearance for The Zango has been provisioned.
 Please log in and update your password in your Settings tab.
   `.trim();
 
-  // If SMTP is properly configured, send email via nodemailer
-  if (host && user && pass) {
-    try {
-      const transporter = nodemailer.createTransport({
-        host,
-        port,
-        secure: port === 465,
-        auth: { user, pass },
-      });
+  return dispatchEmailWithFallback({
+    to,
+    name,
+    subject: `[The Zango Bureau] Newsroom Clearance & Credentials: ${username}`,
+    textContent,
+    htmlContent,
+    username,
+    defaultPassword,
+  });
+}
 
-      const info = await transporter.sendMail({
-        from,
-        to,
-        subject: `[The Zango Bureau] Newsroom Clearance & Credentials: ${username}`,
-        text: textContent,
-        html: htmlContent,
-      });
+/**
+ * Dispatches a password reset email with a newly generated temporary passcode.
+ */
+export async function sendStaffPasswordResetEmail(
+  params: SendStaffWelcomeEmailParams
+): Promise<EmailDispatchResult> {
+  const { to, name, username, defaultPassword, desk, portalUrl = "https://thezango.com/login" } = params;
+  const htmlContent = buildWelcomeHtmlTemplate(params).replace(
+    "Your newsroom clearance has been provisioned by the Bureau Chief",
+    "Your newsroom clearance passcode has been reset by the Bureau Chief"
+  );
+  const textContent = `
+Assalamu Alaikum ${name},
 
-      console.info(`[Email Dispatch] Welcome email successfully dispatched to ${to} (Message ID: ${info.messageId})`);
-      return {
-        success: true,
-        messageId: info.messageId,
-        simulated: false,
-      };
-    } catch (err: unknown) {
-      console.warn("[Email Dispatch] SMTP dispatch failed, falling back to simulation:", err);
-    }
-  }
+Your newsroom clearance passcode for The Zango has been reset by an administrator.
 
-  // Graceful simulation / development fallback
-  console.info(`
-========================================================================
-[MOCK/DEV EMAIL DISPATCHER]
-To: ${to} (${name})
-Subject: [The Zango Bureau] Newsroom Clearance & Credentials: ${username}
-Login Username: ${username}
-Temporary Password: ${defaultPassword}
-Status: Recorded for immediate testing & administrative confirmation.
-========================================================================
-  `);
+- Username: ${username}
+- New Temporary Passcode: ${defaultPassword}
+- Desk: ${desk}
+- Portal URL: ${portalUrl}
 
-  return {
-    success: true,
-    simulated: true,
-  };
+Please sign in and update your password in your Settings tab.
+  `.trim();
+
+  return dispatchEmailWithFallback({
+    to,
+    name,
+    subject: `[The Zango Bureau] Passcode Reset & New Credentials: ${username}`,
+    textContent,
+    htmlContent,
+    username,
+    defaultPassword,
+  });
 }
 
