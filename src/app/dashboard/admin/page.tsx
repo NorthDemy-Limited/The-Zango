@@ -18,7 +18,6 @@ import {
   Inbox, 
   X, 
   UserPlus, 
-  ShieldAlert, 
   KeyRound,
   LayoutDashboard,
   Bell,
@@ -80,7 +79,7 @@ import { PasswordChangeCard } from "@/components/dashboard/password-change-card"
 function AdminDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, role, logout, switchRole, updateUser, isAuthenticated, isLoading } = useAuth();
+  const { user, logout, updateUser, isAuthenticated, isLoading } = useAuth();
 
   const [articles, setArticles] = useState<Article[]>([]);
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
@@ -1842,30 +1841,6 @@ function AdminDashboardContent() {
               >
                 <X className="w-4 h-4" />
               </button>
-            </div>
-          )}
-
-          {/* ROLE ADVISORY FOR WRITERS */}
-          {role === "writer" && (
-            <div className="p-5 rounded-3xl bg-amber-50 border border-amber-200 text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
-              <div className="flex items-start space-x-3">
-                <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-extrabold text-xs uppercase tracking-wider text-amber-900">Staff Writer Session Active</h4>
-                  <p className="text-xs text-amber-700 mt-0.5">
-                    You are currently previewing as {user?.name || "Staff Writer"}. Switch clearance to Chief Admin to unlock full roster and dispatch controls.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => switchRole("admin")}
-                  className="px-4 py-2 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                >
-                  👑 Switch to Chief Admin
-                </button>
-              </div>
             </div>
           )}
 

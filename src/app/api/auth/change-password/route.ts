@@ -1,16 +1,41 @@
 import { NextResponse } from "next/server";
 import { findStaffByIdentifier, updateStaffPassword } from "@/lib/firebase/db";
 import { hashPassword, verifyPassword } from "@/lib/auth-passwords";
+import {
+  attachSessionCookie,
+  createSessionToken,
+  getSessionFromRequest,
+} from "@/lib/auth-session";
 
 export async function POST(request: Request) {
   try {
+    const session = await getSessionFromRequest(request);
+    if (!session) {
+      return NextResponse.json(
+        { success: false, message: "Authentication required. Please sign in first." },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { identifier, currentPassword, newPassword, confirmNewPassword } = body;
 
-    if (!identifier || typeof identifier !== "string" || !identifier.trim()) {
+    const clean = (identifier || session.email || session.username || "").trim().toLowerCase();
+    if (!clean) {
       return NextResponse.json(
         { success: false, message: "Identifier is required." },
         { status: 400 }
+      );
+    }
+
+    // Prevent non-admins from changing another user's password
+    const isOwnAccount =
+      clean === session.email.toLowerCase() ||
+      (session.username && clean === session.username.toLowerCase());
+    if (!isOwnAccount && session.role !== "admin") {
+      return NextResponse.json(
+        { success: false, message: "Forbidden: you can only update your own passcode." },
+        { status: 403 }
       );
     }
 
@@ -35,7 +60,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const clean = identifier.trim().toLowerCase();
     const staff = await findStaffByIdentifier(clean);
 
     if (!staff) {
@@ -45,13 +69,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify current password
-    let isCurrentValid = false;
-    if (staff.passwordHash && staff.passwordSalt) {
-      isCurrentValid = verifyPassword(currentPassword, staff.passwordHash, staff.passwordSalt);
-    } else {
-      isCurrentValid = currentPassword === "password123";
+    if (!staff.passwordHash || !staff.passwordSalt) {
+      return NextResponse.json(
+        { success: false, message: "Account has no password hash configured. Contact an administrator." },
+        { status: 400 }
+      );
     }
+
+    const isCurrentValid = verifyPassword(currentPassword, staff.passwordHash, staff.passwordSalt);
 
     if (!isCurrentValid) {
       return NextResponse.json(
@@ -60,16 +85,31 @@ export async function POST(request: Request) {
       );
     }
 
-    // Hash new password using Scrypt
     const { hash, salt } = hashPassword(newPassword);
-
-    // Save to persistent storage
     await updateStaffPassword(staff.id, hash, salt);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: "Passcode updated successfully. Use your new password on subsequent logins.",
     });
+
+    if (isOwnAccount) {
+      const refreshedToken = await createSessionToken({
+        id: session.id,
+        name: session.name,
+        email: session.email,
+        username: session.username,
+        role: session.role,
+        desk: session.desk,
+        avatar: session.avatar,
+        bio: session.bio,
+        badge: session.badge,
+        mustChangePassword: false,
+      });
+      attachSessionCookie(response, refreshedToken);
+    }
+
+    return response;
   } catch (error) {
     console.error("Change password route error:", error);
     return NextResponse.json(
@@ -78,4 +118,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

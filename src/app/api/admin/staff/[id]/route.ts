@@ -6,6 +6,7 @@ import {
   deleteTeamMember 
 } from "@/lib/firebase/db";
 import { NewsroomRole } from "@/types";
+import { requireAuth } from "@/lib/auth-session";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -15,6 +16,8 @@ const PROTECTED_ADMIN_EMAILS = ["inquiry@thezango.com", "usman.bello@thezango.or
 const PROTECTED_ADMIN_IDS = ["usr-admin-1", "member-1"];
 
 export async function GET(request: Request, { params }: RouteParams) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
     const { id } = await params;
     const members = await getTeamMembers();
@@ -38,6 +41,8 @@ export async function GET(request: Request, { params }: RouteParams) {
 }
 
 export async function PATCH(request: Request, { params }: RouteParams) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
     const { id } = await params;
     const body = await request.json();
@@ -113,6 +118,8 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 }
 
 export async function DELETE(request: Request, { params }: RouteParams) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
     const { id } = await params;
     const members = await getTeamMembers();

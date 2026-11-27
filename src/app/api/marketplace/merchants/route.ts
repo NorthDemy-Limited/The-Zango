@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { getMerchantApplications, createMerchantApplication } from "@/lib/firebase/db";
+import { requireAuth } from "@/lib/auth-session";
 
 export async function GET(request: Request) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");

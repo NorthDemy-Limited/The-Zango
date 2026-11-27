@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { KeyRound, ShieldAlert, CheckCircle2, Lock, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { useAuth } from "@/context/auth-context";
 
 interface PasswordChangeCardProps {
   identifier: string;
@@ -14,6 +15,7 @@ export function PasswordChangeCard({
   accentColor = "red",
   onSuccessToast,
 }: PasswordChangeCardProps) {
+  const { updateUser } = useAuth();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -72,6 +74,7 @@ export function PasswordChangeCard({
       const res = await fetch("/api/auth/change-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           identifier,
           currentPassword,
@@ -83,6 +86,7 @@ export function PasswordChangeCard({
       const data = await res.json();
 
       if (data.success) {
+        updateUser({ mustChangePassword: false });
         setSuccessMessage("Your clearance passcode has been updated successfully!");
         setCurrentPassword("");
         setNewPassword("");

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { findStaffByIdentifier } from "@/lib/firebase/db";
 import { verifyPassword } from "@/lib/auth-passwords";
+import { attachSessionCookie, createSessionToken } from "@/lib/auth-session";
 import { UserRole } from "@/types";
 
 export async function POST(request: Request) {
@@ -39,14 +40,18 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify cryptographic scrypt hash
-    let isValid = false;
-    if (staff.passwordHash && staff.passwordSalt) {
-      isValid = verifyPassword(password, staff.passwordHash, staff.passwordSalt);
-    } else {
-      // Fallback for initial unhashed development accounts
-      isValid = password === "password123";
+    // Verify cryptographic scrypt hash (no plaintext fallback in production)
+    if (!staff.passwordHash || !staff.passwordSalt) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "This account has no password configured. Contact the Bureau Chief to reset your credentials.",
+        },
+        { status: 401 }
+      );
     }
+
+    const isValid = verifyPassword(password, staff.passwordHash, staff.passwordSalt);
 
     if (!isValid) {
       return NextResponse.json(
@@ -55,7 +60,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Role mapping
     const mappedRole: UserRole = staff.role === "writer" ? "author" : (staff.role as UserRole);
     const badge =
       staff.role === "admin"
@@ -64,22 +68,27 @@ export async function POST(request: Request) {
         ? "Desk Editor"
         : "Staff Writer";
 
-    return NextResponse.json({
+    const sessionUser = {
+      id: staff.id,
+      name: staff.name,
+      email: staff.email,
+      username: staff.username || clean,
+      role: mappedRole,
+      desk: staff.desk,
+      avatar: staff.avatar || "/assets/social-image-1.png",
+      bio: staff.bio || "",
+      badge,
+      mustChangePassword: !!staff.mustChangePassword,
+    };
+
+    const token = await createSessionToken(sessionUser);
+    const response = NextResponse.json({
       success: true,
       message: "Clearance authenticated successfully.",
-      user: {
-        id: staff.id,
-        name: staff.name,
-        email: staff.email,
-        username: staff.username || clean,
-        role: mappedRole,
-        desk: staff.desk,
-        avatar: staff.avatar || "/assets/social-image-1.png",
-        bio: staff.bio || "",
-        badge,
-        mustChangePassword: !!staff.mustChangePassword,
-      },
+      user: sessionUser,
     });
+
+    return attachSessionCookie(response, token);
   } catch (error) {
     console.error("Login verification route error:", error);
     return NextResponse.json(
@@ -88,4 +97,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

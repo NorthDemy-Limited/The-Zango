@@ -4,6 +4,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import cloudinary, { isCloudinaryConfigured } from "@/lib/cloudinary";
 import fs from "fs/promises";
 import path from "path";
+import { requireAuth } from "@/lib/auth-session";
 
 const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
@@ -17,6 +18,8 @@ const ALLOWED_MIME_TYPES = new Set([
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export async function POST(request: Request) {
+  const authResult = await requireAuth(request, ["admin", "editor", "writer", "author"]);
+  if (authResult.error) return authResult.error;
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
