@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { db, isFirebaseConfigured } from "@/lib/firebase/config";
 import { collection, getDocs, doc, setDoc } from "firebase/firestore";
 import { getArticles, getTeamMembers } from "@/lib/firebase/db";
+import { requireAuth } from "@/lib/auth-session";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
     if (!isFirebaseConfigured || !db) {
       return NextResponse.json({
@@ -39,7 +42,9 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+export async function POST(request: Request) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
     if (!isFirebaseConfigured || !db) {
       return NextResponse.json(

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { auth, isFirebaseConfigured } from "@/lib/firebase/config";
 import {
@@ -8,10 +8,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
-  onAuthStateChanged,
   signOut as firebaseSignOut,
 } from "firebase/auth";
-import { getOrCreateUserProfile } from "@/lib/firebase/db";
 import { UserRole } from "@/types";
 
 export type { UserRole };
@@ -26,54 +24,8 @@ export interface AuthUser {
   avatar: string;
   bio?: string;
   badge: string;
+  mustChangePassword?: boolean;
 }
-
-export const PRESET_USERS: Record<string, AuthUser> = {
-  "admin": {
-    id: "usr-admin-1",
-    name: "Usman Bello",
-    email: "inquiry@thezango.com",
-    username: "admin",
-    role: "admin",
-    desk: "Executive & Investigation",
-    avatar: "/assets/social-image-1.png",
-    bio: "Chief Executive & Bureau Chief with 15+ years in Sahelian socio-political investigative reporting.",
-    badge: "Chief Admin",
-  },
-  "editor": {
-    id: "usr-editor-2",
-    name: "Aisha Dahiru",
-    email: "aisha.dahiru@thezango.com",
-    username: "editor1",
-    role: "editor",
-    desk: "Business & Capital Markets",
-    avatar: "/assets/social-image-2.png",
-    bio: "Senior Markets Editor analyzing private equity, agribusiness finance, and trade dynamics across Northern Nigeria.",
-    badge: "Desk Editor",
-  },
-  "writer": {
-    id: "usr-writer-3",
-    name: "Fatima Sanusi",
-    email: "fatima.sanusi@thezango.com",
-    username: "author1",
-    role: "writer",
-    desk: "Technology & Digital Economy",
-    avatar: "/assets/social-image-4.png",
-    bio: "Tech correspondent tracking venture capital, AI hubs, and mobile banking adoption from Kano to Kaduna.",
-    badge: "Staff Writer",
-  },
-  "reader": {
-    id: "usr-reader-4",
-    name: "Amina Yusuf",
-    email: "amina.yusuf@gmail.com",
-    username: "reader1",
-    role: "reader",
-    desk: "Public Reader",
-    avatar: "/assets/social-image-3.png",
-    bio: "Passionate reader and follower of Northern Nigerian investigative journalism and Sahelian markets.",
-    badge: "Reader",
-  },
-};
 
 export interface AuthContextType {
   user: AuthUser | null;
@@ -101,171 +53,143 @@ export const AuthContext = createContext<AuthContextType>({
   signInWithEmail: async () => ({ success: false }),
   signUpWithEmail: async () => ({ success: false }),
   signInWithGoogle: async () => ({ success: false }),
-  logout: () => { },
-  signOut: async () => { },
-  switchRole: () => { },
-  updateUser: () => { },
+  logout: () => {},
+  signOut: async () => {},
+  switchRole: () => {},
+  updateUser: () => {},
 });
 
+const SESSION_STORAGE_KEY = "thezango_session_user";
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("thezango_session_user");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed && parsed.email) return parsed;
-        }
-      } catch {
-        // ignore
-      }
-    }
-    return PRESET_USERS.admin;
-  });
-  const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // Listen to external window storage events for multi-tab sync
+  const persistClientUser = useCallback((nextUser: AuthUser | null) => {
+    setUser(nextUser);
+    if (typeof window !== "undefined") {
+      if (nextUser) {
+        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(nextUser));
+      } else {
+        localStorage.removeItem(SESSION_STORAGE_KEY);
+      }
+    }
+  }, []);
+
+  // Hydrate authenticated session from server-side HttpOnly cookie
   useEffect(() => {
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === "thezango_session_user" && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          if (parsed && parsed.email) {
-            setUser(parsed);
+    let active = true;
+
+    const verifySession = async () => {
+      try {
+        const res = await fetch("/api/auth/me", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        });
+
+        if (!active) return;
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.authenticated && data.user) {
+            persistClientUser(data.user);
+            return;
           }
-        } catch {
-          // ignore
+        }
+        persistClientUser(null);
+      } catch {
+        if (active) {
+          persistClientUser(null);
+        }
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    verifySession();
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === SESSION_STORAGE_KEY) {
+        if (!e.newValue) {
+          setUser(null);
+        } else {
+          verifySession();
         }
       }
     };
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, []);
+    return () => {
+      active = false;
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [persistClientUser]);
 
-  // Listen to Firebase Auth state changes and sync with Firestore UserProfile
-  useEffect(() => {
-    if (!isFirebaseConfigured || !auth) {
-      return;
+  const exchangeFirebaseToken = async (idToken: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res = await fetch("/api/auth/firebase-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ idToken }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.user) {
+        persistClientUser(data.user);
+        return { success: true };
+      }
+      return { success: false, error: data.message || "Could not establish server session." };
+    } catch {
+      return { success: false, error: "Network error establishing server session." };
+    }
+  };
+
+  const login = async (identifier: string, password?: string): Promise<{ success: boolean; error?: string }> => {
+    const clean = identifier.trim().toLowerCase();
+
+    if (!clean) {
+      return { success: false, error: "Username or corporate email is required." };
     }
 
-    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
-      if (fbUser) {
+    if (!password) {
+      return { success: false, error: "Passcode is required." };
+    }
+
+    // 1. Verify staff credentials via server-side scrypt check + signed HttpOnly cookie
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ identifier: clean, password }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.user) {
+        persistClientUser(data.user);
+        return { success: true };
+      }
+
+      // 2. If not found in staff roster and looks like email, try Firebase Auth (for readers)
+      if (res.status === 401 && isFirebaseConfigured && auth && clean.includes("@")) {
         try {
-          const profile = await getOrCreateUserProfile({
-            uid: fbUser.uid,
-            email: fbUser.email,
-            displayName: fbUser.displayName,
-            photoURL: fbUser.photoURL,
-          });
-          const authUser: AuthUser = {
-            id: fbUser.uid,
-            name: profile.displayName,
-            email: profile.email,
-            role: profile.role,
-            desk: profile.desk || (profile.role === "editor" ? "Editorial Desk" : profile.role === "admin" ? "Executive Desk" : "Contributor Desk"),
-            avatar: profile.photoURL || "/assets/social-image-1.png",
-            bio: profile.bio,
-            badge: profile.role === "admin" ? "Chief Admin" : profile.role === "editor" ? "Desk Editor" : profile.role === "reader" ? "Reader" : "Staff Writer",
-          };
-          setUser(authUser);
-          localStorage.setItem("thezango_session_user", JSON.stringify(authUser));
-        } catch (err) {
-          console.warn("Could not sync Firebase Auth profile with Firestore:", err);
+          const userCred = await signInWithEmailAndPassword(auth, clean, password);
+          if (userCred.user) {
+            const idToken = await userCred.user.getIdToken();
+            return await exchangeFirebaseToken(idToken);
+          }
+        } catch {
+          // Fall through to primary API error message
         }
       }
-      setIsLoading(false);
-    });
 
-    return () => unsubscribe();
-  }, []);
-
-  const login = async (roleOrEmail: string, password?: string): Promise<{ success: boolean; error?: string }> => {
-    const clean = roleOrEmail.trim().toLowerCase();
-
-    // 1. If password is provided, attempt cryptographic clearance verification via internal API
-    if (password) {
-      try {
-        const res = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ identifier: clean, password }),
-        });
-        const data = await res.json();
-        if (data.success && data.user) {
-          const authUser: AuthUser = {
-            id: data.user.id,
-            name: data.user.name,
-            email: data.user.email,
-            username: data.user.username,
-            role: data.user.role,
-            desk: data.user.desk,
-            avatar: data.user.avatar,
-            bio: data.user.bio,
-            badge: data.user.badge,
-          };
-          setUser(authUser);
-          localStorage.setItem("thezango_session_user", JSON.stringify(authUser));
-          return { success: true };
-        } else {
-          return { success: false, error: data.message || "Invalid clearance credentials." };
-        }
-      } catch (apiErr) {
-        console.warn("API login verification failed:", apiErr);
-        return { success: false, error: "Network error during authentication. Please try again." };
-      }
+      return { success: false, error: data.message || "Invalid clearance credentials." };
+    } catch (apiErr) {
+      console.warn("API login verification failed:", apiErr);
+      return { success: false, error: "Network error during authentication. Please try again." };
     }
-
-    // 2. Direct role key matching (Fast Clearance / 1-Click for dev/demo)
-    if (PRESET_USERS[clean]) {
-      const selected = PRESET_USERS[clean];
-      setUser(selected);
-      localStorage.setItem("thezango_session_user", JSON.stringify(selected));
-      return { success: true };
-    }
-
-    // 3. Email matching with local preset or Firebase Auth
-    const found = Object.values(PRESET_USERS).find((u) => u.email.toLowerCase() === clean);
-
-    // If Firebase Auth is configured and credentials are supplied, attempt Firebase sign-in
-    if (isFirebaseConfigured && auth && clean.includes("@") && password) {
-      try {
-        const userCred = await signInWithEmailAndPassword(auth, clean, password);
-        if (userCred.user) {
-          const profile = await getOrCreateUserProfile({
-            uid: userCred.user.uid,
-            email: userCred.user.email,
-            displayName: userCred.user.displayName,
-            photoURL: userCred.user.photoURL,
-          });
-          const authUser: AuthUser = found || {
-            id: userCred.user.uid,
-            name: profile.displayName || userCred.user.displayName || clean.split("@")[0].replace(".", " ").toUpperCase(),
-            email: userCred.user.email || clean,
-            role: profile.role,
-            desk: profile.desk || (clean.includes("editor") ? "Business & Capital Markets" : "Technology & Digital Economy"),
-            avatar: profile.photoURL || "/assets/social-image-1.png",
-            badge: profile.role === "admin" ? "Chief Admin" : profile.role === "editor" ? "Desk Editor" : profile.role === "reader" ? "Reader" : "Staff Writer",
-          };
-          setUser(authUser);
-          localStorage.setItem("thezango_session_user", JSON.stringify(authUser));
-          return { success: true };
-        }
-      } catch (fbErr: unknown) {
-        console.warn("Firebase Auth sign-in attempted, checking local credentials fallback:", fbErr);
-      }
-    }
-
-    if (found) {
-      if (password && password.length < 4) {
-        return { success: false, error: "Password must be at least 4 characters." };
-      }
-      setUser(found);
-      localStorage.setItem("thezango_session_user", JSON.stringify(found));
-      return { success: true };
-    }
-
-    return { success: false, error: "Invalid credentials. Staff should sign in using their assigned username (e.g. editor1, author1) and passcode." };
   };
 
   const signInWithEmail = async (email: string, password: string) => {
@@ -274,138 +198,93 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUpWithEmail = async (
     email: string,
-    password: string,
-    name?: string,
-    role: UserRole = "reader"
+    password: string
   ): Promise<{ success: boolean; error?: string }> => {
-    if (isFirebaseConfigured && auth) {
-      try {
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        const profile = await getOrCreateUserProfile(
-          {
-            uid: cred.user.uid,
-            email: cred.user.email,
-            displayName: name || email.split("@")[0],
-            photoURL: cred.user.photoURL,
-          },
-          role
-        );
-        const authUser: AuthUser = {
-          id: cred.user.uid,
-          name: profile.displayName,
-          email: profile.email,
-          role: profile.role,
-          desk: profile.desk || "General",
-          avatar: profile.photoURL || "/assets/social-image-1.png",
-          bio: profile.bio,
-          badge: profile.role === "admin" ? "Chief Admin" : profile.role === "editor" ? "Desk Editor" : profile.role === "reader" ? "Reader" : "Staff Writer",
-        };
-        setUser(authUser);
-        localStorage.setItem("thezango_session_user", JSON.stringify(authUser));
-        return { success: true };
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "Registration failed.";
-        return { success: false, error: message };
-      }
+    if (!isFirebaseConfigured || !auth) {
+      return { success: false, error: "Authentication service is not configured." };
     }
 
-    const newUid = `usr-${Date.now()}`;
-    const localUser: AuthUser = {
-      id: newUid,
-      name: name || email.split("@")[0].toUpperCase(),
-      email,
-      role,
-      desk: "General",
-      avatar: "/assets/social-image-1.png",
-      badge: role === "admin" ? "Chief Admin" : role === "editor" ? "Desk Editor" : role === "reader" ? "Reader" : "Staff Writer",
-    };
-    setUser(localUser);
-    localStorage.setItem("thezango_session_user", JSON.stringify(localUser));
-    return { success: true };
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      const idToken = await cred.user.getIdToken();
+      return await exchangeFirebaseToken(idToken);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Registration failed.";
+      return { success: false, error: message };
+    }
   };
 
   const signInWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
-    if (isFirebaseConfigured && auth) {
-      try {
-        const provider = new GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: "select_account" });
-        const res = await signInWithPopup(auth, provider);
-        if (res.user) {
-          const profile = await getOrCreateUserProfile(
-            {
-              uid: res.user.uid,
-              email: res.user.email,
-              displayName: res.user.displayName,
-              photoURL: res.user.photoURL,
-            },
-            "reader"
-          );
-          const authUser: AuthUser = {
-            id: res.user.uid,
-            name: profile.displayName,
-            email: profile.email,
-            role: profile.role,
-            desk: profile.desk || "General",
-            avatar: profile.photoURL || "/assets/social-image-1.png",
-            bio: profile.bio,
-            badge: profile.role === "admin" ? "Chief Admin" : profile.role === "editor" ? "Desk Editor" : profile.role === "reader" ? "Reader" : "Staff Writer",
-          };
-          setUser(authUser);
-          localStorage.setItem("thezango_session_user", JSON.stringify(authUser));
-          return { success: true };
-        }
-      } catch (err: unknown) {
-        const firebaseErr = err as { code?: string; message?: string };
-        if (firebaseErr?.code === "auth/popup-closed-by-user" || firebaseErr?.code === "auth/popup-blocked") {
-          return {
-            success: false,
-            error: "Google sign-in popup was blocked or closed. If using Brave Browser, please disable Brave Shields for this tab. If using an ad blocker, allow popups.",
-          };
-        }
-        if (firebaseErr?.code === "auth/unauthorized-domain") {
-          return {
-            success: false,
-            error: "This domain is not authorized in Firebase Console. Please add localhost (or your current URL) under Firebase Authentication > Settings > Authorized domains.",
-          };
-        }
-        if (firebaseErr?.code === "auth/operation-not-allowed") {
-          return {
-            success: false,
-            error: "Google sign-in is not enabled yet in Firebase Console. Please enable Google provider and click Save.",
-          };
-        }
-        return { success: false, error: firebaseErr?.message || "Google sign-in failed." };
-      }
+    if (!isFirebaseConfigured || !auth) {
+      return { success: false, error: "Google authentication is not configured in this environment." };
     }
-    return { success: false, error: "Google authentication is not available in current environment." };
+
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      const res = await signInWithPopup(auth, provider);
+      if (res.user) {
+        const idToken = await res.user.getIdToken();
+        return await exchangeFirebaseToken(idToken);
+      }
+      return { success: false, error: "Google sign-in did not return a user." };
+    } catch (err: unknown) {
+      const firebaseErr = err as { code?: string; message?: string };
+      if (firebaseErr?.code === "auth/popup-closed-by-user" || firebaseErr?.code === "auth/popup-blocked") {
+        return {
+          success: false,
+          error:
+            "Google sign-in popup was blocked or closed. If using Brave Browser, please disable Brave Shields for this tab or allow popups.",
+        };
+      }
+      if (firebaseErr?.code === "auth/unauthorized-domain") {
+        return {
+          success: false,
+          error:
+            "This domain is not authorized in Firebase Console. Add your domain under Firebase Authentication > Settings > Authorized domains.",
+        };
+      }
+      if (firebaseErr?.code === "auth/operation-not-allowed") {
+        return {
+          success: false,
+          error: "Google sign-in is not enabled in Firebase Console.",
+        };
+      }
+      return { success: false, error: firebaseErr?.message || "Google sign-in failed." };
+    }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {
+      // ignore network errors on logout
+    }
     if (isFirebaseConfigured && auth) {
       firebaseSignOut(auth).catch(() => {});
     }
-    setUser(null);
-    localStorage.removeItem("thezango_session_user");
+    persistClientUser(null);
     router.push("/login");
   };
 
   const signOut = async () => {
-    logout();
+    await logout();
   };
 
-  const switchRole = (newRole: UserRole) => {
-    const target = PRESET_USERS[newRole];
-    if (target) {
-      setUser(target);
-      localStorage.setItem("thezango_session_user", JSON.stringify(target));
-    }
+  const switchRole = () => {
+    // Role switching is disabled in production; roles are enforced server-side.
   };
 
   const updateUser = (updates: Partial<AuthUser>) => {
     setUser((prev) => {
       if (!prev) return null;
       const updated = { ...prev, ...updates };
-      localStorage.setItem("thezango_session_user", JSON.stringify(updated));
+      if (typeof window !== "undefined") {
+        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(updated));
+      }
       return updated;
     });
   };

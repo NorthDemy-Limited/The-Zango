@@ -3,8 +3,11 @@ import { getTeamMembers, createTeamMember, getAllUsernames } from "@/lib/firebas
 import { NewsroomRole } from "@/types";
 import { generateDefaultPassword, generateNextUsername, hashPassword } from "@/lib/auth-passwords";
 import { sendStaffWelcomeEmail, EmailDispatchResult } from "@/lib/email";
+import { requireAuth } from "@/lib/auth-session";
 
 export async function GET(request: Request) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
     const { searchParams } = new URL(request.url);
     const role = searchParams.get("role");
@@ -51,6 +54,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
     const body = await request.json();
     const { name, email, role, desk, avatar, bio, status } = body;
