@@ -141,6 +141,7 @@ function AdminDashboardContent() {
     simulated: boolean;
   } | null>(null);
   const [copiedCredentials, setCopiedCredentials] = useState(false);
+  const [resettingMemberId, setResettingMemberId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
@@ -623,6 +624,40 @@ function AdminDashboardContent() {
     await updateTeamMemberStatus(id, nextStatus);
     await refreshStaffList();
     triggerToast(name + " status updated to " + nextStatus);
+  };
+
+  const handleResetMemberPassword = async (member: NewsroomMember) => {
+    if (!confirm(`Generate a new temporary passcode and send reset credentials to ${member.name} (${member.email})?`)) {
+      return;
+    }
+    setResettingMemberId(member.id);
+    try {
+      const res = await fetch(`/api/admin/staff/${member.id}/reset-password`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (data.success && data.credentials) {
+        await refreshStaffList();
+        setStaffCredentialsModal({
+          memberName: member.name,
+          username: data.credentials.username,
+          defaultPassword: data.credentials.defaultPassword,
+          role: member.role,
+          desk: member.desk,
+          email: member.email,
+          emailSent: data.credentials.emailSent,
+          simulated: data.credentials.simulated,
+        });
+        triggerToast(data.message || `Passcode reset for ${member.name}`);
+      } else {
+        triggerToast(data.message || "Failed to reset staff passcode");
+      }
+    } catch {
+      triggerToast("Network error while resetting staff passcode");
+    } finally {
+      setResettingMemberId(null);
+    }
   };
 
   const handleDeleteMember = async (id: string, name: string) => {
@@ -3101,17 +3136,29 @@ function AdminDashboardContent() {
                             )}
                           </td>
                           <td className="py-4 px-6 text-right">
-                            {(member.email === "inquiry@thezango.com" || member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) ? (
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Root Admin</span>
-                            ) : (
+                            <div className="inline-flex items-center justify-end space-x-1.5">
                               <button
-                                onClick={() => handleDeleteMember(member.id, member.name)}
-                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                                title="Remove staff member"
+                                type="button"
+                                disabled={resettingMemberId === member.id}
+                                onClick={() => handleResetMemberPassword(member)}
+                                className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                                title="Reset passcode & send credentials"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <KeyRound className={`w-3.5 h-3.5 ${resettingMemberId === member.id ? "animate-spin" : ""}`} />
                               </button>
-                            )}
+                              {(member.email === "inquiry@thezango.com" || member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) ? (
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-1">Root Admin</span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteMember(member.id, member.name)}
+                                  className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                  title="Remove staff member"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -3187,6 +3234,16 @@ function AdminDashboardContent() {
                                 <option value="writer">Writer</option>
                               </select>
                             )}
+
+                            <button
+                              type="button"
+                              disabled={resettingMemberId === member.id}
+                              onClick={() => handleResetMemberPassword(member)}
+                              className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                              title="Reset passcode & send credentials"
+                            >
+                              <KeyRound className={`w-3.5 h-3.5 ${resettingMemberId === member.id ? "animate-spin" : ""}`} />
+                            </button>
 
                             {!(member.email === "inquiry@thezango.com" || member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) && (
                               <button

@@ -1090,8 +1090,10 @@ export async function findStaffByIdentifier(identifier: string): Promise<Newsroo
 export async function updateStaffPassword(
   memberIdOrIdentifier: string,
   newHash: string,
-  newSalt: string
+  newSalt: string,
+  options?: { mustChangePassword?: boolean; username?: string }
 ): Promise<boolean> {
+  const mustChange = options?.mustChangePassword ?? false;
   const clean = memberIdOrIdentifier.trim().toLowerCase();
   const member = localTeamMembersStore.find(
     (m) =>
@@ -1103,7 +1105,10 @@ export async function updateStaffPassword(
   if (member) {
     member.passwordHash = newHash;
     member.passwordSalt = newSalt;
-    member.mustChangePassword = false;
+    member.mustChangePassword = mustChange;
+    if (options?.username) {
+      member.username = options.username;
+    }
   }
 
   const targetId = member?.id || memberIdOrIdentifier;
@@ -1111,13 +1116,17 @@ export async function updateStaffPassword(
   // Update in Supabase
   if (isSupabaseConfigured && supabase) {
     try {
+      const supabaseUpdate: Record<string, unknown> = {
+        password_hash: newHash,
+        password_salt: newSalt,
+        must_change_password: mustChange,
+      };
+      if (options?.username) {
+        supabaseUpdate.username = options.username;
+      }
       await supabase
         .from("newsroom_members")
-        .update({
-          password_hash: newHash,
-          password_salt: newSalt,
-          must_change_password: false,
-        })
+        .update(supabaseUpdate)
         .eq("id", targetId);
     } catch (err) {
       console.warn("Could not update staff password in Supabase:", err);
@@ -1126,23 +1135,23 @@ export async function updateStaffPassword(
 
   // Update in Firestore
   if (isFirebaseConfigured && db && isFirestoreAvailable) {
+    const firestoreUpdate: Record<string, unknown> = {
+      passwordHash: newHash,
+      passwordSalt: newSalt,
+      mustChangePassword: mustChange,
+    };
+    if (options?.username) {
+      firestoreUpdate.username = options.username;
+    }
     try {
       const docRef = doc(db, "team_members", targetId);
-      await updateDoc(docRef, {
-        passwordHash: newHash,
-        passwordSalt: newSalt,
-        mustChangePassword: false,
-      });
+      await updateDoc(docRef, firestoreUpdate);
     } catch {
       try {
         const q = query(collection(db, "team_members"), where("id", "==", targetId));
         const snap = await getDocs(q);
         for (const d of snap.docs) {
-          await updateDoc(d.ref, {
-            passwordHash: newHash,
-            passwordSalt: newSalt,
-            mustChangePassword: false,
-          });
+          await updateDoc(d.ref, firestoreUpdate);
         }
       } catch (err) {
         console.warn("Could not update staff password in Firestore:", err);
