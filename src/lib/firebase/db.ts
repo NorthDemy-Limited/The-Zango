@@ -1076,7 +1076,13 @@ export async function findStaffByIdentifier(identifier: string): Promise<Newsroo
     }
   }
 
-  // 2. Fallback to local store for offline development
+  // 2. Fail closed when Firebase is configured so a transient Firestore error
+  // never falls back to hardcoded local seed credentials.
+  if (isFirebaseConfigured) {
+    return null;
+  }
+
+  // 3. Offline development fallback only when Firebase is not configured
   const localMatch = localTeamMembersStore.find(
     (m) =>
       (m.username && m.username.toLowerCase() === clean) ||

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { findStaffByIdentifier } from "@/lib/firebase/db";
 import { verifyPassword } from "@/lib/auth-passwords";
 import { attachSessionCookie, createSessionToken } from "@/lib/auth-session";
+import { checkRateLimit, getClientIp, resetRateLimit } from "@/lib/rate-limit";
 import { UserRole } from "@/types";
 
 export async function POST(request: Request) {
@@ -24,6 +25,22 @@ export async function POST(request: Request) {
     }
 
     const clean = identifier.trim().toLowerCase();
+    const ip = getClientIp(request);
+    const rateKey = `login:${ip}:${clean}`;
+    const rate = checkRateLimit(rateKey, 10, 15 * 60 * 1000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Too many failed login attempts. Please try again in ${Math.ceil(rate.retryAfterSeconds / 60)} minute(s).`,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(rate.retryAfterSeconds) },
+        }
+      );
+    }
+
     const staff = await findStaffByIdentifier(clean);
 
     if (!staff) {
@@ -59,6 +76,8 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
+
+    resetRateLimit(rateKey);
 
     const mappedRole: UserRole = staff.role === "writer" ? "author" : (staff.role as UserRole);
     const badge =
