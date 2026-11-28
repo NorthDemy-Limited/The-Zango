@@ -158,6 +158,21 @@ function mapArticleToSupabase(article: Partial<Article>): Record<string, unknown
   return row;
 }
 
+function stripLeadingByline(text: string, authorName: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) return trimmed;
+  if (authorName) {
+    const escaped = authorName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const exactMatch = new RegExp(`^By\\s+${escaped}(?:\\s*&\\s*[^A-Z]*[A-Z][a-zA-Z.'-]+(?:\\s+[A-Z][a-zA-Z.'-]+)*)?\\s*[:\\-–—]?\\s*`, "i");
+    const stripped = trimmed.replace(exactMatch, "");
+    if (stripped !== trimmed) return stripped;
+  }
+  return trimmed.replace(
+    /^By\s+[A-Z][a-zA-Z.'-]+(?:\s+[A-Z][a-zA-Z.'-]+){0,3}(?:\s*&\s*[A-Z][a-zA-Z.'-]+(?:\s+[A-Z][a-zA-Z.'-]+){0,3})?\s*[:\-–—]?\s*/,
+    ""
+  );
+}
+
 export function mapFirestoreToArticle(id: string, data: Record<string, unknown>): Article {
   const localMatch = ARTICLES.find(
     (m) => m.slug.toLowerCase() === String(data.slug || "").toLowerCase()
@@ -200,7 +215,7 @@ export function mapFirestoreToArticle(id: string, data: Record<string, unknown>)
     id,
     slug: String(data.slug || localMatch?.slug || id),
     title: String(data.title || localMatch?.title || "Untitled Dispatch"),
-    excerpt: String(data.excerpt || localMatch?.excerpt || ""),
+    excerpt: stripLeadingByline(String(data.excerpt || localMatch?.excerpt || ""), authorName),
     content: String(data.content || localMatch?.content || ""),
     coverImage: String(
       data.coverImage || data.cover_image || localMatch?.coverImage || "/assets/hero-featured.jpg"
