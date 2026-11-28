@@ -27,53 +27,6 @@ export interface AuthUser {
   mustChangePassword?: boolean;
 }
 
-export const PRESET_USERS: Record<string, AuthUser> = {
-  "admin": {
-    id: "usr-admin-1",
-    name: "Usman Bello",
-    email: "inquiry@thezango.com",
-    username: "admin",
-    role: "admin",
-    desk: "Executive & Investigation",
-    avatar: "/assets/social-image-1.png",
-    bio: "Chief Executive & Bureau Chief with 15+ years in Sahelian socio-political investigative reporting.",
-    badge: "Chief Admin",
-  },
-  "editor": {
-    id: "usr-editor-2",
-    name: "Aisha Dahiru",
-    email: "aisha.dahiru@thezango.com",
-    username: "editor1",
-    role: "editor",
-    desk: "Business & Capital Markets",
-    avatar: "/assets/social-image-2.png",
-    bio: "Senior Markets Editor analyzing private equity, agribusiness finance, and trade dynamics across Northern Nigeria.",
-    badge: "Desk Editor",
-  },
-  "writer": {
-    id: "usr-writer-3",
-    name: "Fatima Sanusi",
-    email: "fatima.sanusi@thezango.com",
-    username: "author1",
-    role: "writer",
-    desk: "Technology & Digital Economy",
-    avatar: "/assets/social-image-4.png",
-    bio: "Tech correspondent tracking venture capital, AI hubs, and mobile banking adoption from Kano to Kaduna.",
-    badge: "Staff Writer",
-  },
-  "reader": {
-    id: "usr-reader-4",
-    name: "Amina Yusuf",
-    email: "amina.yusuf@gmail.com",
-    username: "reader1",
-    role: "reader",
-    desk: "Public Reader",
-    avatar: "/assets/social-image-3.png",
-    bio: "Passionate reader and follower of Northern Nigerian investigative journalism and Sahelian markets.",
-    badge: "Reader",
-  },
-};
-
 export interface AuthContextType {
   user: AuthUser | null;
   role: UserRole | null;

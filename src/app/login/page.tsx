@@ -153,27 +153,12 @@ function LoginContent() {
           </div>
         )}
 
-        {/* MODE 1: Standard Credentials Form */}
-        {activeTab === "credentials" && (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                  Username or Corporate Email
-                </label>
-                <span className="text-[11px] text-slate-400 font-medium">e.g. editor1, author1, or admin</span>
-              </div>
-              <div className="relative">
-                <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  required
-                  placeholder="editor1, author1, or inquiry@thezango.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 focus:border-[#84CC16] text-xs font-semibold focus:outline-hidden transition-all bg-slate-50/60 focus:bg-white text-slate-900"
-                />
-              </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                Username or Corporate Email
+              </label>
             </div>
             <div className="relative">
               <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
