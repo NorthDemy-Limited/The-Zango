@@ -10,7 +10,7 @@ import BreakingNewsTicker from "@/components/breaking-news-ticker";
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const articles = await getArticlesServer();
+  const articles = await getArticlesServer(60);
   const breakingArticles = articles.filter((a) => a.isBreaking);
   const featuredArticle = articles.find((a) => a.isFeatured) || articles[0];
   const latestNews = articles.filter((a) => a.isLatest);

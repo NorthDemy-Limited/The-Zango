@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { adminAuth, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import {
   findStaffByIdentifierServer,
   getOrCreateUserProfileServer,
@@ -26,51 +25,32 @@ export async function POST(request: Request) {
       );
     }
 
-    let fbUser: FirebaseLookupUser | null = null;
-
-    if (isFirebaseAdminConfigured && adminAuth) {
-      try {
-        const decoded = await adminAuth.verifyIdToken(idToken);
-        fbUser = {
-          localId: decoded.uid,
-          email: decoded.email,
-          displayName: decoded.name,
-          photoUrl: decoded.picture,
-        };
-      } catch {
-        return NextResponse.json(
-          { success: false, message: "Invalid or expired Firebase authentication token." },
-          { status: 401 }
-        );
-      }
-    } else {
-      const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-      if (!apiKey) {
-        return NextResponse.json(
-          { success: false, message: "Firebase is not configured on the server." },
-          { status: 500 }
-        );
-      }
-
-      const lookupRes = await fetch(
-        `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(apiKey)}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ idToken }),
-        }
+    const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json(
+        { success: false, message: "Firebase is not configured on the server." },
+        { status: 500 }
       );
-
-      if (!lookupRes.ok) {
-        return NextResponse.json(
-          { success: false, message: "Invalid or expired Firebase authentication token." },
-          { status: 401 }
-        );
-      }
-
-      const lookupData = (await lookupRes.json()) as { users?: FirebaseLookupUser[] };
-      fbUser = lookupData.users?.[0] || null;
     }
+
+    const lookupRes = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      }
+    );
+
+    if (!lookupRes.ok) {
+      return NextResponse.json(
+        { success: false, message: "Invalid or expired Firebase authentication token." },
+        { status: 401 }
+      );
+    }
+
+    const lookupData = (await lookupRes.json()) as { users?: FirebaseLookupUser[] };
+    const fbUser = lookupData.users?.[0] || null;
 
     if (!fbUser || !fbUser.localId || !fbUser.email) {
       return NextResponse.json(
