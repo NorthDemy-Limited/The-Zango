@@ -3326,7 +3326,9 @@ function AdminDashboardContent() {
                             )}
                           </td>
                           <td className="py-4 px-6 text-right">
-                            <div className="inline-flex items-center justify-end space-x-1.5">
+                            {(member.email === "inquiry@thezango.com" || member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) ? (
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Root Admin</span>
+                            ) : (
                               <button
                                 type="button"
                                 disabled={resettingMemberId === member.id}
@@ -3424,16 +3426,6 @@ function AdminDashboardContent() {
                                 <option value="writer">Writer</option>
                               </select>
                             )}
-
-                            <button
-                              type="button"
-                              disabled={resettingMemberId === member.id}
-                              onClick={() => handleResetMemberPassword(member)}
-                              className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
-                              title="Reset passcode & send credentials"
-                            >
-                              <KeyRound className={`w-3.5 h-3.5 ${resettingMemberId === member.id ? "animate-spin" : ""}`} />
-                            </button>
 
                             {!(member.email === "inquiry@thezango.com" || member.email === "usman.bello@thezango.org" || member.id === "usr-admin-1" || member.id === "member-1" || member.email === user?.email) && (
                               <button
