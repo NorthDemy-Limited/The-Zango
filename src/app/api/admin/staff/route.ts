@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { getTeamMembers, createTeamMember, getAllUsernames } from "@/lib/firebase/db";
+import {
+  getTeamMembersServer,
+  createTeamMemberServer,
+  getAllUsernamesServer,
+} from "@/lib/firebase/admin-db";
 import { NewsroomRole } from "@/types";
 import { generateDefaultPassword, generateNextUsername, hashPassword } from "@/lib/auth-passwords";
 import { sendStaffWelcomeEmail, EmailDispatchResult } from "@/lib/email";
@@ -15,7 +19,7 @@ export async function GET(request: Request) {
     const desk = searchParams.get("desk");
     const query = searchParams.get("query");
 
-    let members = await getTeamMembers();
+    let members = await getTeamMembersServer();
 
     if (role && role !== "all") {
       members = members.filter((m) => m.role === role);
@@ -74,12 +78,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const existingUsernames = await getAllUsernames();
+    const existingUsernames = await getAllUsernamesServer();
     const assignedUsername = body.username?.trim().toLowerCase() || generateNextUsername(role, existingUsernames);
     const defaultPassword = generateDefaultPassword();
     const { hash, salt } = hashPassword(defaultPassword);
 
-    const newMember = await createTeamMember({
+    const newMember = await createTeamMemberServer({
       name: name.trim(),
       email: email.trim().toLowerCase(),
       username: assignedUsername,

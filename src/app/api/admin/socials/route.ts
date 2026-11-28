@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSiteSocials, updateSiteSocials } from "@/lib/site-socials";
+import { getSiteSocialsServer, updateSiteSocialsServer } from "@/lib/firebase/admin-db";
 import { requireAuth } from "@/lib/auth-session";
 import { SITE_CONFIG, SiteSocials } from "@/config/site";
 
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   if (authResult.error) return authResult.error;
 
   try {
-    const socials = await getSiteSocials();
+    const socials = await getSiteSocialsServer();
     return NextResponse.json({ success: true, socials });
   } catch (error) {
     console.error("Admin get socials error:", error);
@@ -43,7 +43,7 @@ export async function PUT(request: Request) {
       );
     }
 
-    const current = await getSiteSocials();
+    const current = await getSiteSocialsServer();
     const defaults = SITE_CONFIG.socials;
 
     const nextSocials: SiteSocials = {
@@ -74,7 +74,7 @@ export async function PUT(request: Request) {
       },
     };
 
-    const saved = await updateSiteSocials(nextSocials);
+    const saved = await updateSiteSocialsServer(nextSocials);
     return NextResponse.json({
       success: true,
       message: "Social media links updated successfully.",

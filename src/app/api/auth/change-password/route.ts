@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findStaffByIdentifier, updateStaffPassword } from "@/lib/firebase/db";
+import { findStaffByIdentifierServer, updateStaffPasswordServer } from "@/lib/firebase/admin-db";
 import { hashPassword, verifyPassword } from "@/lib/auth-passwords";
 import {
   attachSessionCookie,
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const staff = await findStaffByIdentifier(clean);
+    const staff = await findStaffByIdentifierServer(clean);
 
     if (!staff) {
       return NextResponse.json(
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
     resetRateLimit(rateKey);
 
     const { hash, salt } = hashPassword(newPassword);
-    await updateStaffPassword(staff.id, hash, salt);
+    await updateStaffPasswordServer(staff.id, hash, salt);
 
     const response = NextResponse.json({
       success: true,

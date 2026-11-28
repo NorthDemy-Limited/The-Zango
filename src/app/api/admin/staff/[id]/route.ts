@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { 
-  getTeamMembers, 
-  updateTeamMemberRole, 
-  updateTeamMemberStatus, 
-  deleteTeamMember 
-} from "@/lib/firebase/db";
+import {
+  getTeamMembersServer,
+  updateTeamMemberRoleServer,
+  updateTeamMemberStatusServer,
+  deleteTeamMemberServer,
+} from "@/lib/firebase/admin-db";
 import { NewsroomRole } from "@/types";
 import { requireAuth } from "@/lib/auth-session";
 
@@ -20,7 +20,7 @@ export async function GET(request: Request, { params }: RouteParams) {
   if (authResult.error) return authResult.error;
   try {
     const { id } = await params;
-    const members = await getTeamMembers();
+    const members = await getTeamMembersServer();
     const member = members.find((m) => m.id === id || (m as unknown as Record<string, unknown>).internalId === id);
 
     if (!member) {
@@ -48,7 +48,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     const body = await request.json();
     const { role, status } = body;
 
-    const members = await getTeamMembers();
+    const members = await getTeamMembersServer();
     const member = members.find((m) => m.id === id || (m as unknown as Record<string, unknown>).internalId === id);
 
     if (!member) {
@@ -85,9 +85,9 @@ export async function PATCH(request: Request, { params }: RouteParams) {
           { status: 400 }
         );
       }
-      await updateTeamMemberRole(member.id, role as NewsroomRole);
+      await updateTeamMemberRoleServer(member.id, role as NewsroomRole);
       if (member.id !== id) {
-        await updateTeamMemberRole(id, role as NewsroomRole);
+        await updateTeamMemberRoleServer(id, role as NewsroomRole);
       }
     }
 
@@ -98,9 +98,9 @@ export async function PATCH(request: Request, { params }: RouteParams) {
           { status: 400 }
         );
       }
-      await updateTeamMemberStatus(member.id, status as "active" | "inactive");
+      await updateTeamMemberStatusServer(member.id, status as "active" | "inactive");
       if (member.id !== id) {
-        await updateTeamMemberStatus(id, status as "active" | "inactive");
+        await updateTeamMemberStatusServer(id, status as "active" | "inactive");
       }
     }
 
@@ -122,7 +122,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
   if (authResult.error) return authResult.error;
   try {
     const { id } = await params;
-    const members = await getTeamMembers();
+    const members = await getTeamMembersServer();
     const member = members.find((m) => m.id === id || (m as unknown as Record<string, unknown>).internalId === id);
 
     if (!member) {
@@ -143,9 +143,9 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       );
     }
 
-    await deleteTeamMember(member.id);
+    await deleteTeamMemberServer(member.id);
     if (member.id !== id) {
-      await deleteTeamMember(id);
+      await deleteTeamMemberServer(id);
     }
 
     return NextResponse.json({

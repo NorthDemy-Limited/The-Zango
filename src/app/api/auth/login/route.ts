@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findStaffByIdentifier } from "@/lib/firebase/db";
+import { findStaffByIdentifierServer } from "@/lib/firebase/admin-db";
 import { verifyPassword } from "@/lib/auth-passwords";
 import { attachSessionCookie, createSessionToken } from "@/lib/auth-session";
 import { checkRateLimit, getClientIp, resetRateLimit } from "@/lib/rate-limit";
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const staff = await findStaffByIdentifier(clean);
+    const staff = await findStaffByIdentifierServer(clean);
 
     if (!staff) {
       return NextResponse.json(

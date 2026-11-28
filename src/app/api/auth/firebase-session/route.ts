@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { findStaffByIdentifier, getOrCreateUserProfile } from "@/lib/firebase/db";
+import { adminAuth, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
+import {
+  findStaffByIdentifierServer,
+  getOrCreateUserProfileServer,
+} from "@/lib/firebase/admin-db";
 import { attachSessionCookie, createSessionToken } from "@/lib/auth-session";
 import { UserRole } from "@/types";
 
@@ -22,33 +26,51 @@ export async function POST(request: Request) {
       );
     }
 
-    const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { success: false, message: "Firebase is not configured on the server." },
-        { status: 500 }
-      );
-    }
+    let fbUser: FirebaseLookupUser | null = null;
 
-    // Verify Firebase ID token directly with Firebase Identity Toolkit
-    const lookupRes = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(apiKey)}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken }),
+    if (isFirebaseAdminConfigured && adminAuth) {
+      try {
+        const decoded = await adminAuth.verifyIdToken(idToken);
+        fbUser = {
+          localId: decoded.uid,
+          email: decoded.email,
+          displayName: decoded.name,
+          photoUrl: decoded.picture,
+        };
+      } catch {
+        return NextResponse.json(
+          { success: false, message: "Invalid or expired Firebase authentication token." },
+          { status: 401 }
+        );
       }
-    );
+    } else {
+      const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+      if (!apiKey) {
+        return NextResponse.json(
+          { success: false, message: "Firebase is not configured on the server." },
+          { status: 500 }
+        );
+      }
 
-    if (!lookupRes.ok) {
-      return NextResponse.json(
-        { success: false, message: "Invalid or expired Firebase authentication token." },
-        { status: 401 }
+      const lookupRes = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(apiKey)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken }),
+        }
       );
-    }
 
-    const lookupData = (await lookupRes.json()) as { users?: FirebaseLookupUser[] };
-    const fbUser = lookupData.users?.[0];
+      if (!lookupRes.ok) {
+        return NextResponse.json(
+          { success: false, message: "Invalid or expired Firebase authentication token." },
+          { status: 401 }
+        );
+      }
+
+      const lookupData = (await lookupRes.json()) as { users?: FirebaseLookupUser[] };
+      fbUser = lookupData.users?.[0] || null;
+    }
 
     if (!fbUser || !fbUser.localId || !fbUser.email) {
       return NextResponse.json(
@@ -58,7 +80,7 @@ export async function POST(request: Request) {
     }
 
     // Check if the verified email belongs to an active newsroom staff member
-    const staff = await findStaffByIdentifier(fbUser.email.toLowerCase());
+    const staff = await findStaffByIdentifierServer(fbUser.email.toLowerCase());
     if (staff) {
       if (staff.status === "inactive") {
         return NextResponse.json(
@@ -94,7 +116,7 @@ export async function POST(request: Request) {
     }
 
     // Otherwise sync public reader profile (defaults to "reader")
-    const profile = await getOrCreateUserProfile(
+    const profile = await getOrCreateUserProfileServer(
       {
         uid: fbUser.localId,
         email: fbUser.email,

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import {
-  getAllUsernames,
-  getTeamMembers,
-  updateStaffPassword,
-} from "@/lib/firebase/db";
+  getAllUsernamesServer,
+  getTeamMembersServer,
+  updateStaffPasswordServer,
+} from "@/lib/firebase/admin-db";
 import {
   generateDefaultPassword,
   generateNextUsername,
@@ -22,7 +22,7 @@ export async function POST(request: Request, { params }: RouteParams) {
 
   try {
     const { id } = await params;
-    const members = await getTeamMembers();
+    const members = await getTeamMembersServer();
     const member = members.find(
       (m) => m.id === id || (m as unknown as Record<string, unknown>).internalId === id
     );
@@ -39,11 +39,11 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     let assignedUsername = member.username;
     if (!assignedUsername) {
-      const existingUsernames = await getAllUsernames();
+      const existingUsernames = await getAllUsernamesServer();
       assignedUsername = generateNextUsername(member.role, existingUsernames);
     }
 
-    await updateStaffPassword(member.id, hash, salt, {
+    await updateStaffPasswordServer(member.id, hash, salt, {
       mustChangePassword: true,
       username: member.username ? undefined : assignedUsername,
     });

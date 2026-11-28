@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findStaffByIdentifier } from "@/lib/firebase/db";
+import { findStaffByIdentifierServer } from "@/lib/firebase/admin-db";
 import { clearSessionCookie, getSessionFromRequest } from "@/lib/auth-session";
 import { UserRole } from "@/types";
 
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
 
     // Re-validate staff accounts against Firestore so revoked/deleted staff cannot retain access
     if (session.role !== "reader") {
-      const staff = await findStaffByIdentifier(session.email || session.username || "");
+      const staff = await findStaffByIdentifierServer(session.email || session.username || "");
       if (!staff || staff.status === "inactive") {
         const res = NextResponse.json(
           { authenticated: false, user: null, message: "Session is no longer active." },
