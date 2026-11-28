@@ -5,7 +5,6 @@ import { Article, Subscriber, Submission, NewsroomMember, NewsroomRole, UserProf
 import { ARTICLES } from "@/data/mock-articles";
 import LIVE_WORDPRESS_ARTICLES from "@/data/live-wordpress-articles.json";
 import { DEFAULT_SEED_HASH, DEFAULT_SEED_SALT } from "@/lib/auth-passwords";
-import { SITE_CONFIG, SiteSocials } from "@/config/site";
 
 function sanitizeForFirestore<T extends Record<string, unknown>>(data: T): Record<string, unknown> {
   const clean: Record<string, unknown> = {};
@@ -1527,59 +1526,6 @@ export async function updateMerchantApplicationStatus(
   }
 
   return existing || null;
-}
-
-// ==============================================================================
-// SITE SOCIAL MEDIA LINKS (HOMEPAGE, NAVBAR, FOOTER, CONTACT)
-// ==============================================================================
-let localSiteSocialsStore: SiteSocials = {
-  twitter: { ...SITE_CONFIG.socials.twitter },
-  linkedin: { ...SITE_CONFIG.socials.linkedin },
-  instagram: { ...SITE_CONFIG.socials.instagram },
-  facebook: { ...SITE_CONFIG.socials.facebook },
-  youtube: { ...SITE_CONFIG.socials.youtube },
-};
-
-export async function getSiteSocials(): Promise<SiteSocials> {
-  if (isFirebaseConfigured && db && isFirestoreAvailable) {
-    try {
-      const docRef = doc(db, "site_settings", "socials");
-      const snap = await withTimeout(getDoc(docRef), 3500, null);
-      if (snap && snap.exists()) {
-        const data = snap.data() as Partial<SiteSocials>;
-        const merged: SiteSocials = {
-          twitter: { ...SITE_CONFIG.socials.twitter, ...(data.twitter || {}) },
-          linkedin: { ...SITE_CONFIG.socials.linkedin, ...(data.linkedin || {}) },
-          instagram: { ...SITE_CONFIG.socials.instagram, ...(data.instagram || {}) },
-          facebook: { ...SITE_CONFIG.socials.facebook, ...(data.facebook || {}) },
-          youtube: { ...SITE_CONFIG.socials.youtube, ...(data.youtube || {}) },
-        };
-        localSiteSocialsStore = merged;
-        return merged;
-      }
-    } catch (err) {
-      console.warn("Could not fetch site socials from Firestore:", err);
-    }
-  }
-
-  return localSiteSocialsStore;
-}
-
-export async function updateSiteSocials(socials: SiteSocials): Promise<SiteSocials> {
-  localSiteSocialsStore = socials;
-
-  if (isFirebaseConfigured && db) {
-    try {
-      const docRef = doc(db, "site_settings", "socials");
-      await setDoc(docRef, sanitizeForFirestore(socials as unknown as Record<string, unknown>), {
-        merge: true,
-      });
-    } catch (err) {
-      console.warn("Could not save site socials to Firestore:", err);
-    }
-  }
-
-  return socials;
 }
 
 
