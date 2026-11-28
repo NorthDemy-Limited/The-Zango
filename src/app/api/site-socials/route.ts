@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getSiteSocials } from "@/lib/site-socials";
+import { getSiteSocialsServer } from "@/lib/firebase/admin-db";
 
 export async function GET() {
   try {
-    const socials = await getSiteSocials();
+    const socials = await getSiteSocialsServer();
     return NextResponse.json({ success: true, socials });
   } catch (error) {
     console.error("Get site socials error:", error);

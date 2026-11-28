@@ -34,7 +34,8 @@ function getSessionSecret(): string {
 
   // Deterministic fallback derived from project config so deployments without
   // AUTH_SESSION_SECRET do not crash, while still signing tokens with HMAC-SHA256.
-  const projectSeed =
+  const serverSeed =
+    process.env.FIREBASE_PRIVATE_KEY ||
     process.env.NEXT_PUBLIC_FIREBASE_API_KEY ||
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
     "thezango-local-dev";
@@ -45,7 +46,7 @@ function getSessionSecret(): string {
     );
   }
 
-  return `thezango-hmac-key::${projectSeed}`;
+  return `thezango-hmac-key::${serverSeed}`;
 }
 
 function toBase64Url(bytes: Uint8Array): string {
