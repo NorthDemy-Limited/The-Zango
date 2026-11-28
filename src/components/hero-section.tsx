@@ -46,7 +46,7 @@ export default function HeroSection({ featuredArticle, latestNews }: HeroSection
                   </div>
 
                   {/* Headline with Link */}
-                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight mb-3">
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight mb-2.5">
                     <Link
                       href={`/article/${featuredArticle.slug}`}
                       className="hover:text-red-100 transition-colors"
@@ -55,32 +55,32 @@ export default function HeroSection({ featuredArticle, latestNews }: HeroSection
                     </Link>
                   </h1>
 
-                  {/* Excerpt */}
-                  <p className="text-sm sm:text-base text-gray-200 line-clamp-3 leading-relaxed mb-6 max-w-3xl">
+                  {/* Author Byline & Date (First, on its own line above summary) */}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-gray-200 font-medium mb-3">
+                    <Link
+                      href={`/author/${featuredArticle.author.slug || "abdul-rahman"}`}
+                      className="inline-flex items-center space-x-1.5 hover:text-white hover:underline transition-colors font-semibold"
+                    >
+                      <User className="w-3.5 h-3.5 text-[#84CC16]" />
+                      <span>By {featuredArticle.author.name}</span>
+                    </Link>
+                    <span className="text-white/40">•</span>
+                    <span className="inline-flex items-center space-x-1.5 text-gray-300">
+                      <Calendar className="w-3.5 h-3.5 text-gray-300" />
+                      <span>{featuredArticle.publishedAt}</span>
+                    </span>
+                  </div>
+
+                  {/* Summary / Excerpt (Below byline) */}
+                  <p className="text-sm sm:text-base text-gray-200 line-clamp-3 leading-relaxed mb-5 max-w-3xl">
                     {featuredArticle.excerpt}
                   </p>
 
-                  {/* Author & Meta Row */}
-                  <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-white/20">
-                    <div className="flex items-center space-x-4 text-xs sm:text-sm text-gray-200 font-medium">
-                      <Link
-                        href={`/author/${featuredArticle.author.slug || "abdul-rahman"}`}
-                        className="flex items-center space-x-1.5 hover:text-white hover:underline transition-colors"
-                      >
-                        <User className="w-3.5 h-3.5 text-gray-300" />
-                        <span>By {featuredArticle.author.name}</span>
-                      </Link>
-                      <span className="text-white/40">•</span>
-                      <span className="flex items-center space-x-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-gray-300" />
-                        <span>{featuredArticle.publishedAt}</span>
-                      </span>
-                    </div>
-
-                    {/* Read More CTA */}
+                  {/* Read More Row */}
+                  <div className="flex items-center justify-end pt-4 border-t border-white/20">
                     <Link
                       href={`/article/${featuredArticle.slug}`}
-                      className="inline-flex items-center space-x-2 bg-white text-[#111111] hover:bg-[#84CC16] hover:text-black font-semibold px-4 py-2 rounded-full font-semibold text-xs transition-colors duration-200 cursor-pointer"
+                      className="inline-flex items-center space-x-2 bg-white text-[#111111] hover:bg-[#84CC16] hover:text-black font-semibold px-4 py-2 rounded-full text-xs transition-colors duration-200 cursor-pointer"
                     >
                       <span>Read More</span>
                       <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
