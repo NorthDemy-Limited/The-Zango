@@ -59,12 +59,17 @@ export function verifyPassword(password: string, storedHash: string, salt: strin
 }
 
 /**
- * Generates an easily readable, secure default temporary password
- * Format: Zango#<4-random-digits>! (e.g. Zango#5921!)
+ * Generates a cryptographically strong, readable temporary password
+ * Format: Zango#<10-char-alphanumeric>!
  */
 export function generateDefaultPassword(): string {
-  const randomDigits = Math.floor(1000 + Math.random() * 9000);
-  return `Zango#${randomDigits}!`;
+  const charset = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+  const bytes = crypto.randomBytes(10);
+  let token = "";
+  for (let i = 0; i < bytes.length; i++) {
+    token += charset[bytes[i] % charset.length];
+  }
+  return `Zango#${token}!`;
 }
 
 /**

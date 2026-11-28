@@ -6,6 +6,7 @@ import {
   createSessionToken,
   getSessionFromRequest,
 } from "@/lib/auth-session";
+import { checkRateLimit, getClientIp, resetRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
@@ -14,6 +15,22 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { success: false, message: "Authentication required. Please sign in first." },
         { status: 401 }
+      );
+    }
+
+    const ip = getClientIp(request);
+    const rateKey = `change-pw:${ip}:${session.email.toLowerCase()}`;
+    const rate = checkRateLimit(rateKey, 8, 15 * 60 * 1000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Too many password change attempts. Please try again in ${Math.ceil(rate.retryAfterSeconds / 60)} minute(s).`,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(rate.retryAfterSeconds) },
+        }
       );
     }
 
@@ -84,6 +101,8 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
+
+    resetRateLimit(rateKey);
 
     const { hash, salt } = hashPassword(newPassword);
     await updateStaffPassword(staff.id, hash, salt);
