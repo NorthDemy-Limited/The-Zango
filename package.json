@@ -29,7 +29,6 @@
     "@tiptap/starter-kit": "^3.33.0",
     "cloudinary": "^2.11.0",
     "firebase": "^13.2.0",
-    "firebase-admin": "^14.5.1",
     "lucide-react": "^1.66.0",
     "next": "16.4.6",
     "nodemailer": "^10.6.1",
