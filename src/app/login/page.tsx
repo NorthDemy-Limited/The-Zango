@@ -4,7 +4,7 @@ import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { useAuth } from "@/context/auth-context";
+import { useAuth, AuthUser } from "@/context/auth-context";
 import {
   ShieldCheck,
   Lock,
@@ -29,30 +29,30 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const determineTarget = (userEmailOrRole: string): string => {
-    if (redirectParam && redirectParam.startsWith("/")) return redirectParam;
+  const determineTarget = (loggedInUser?: AuthUser): string => {
+    const resolvedRole = loggedInUser?.role;
+    const roleHome =
+      resolvedRole === "admin"
+        ? "/dashboard/admin"
+        : resolvedRole === "editor"
+        ? "/dashboard/editor"
+        : resolvedRole === "author" || resolvedRole === "writer"
+        ? "/dashboard/author"
+        : resolvedRole === "reader"
+        ? "/"
+        : "/dashboard";
 
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("thezango_session_user");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed && parsed.role) {
-            if (parsed.role === "editor") return "/dashboard/editor";
-            if (parsed.role === "author" || parsed.role === "writer") return "/dashboard/author";
-            if (parsed.role === "admin") return "/dashboard/admin";
-            if (parsed.role === "reader") return "/";
-          }
-        }
-      } catch {
-        // fallback
+    if (redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")) {
+      // Only honor redirectParam if it stays within the user's own role workspace or is a public non-dashboard route
+      if (!redirectParam.startsWith("/dashboard")) {
+        return redirectParam;
+      }
+      if (roleHome !== "/" && redirectParam.startsWith(roleHome)) {
+        return redirectParam;
       }
     }
 
-    const clean = userEmailOrRole.trim().toLowerCase();
-    if (clean.includes("editor")) return "/dashboard/editor";
-    if (clean.includes("author") || clean.includes("writer")) return "/dashboard/author";
-    return "/dashboard";
+    return roleHome;
   };
 
   const handleGoogleSignIn = async () => {
@@ -60,7 +60,7 @@ function LoginContent() {
     setErrorMessage(null);
     const res = await signInWithGoogle();
     if (res.success) {
-      const target = determineTarget("");
+      const target = determineTarget(res.user);
       window.location.href = target;
     } else {
       setLoading(false);
@@ -78,7 +78,7 @@ function LoginContent() {
     const res = await login(email, password);
 
     if (res.success) {
-      const target = determineTarget(email);
+      const target = determineTarget(res.user);
       window.location.href = target;
     } else {
       setLoading(false);

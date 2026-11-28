@@ -33,10 +33,10 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   loading: boolean;
-  login: (roleOrEmail: string, password?: string) => Promise<{ success: boolean; error?: string }>;
-  signInWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signUpWithEmail: (email: string, password: string, name?: string, role?: UserRole) => Promise<{ success: boolean; error?: string }>;
-  signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  login: (roleOrEmail: string, password?: string) => Promise<{ success: boolean; user?: AuthUser; error?: string }>;
+  signInWithEmail: (email: string, password: string) => Promise<{ success: boolean; user?: AuthUser; error?: string }>;
+  signUpWithEmail: (email: string, password: string, name?: string, role?: UserRole) => Promise<{ success: boolean; user?: AuthUser; error?: string }>;
+  signInWithGoogle: () => Promise<{ success: boolean; user?: AuthUser; error?: string }>;
   logout: () => void;
   signOut: () => Promise<void>;
   switchRole: (newRole: UserRole) => void;
@@ -128,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [persistClientUser]);
 
-  const exchangeFirebaseToken = async (idToken: string): Promise<{ success: boolean; error?: string }> => {
+  const exchangeFirebaseToken = async (idToken: string): Promise<{ success: boolean; user?: AuthUser; error?: string }> => {
     try {
       const res = await fetch("/api/auth/firebase-session", {
         method: "POST",
@@ -139,7 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
       if (res.ok && data.success && data.user) {
         persistClientUser(data.user);
-        return { success: true };
+        return { success: true, user: data.user };
       }
       return { success: false, error: data.message || "Could not establish server session." };
     } catch {
@@ -147,7 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const login = async (identifier: string, password?: string): Promise<{ success: boolean; error?: string }> => {
+  const login = async (identifier: string, password?: string): Promise<{ success: boolean; user?: AuthUser; error?: string }> => {
     const clean = identifier.trim().toLowerCase();
 
     if (!clean) {
@@ -169,7 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
       if (res.ok && data.success && data.user) {
         persistClientUser(data.user);
-        return { success: true };
+        return { success: true, user: data.user };
       }
 
       // 2. If not found in staff roster and looks like email, try Firebase Auth (for readers)
@@ -266,7 +266,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (isFirebaseConfigured && auth) {
       firebaseSignOut(auth).catch(() => {});
     }
-    persistClientUser(null);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+      window.location.href = "/login";
+      return;
+    }
+    setUser(null);
     router.push("/login");
   };
 
