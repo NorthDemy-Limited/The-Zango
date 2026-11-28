@@ -145,6 +145,28 @@ function AdminDashboardContent() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
+  const [activityNotifications, setActivityNotifications] = useState<
+    Array<{
+      id: string;
+      message: string;
+      category: "security" | "staff" | "editorial" | "merchant" | "system";
+      timestamp: string;
+      read: boolean;
+    }>
+  >(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("thezango_admin_activity_notifications");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return [];
+  });
 
   // Revision request modal state
   const [revisionModalSub, setRevisionModalSub] = useState<Submission | null>(null);
@@ -341,9 +363,77 @@ function AdminDashboardContent() {
     };
   }, []);
 
-  const triggerToast = (msg: string) => {
+  const inferActivityCategory = (
+    msg: string
+  ): "security" | "staff" | "editorial" | "merchant" | "system" => {
+    const lower = msg.toLowerCase();
+    if (lower.includes("passcode") || lower.includes("password") || lower.includes("credential")) {
+      return "security";
+    }
+    if (lower.includes("staff") || lower.includes("roster") || lower.includes("role") || lower.includes("status")) {
+      return "staff";
+    }
+    if (lower.includes("merchant") || lower.includes("vendor")) {
+      return "merchant";
+    }
+    if (lower.includes("dispatch") || lower.includes("article") || lower.includes("manuscript") || lower.includes("story") || lower.includes("submission")) {
+      return "editorial";
+    }
+    return "system";
+  };
+
+  const triggerToast = (
+    msg: string,
+    category?: "security" | "staff" | "editorial" | "merchant" | "system"
+  ) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 4000);
+
+    setActivityNotifications((prev) => {
+      const next = [
+        {
+          id: `act-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          message: msg,
+          category: category || inferActivityCategory(msg),
+          timestamp: new Date().toISOString(),
+          read: false,
+        },
+        ...prev,
+      ].slice(0, 25);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("thezango_admin_activity_notifications", JSON.stringify(next));
+        } catch {
+          // ignore storage quota errors
+        }
+      }
+      return next;
+    });
+  };
+
+  const markAllActivityRead = () => {
+    setActivityNotifications((prev) => {
+      const next = prev.map((item) => ({ ...item, read: true }));
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("thezango_admin_activity_notifications", JSON.stringify(next));
+        } catch {
+          // ignore
+        }
+      }
+      return next;
+    });
+  };
+
+  const clearActivityNotifications = () => {
+    setActivityNotifications([]);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("thezango_admin_activity_notifications");
+      } catch {
+        // ignore
+      }
+    }
   };
 
   const formatMerchantDate = (dateStr: string) => {
@@ -1013,7 +1103,8 @@ function AdminDashboardContent() {
   const pendingMerchants = merchants.filter((m) => m.status === "pending");
   const underReviewMerchants = merchants.filter((m) => m.status === "under_review");
   const approvedMerchants = merchants.filter((m) => m.status === "approved");
-  const totalAlerts = pendingSubmissions.length + pendingMerchants.length;
+  const unreadActivityCount = activityNotifications.filter((n) => !n.read).length;
+  const totalAlerts = pendingSubmissions.length + pendingMerchants.length + unreadActivityCount;
 
   const filteredMerchants = merchants.filter((m) => {
     const matchesFilter =
@@ -1268,8 +1359,68 @@ function AdminDashboardContent() {
                         </div>
                       )}
 
+                      {/* Recent Admin Activity Section */}
+                      {activityNotifications.length > 0 && (
+                        <div className="p-3 bg-slate-50/70">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-extrabold uppercase text-slate-600 tracking-wider flex items-center space-x-1.5">
+                              <KeyRound className="w-3.5 h-3.5 text-[#84CC16]" />
+                              <span>Recent Admin Actions ({activityNotifications.length})</span>
+                            </span>
+                            <div className="flex items-center space-x-2">
+                              {unreadActivityCount > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={markAllActivityRead}
+                                  className="text-[10px] font-bold text-blue-600 hover:underline cursor-pointer"
+                                >
+                                  Mark read
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={clearActivityNotifications}
+                                className="text-[10px] font-bold text-slate-400 hover:text-red-600 cursor-pointer"
+                              >
+                                Clear
+                              </button>
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            {activityNotifications.slice(0, 6).map((item) => (
+                              <div
+                                key={item.id}
+                                className={`p-2.5 rounded-xl border transition-all ${
+                                  item.read
+                                    ? "bg-white border-slate-200/70"
+                                    : "bg-lime-50/60 border-lime-200"
+                                }`}
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <span className="text-xs font-semibold text-slate-900 leading-snug">
+                                    {item.message}
+                                  </span>
+                                  {!item.read && (
+                                    <span className="w-2 h-2 rounded-full bg-[#84CC16] shrink-0 mt-1" />
+                                  )}
+                                </div>
+                                <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between uppercase font-bold tracking-wider">
+                                  <span>{item.category}</span>
+                                  <span>
+                                    {new Date(item.timestamp).toLocaleTimeString([], {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Empty Notification State */}
-                      {totalAlerts === 0 && (
+                      {totalAlerts === 0 && activityNotifications.length === 0 && (
                         <div className="p-8 text-center">
                           <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
                           <div className="text-xs font-bold text-slate-800">All Queues Cleared</div>
