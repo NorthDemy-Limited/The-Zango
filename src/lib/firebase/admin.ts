@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp, cert, App } from "firebase-admin/app";
-import { getFirestore, Firestore } from "firebase-admin/firestore";
+import { getFirestore, initializeFirestore, Firestore } from "firebase-admin/firestore";
 import { getAuth, Auth } from "firebase-admin/auth";
 
 function normalizePrivateKey(raw: string | undefined): string | undefined {
@@ -35,7 +35,11 @@ if (isFirebaseAdminConfigured && projectId && clientEmail && privateKey) {
             privateKey,
           }),
         });
-    adminDb = getFirestore(adminApp);
+    try {
+      adminDb = initializeFirestore(adminApp, { preferRest: true });
+    } catch {
+      adminDb = getFirestore(adminApp);
+    }
     adminAuth = getAuth(adminApp);
   } catch (error) {
     console.error("Failed to initialize Firebase Admin SDK:", error);
