@@ -3,9 +3,10 @@
 import React, { useState } from "react";
 import { CheckCircle2, Mail, Send, AlertCircle } from "lucide-react";
 import { TwitterIcon, InstagramIcon, YoutubeIcon, LinkedinIcon } from "@/components/social-icons";
-import { SITE_CONFIG } from "@/config/site";
+import { useSiteSocials } from "@/hooks/use-site-socials";
 
 export default function StayInformedBanner() {
+  const siteSocials = useSiteSocials();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -44,29 +45,29 @@ export default function StayInformedBanner() {
   const socials = [
     {
       name: "X (Twitter)",
-      label: "Follow @thezangong on X",
-      href: SITE_CONFIG.socials.twitter.url,
+      label: `Follow ${siteSocials.twitter.handle} on X`,
+      href: siteSocials.twitter.url,
       icon: TwitterIcon,
       bgColor: "bg-neutral-100 text-neutral-800 hover:bg-black hover:text-white",
     },
     {
       name: "LinkedIn",
       label: "Connect on LinkedIn",
-      href: SITE_CONFIG.socials.linkedin.url,
+      href: siteSocials.linkedin.url,
       icon: LinkedinIcon,
       bgColor: "bg-sky-50 text-[#0077B5] hover:bg-[#0077B5] hover:text-white",
     },
     {
       name: "Instagram",
-      label: "Follow @thezangong on Instagram",
-      href: SITE_CONFIG.socials.instagram.url,
+      label: `Follow ${siteSocials.instagram.handle} on Instagram`,
+      href: siteSocials.instagram.url,
       icon: InstagramIcon,
       bgColor: "bg-pink-50 text-pink-600 hover:bg-pink-600 hover:text-white",
     },
     {
       name: "YouTube",
       label: "Subscribe on YouTube",
-      href: SITE_CONFIG.socials.youtube.url,
+      href: siteSocials.youtube.url,
       icon: YoutubeIcon,
       bgColor: "bg-red-50 text-red-600 hover:bg-red-600 hover:text-white",
     },

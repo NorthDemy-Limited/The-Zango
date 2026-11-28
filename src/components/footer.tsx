@@ -6,9 +6,10 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Send, CheckCircle2 } from "lucide-react";
 import { FacebookIcon, TwitterIcon, InstagramIcon, YoutubeIcon, LinkedinIcon } from "@/components/social-icons";
-import { SITE_CONFIG } from "@/config/site";
+import { useSiteSocials } from "@/hooks/use-site-socials";
 
 export default function Footer() {
+  const siteSocials = useSiteSocials();
   const pathname = usePathname();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -89,7 +90,7 @@ export default function Footer() {
             {/* Social Icons */}
             <div className="flex items-center space-x-3 pt-2">
               <a
-                href={SITE_CONFIG.socials.twitter.url}
+                href={siteSocials.twitter.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#84CC16] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
@@ -98,7 +99,7 @@ export default function Footer() {
                 <TwitterIcon className="w-4 h-4" />
               </a>
               <a
-                href={SITE_CONFIG.socials.linkedin.url}
+                href={siteSocials.linkedin.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#84CC16] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
@@ -107,7 +108,7 @@ export default function Footer() {
                 <LinkedinIcon className="w-4 h-4" />
               </a>
               <a
-                href={SITE_CONFIG.socials.instagram.url}
+                href={siteSocials.instagram.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#84CC16] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
@@ -116,7 +117,7 @@ export default function Footer() {
                 <InstagramIcon className="w-4 h-4" />
               </a>
               <a
-                href={SITE_CONFIG.socials.facebook.url}
+                href={siteSocials.facebook.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#84CC16] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
@@ -125,7 +126,7 @@ export default function Footer() {
                 <FacebookIcon className="w-4 h-4" />
               </a>
               <a
-                href={SITE_CONFIG.socials.youtube.url}
+                href={siteSocials.youtube.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#84CC16] text-[#535252] hover:text-white flex items-center justify-center transition-colors"

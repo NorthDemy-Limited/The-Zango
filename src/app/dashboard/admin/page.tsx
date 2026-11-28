@@ -26,6 +26,7 @@ import {
   ArrowRight,
   Send,
   Mail,
+  Globe,
   CheckCircle,
   AlertCircle,
   Store,
@@ -75,6 +76,8 @@ import { CATEGORIES } from "@/data/mock-articles";
 import ImageUploader from "@/components/image-uploader";
 import RichEditor from "@/components/rich-editor";
 import { PasswordChangeCard } from "@/components/dashboard/password-change-card";
+import { SITE_CONFIG, SiteSocials } from "@/config/site";
+import { SOCIALS_UPDATED_EVENT } from "@/hooks/use-site-socials";
 
 function AdminDashboardContent() {
   const router = useRouter();
@@ -142,6 +145,8 @@ function AdminDashboardContent() {
   } | null>(null);
   const [copiedCredentials, setCopiedCredentials] = useState(false);
   const [resettingMemberId, setResettingMemberId] = useState<string | null>(null);
+  const [socialLinksForm, setSocialLinksForm] = useState<SiteSocials>(SITE_CONFIG.socials);
+  const [savingSocials, setSavingSocials] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
@@ -327,6 +332,13 @@ function AdminDashboardContent() {
           totalSubscribers: mets.totalSubscribers,
           draftCount: mets.draftCount,
         });
+      }
+
+      const socialsRes = await fetch("/api/admin/socials", { credentials: "include" })
+        .then((r) => r.json())
+        .catch(() => null);
+      if (socialsRes?.success && socialsRes.socials) {
+        setSocialLinksForm(socialsRes.socials);
       }
     } catch (e) {
       console.error("loadData error, falling back to local db:", e);
@@ -714,6 +726,33 @@ function AdminDashboardContent() {
     await updateTeamMemberStatus(id, nextStatus);
     await refreshStaffList();
     triggerToast(name + " status updated to " + nextStatus);
+  };
+
+  const handleSaveSocials = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingSocials(true);
+    try {
+      const res = await fetch("/api/admin/socials", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ socials: socialLinksForm }),
+      });
+      const data = await res.json();
+      if (data.success && data.socials) {
+        setSocialLinksForm(data.socials);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent(SOCIALS_UPDATED_EVENT, { detail: data.socials }));
+        }
+        triggerToast("Social media URLs updated across homepage, header, and footer!", "system");
+      } else {
+        triggerToast(data.message || "Failed to update social media links", "system");
+      }
+    } catch {
+      triggerToast("Network error while saving social media links", "system");
+    } finally {
+      setSavingSocials(false);
+    }
   };
 
   const handleResetMemberPassword = async (member: NewsroomMember) => {
@@ -3578,6 +3617,97 @@ function AdminDashboardContent() {
               accentColor="red"
               onSuccessToast={(msg) => triggerToast(msg)}
             />
+
+            {/* Social Media & Homepage Links */}
+            <form
+              onSubmit={handleSaveSocials}
+              className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] space-y-6 animate-in fade-in duration-200"
+            >
+              <div className="pb-4 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wide flex items-center space-x-2">
+                    <Globe className="w-4 h-4 text-[#84CC16]" />
+                    <span>Homepage &amp; Social Media Links</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Update official social URLs displayed on the homepage, navigation bar, footer, and contact page.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {(
+                  [
+                    { key: "twitter", label: "X (Twitter)", placeholder: "https://x.com/thezangong" },
+                    { key: "linkedin", label: "LinkedIn", placeholder: "https://www.linkedin.com/company/thezangong/" },
+                    { key: "instagram", label: "Instagram", placeholder: "https://www.instagram.com/thezangong" },
+                    { key: "facebook", label: "Facebook", placeholder: "https://facebook.com/thezango" },
+                    { key: "youtube", label: "YouTube", placeholder: "https://youtube.com/@thezangong" },
+                  ] as const
+                ).map(({ key, label, placeholder }) => (
+                  <div key={key} className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/50 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-slate-800">
+                        {label}
+                      </span>
+                      <a
+                        href={socialLinksForm[key].url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] font-bold text-[#84CC16] hover:underline flex items-center space-x-1"
+                      >
+                        <span>Test</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+                        Profile URL
+                      </label>
+                      <input
+                        type="url"
+                        required
+                        placeholder={placeholder}
+                        value={socialLinksForm[key].url}
+                        onChange={(e) =>
+                          setSocialLinksForm((prev) => ({
+                            ...prev,
+                            [key]: { ...prev[key], url: e.target.value },
+                          }))
+                        }
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white focus:border-[#84CC16] focus:outline-hidden"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+                        Display Handle
+                      </label>
+                      <input
+                        type="text"
+                        value={socialLinksForm[key].handle}
+                        onChange={(e) =>
+                          setSocialLinksForm((prev) => ({
+                            ...prev,
+                            [key]: { ...prev[key], handle: e.target.value },
+                          }))
+                        }
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white focus:border-[#84CC16] focus:outline-hidden"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={savingSocials}
+                  className="px-6 py-2.5 bg-[#84CC16] hover:bg-[#65A30D] text-black font-bold rounded-xl text-xs uppercase tracking-wider transition-colors shadow-xs cursor-pointer disabled:opacity-50"
+                >
+                  {savingSocials ? "Saving Social Links..." : "Save Social Media Links"}
+                </button>
+              </div>
+            </form>
           </div>
           )}
 
