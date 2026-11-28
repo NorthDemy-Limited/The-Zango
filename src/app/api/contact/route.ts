@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createMerchantApplicationServer } from "@/lib/firebase/admin-db";
-import { db, isFirebaseConfigured } from "@/lib/firebase/config";
-import { collection, addDoc } from "firebase/firestore";
+import { fsAddDoc, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 
 export async function POST(request: Request) {
   try {
@@ -34,9 +33,9 @@ export async function POST(request: Request) {
     }
 
     // Persist general contact message to Firestore if configured
-    if (isFirebaseConfigured && db) {
+    if (isFirebaseAdminConfigured) {
       try {
-        await addDoc(collection(db, "inquiries"), {
+        await fsAddDoc("inquiries", {
           name,
           email,
           subject: subject || "General Inquiry",

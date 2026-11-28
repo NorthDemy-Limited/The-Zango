@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { INITIAL_COMMENTS } from "@/data/mock-articles";
 import { Comment } from "@/types";
-import { db, isFirebaseConfigured } from "@/lib/firebase/config";
-import { collection, getDocs, addDoc, query, where } from "firebase/firestore";
+import { fsAddDoc, fsListDocs, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 
 let localCommentsStore: Comment[] = [...INITIAL_COMMENTS];
 
@@ -12,19 +11,13 @@ export async function GET(request: Request) {
     const slug = searchParams.get("slug");
 
     // Check Firebase Firestore
-    if (isFirebaseConfigured && db) {
+    if (isFirebaseAdminConfigured) {
       try {
-        const commentsRef = collection(db, "comments");
-        const q = slug ? query(commentsRef, where("articleSlug", "==", slug)) : commentsRef;
-        const fetchPromise = getDocs(q);
-        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3500));
-        const snapshot = await Promise.race([fetchPromise, timeoutPromise]);
-        if (snapshot && !snapshot.empty) {
-          const firestoreComments = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          })) as Comment[];
-          return NextResponse.json({ success: true, count: firestoreComments.length, comments: firestoreComments });
+        const docs = await fsListDocs("comments");
+        if (docs.length > 0) {
+          const allComments = docs as unknown as Comment[];
+          const filtered = slug ? allComments.filter((c) => c.articleSlug === slug) : allComments;
+          return NextResponse.json({ success: true, count: filtered.length, comments: filtered });
         }
       } catch (err: unknown) {
         if ((err as { digest?: string })?.digest?.startsWith?.("NEXT_")) throw err;
@@ -66,10 +59,10 @@ export async function POST(request: Request) {
     };
 
     // Persist to Firestore
-    if (isFirebaseConfigured && db) {
+    if (isFirebaseAdminConfigured) {
       try {
-        const docRef = await addDoc(collection(db, "comments"), newComment);
-        newComment.id = docRef.id;
+        const docId = await fsAddDoc("comments", newComment as unknown as Record<string, unknown>);
+        newComment.id = docId;
       } catch (err: unknown) {
         if ((err as { digest?: string })?.digest?.startsWith?.("NEXT_")) throw err;
         console.warn("Could not save comment to Firestore:", err);

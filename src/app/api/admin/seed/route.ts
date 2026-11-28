@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { db, isFirebaseConfigured } from "@/lib/firebase/config";
-import { collection, getDocs, doc, setDoc } from "firebase/firestore";
+import { fsListDocs, fsSetDoc, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { getArticlesServer, getTeamMembersServer } from "@/lib/firebase/admin-db";
 import { requireAuth } from "@/lib/auth-session";
 
@@ -8,7 +7,7 @@ export async function GET(request: Request) {
   const authResult = await requireAuth(request, ["admin"]);
   if (authResult.error) return authResult.error;
   try {
-    if (!isFirebaseConfigured || !db) {
+    if (!isFirebaseAdminConfigured) {
       return NextResponse.json({
         success: false,
         isConfigured: false,
@@ -16,19 +15,19 @@ export async function GET(request: Request) {
       });
     }
 
-    const [articlesSnap, subsSnap, teamSnap] = await Promise.all([
-      getDocs(collection(db, "articles")).catch(() => null),
-      getDocs(collection(db, "submissions")).catch(() => null),
-      getDocs(collection(db, "team_members")).catch(() => null),
+    const [articlesDocs, subsDocs, teamDocs] = await Promise.all([
+      fsListDocs("articles").catch(() => null),
+      fsListDocs("submissions").catch(() => null),
+      fsListDocs("team_members").catch(() => null),
     ]);
 
     return NextResponse.json({
       success: true,
       isConfigured: true,
       collections: {
-        articles: articlesSnap ? articlesSnap.size : 0,
-        submissions: subsSnap ? subsSnap.size : 0,
-        team_members: teamSnap ? teamSnap.size : 0,
+        articles: articlesDocs ? articlesDocs.length : 0,
+        submissions: subsDocs ? subsDocs.length : 0,
+        team_members: teamDocs ? teamDocs.length : 0,
       },
       message: "Firebase connection successful",
     });
@@ -46,7 +45,7 @@ export async function POST(request: Request) {
   const authResult = await requireAuth(request, ["admin"]);
   if (authResult.error) return authResult.error;
   try {
-    if (!isFirebaseConfigured || !db) {
+    if (!isFirebaseAdminConfigured) {
       return NextResponse.json(
         { success: false, message: "Firebase is not configured" },
         { status: 400 }
@@ -54,15 +53,14 @@ export async function POST(request: Request) {
     }
 
     // 1. Seed Articles
-    const articlesRef = collection(db, "articles");
-    const existingArticles = await getDocs(articlesRef);
+    const existingArticles = await fsListDocs("articles");
     let seededArticlesCount = 0;
 
-    if (existingArticles.empty) {
+    if (existingArticles.length === 0) {
       const articlesToSeed = await getArticlesServer();
       for (const article of articlesToSeed) {
-        await setDoc(doc(db, "articles", article.id), {
-          ...article,
+        await fsSetDoc("articles", article.id, {
+          ...(article as unknown as Record<string, unknown>),
           views: article.views || Math.floor(Math.random() * 2000) + 500,
         });
         seededArticlesCount++;
@@ -70,14 +68,13 @@ export async function POST(request: Request) {
     }
 
     // 2. Seed Team Members
-    const teamRef = collection(db, "team_members");
-    const existingTeam = await getDocs(teamRef);
+    const existingTeam = await fsListDocs("team_members");
     let seededTeamCount = 0;
 
-    if (existingTeam.empty) {
+    if (existingTeam.length === 0) {
       const initialTeam = await getTeamMembersServer();
       for (const member of initialTeam) {
-        await setDoc(doc(db, "team_members", member.id), member);
+        await fsSetDoc("team_members", member.id, member as unknown as Record<string, unknown>);
         seededTeamCount++;
       }
     }
