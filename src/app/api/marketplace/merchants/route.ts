@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getMerchantApplications, createMerchantApplication } from "@/lib/firebase/db";
+import { getMerchantApplicationsServer, createMerchantApplicationServer } from "@/lib/firebase/admin-db";
 import { requireAuth } from "@/lib/auth-session";
 
 export async function GET(request: Request) {
@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
 
-    let merchants = await getMerchantApplications();
+    let merchants = await getMerchantApplicationsServer();
 
     if (status && status !== "all") {
       merchants = merchants.filter((m) => m.status.toLowerCase() === status.toLowerCase());
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const newMerchant = await createMerchantApplication({
+    const newMerchant = await createMerchantApplicationServer({
       businessName: finalBusinessName,
       contactName: finalContactName || finalBusinessName,
       email: finalEmail,

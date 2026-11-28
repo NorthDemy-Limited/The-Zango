@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { addSubscriber } from "@/lib/firebase/db";
+import { addSubscriberServer } from "@/lib/firebase/admin-db";
 
 export async function POST(request: Request) {
   try {
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const subscriber = await addSubscriber(email.trim().toLowerCase());
+    const subscriber = await addSubscriberServer(email.trim().toLowerCase());
 
     return NextResponse.json(
       {

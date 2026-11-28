@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getArticles } from "@/lib/firebase/db";
+import { getArticlesServer } from "@/lib/firebase/admin-db";
 
 export async function GET() {
   try {
-    const articles = await getArticles();
+    const articles = await getArticlesServer();
 
     const featured = articles.find((a) => a.isFeatured) || articles[0];
     const latestNews = articles.filter((a) => a.isLatest).slice(0, 5);

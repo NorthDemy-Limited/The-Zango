@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
-import { getSubscribers, addSubscriber } from "@/lib/firebase/db";
+import { requireAuth } from "@/lib/auth-session";
+import { getSubscribersServer, addSubscriberServer } from "@/lib/firebase/admin-db";
 
 export async function GET(request: Request) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("query");
 
-    let subscribers = await getSubscribers();
+    let subscribers = await getSubscribersServer();
 
     if (query) {
       const q = query.toLowerCase();
@@ -28,6 +31,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
     const body = await request.json();
     const { email } = body;
@@ -39,7 +44,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const subscriber = await addSubscriber(email.trim().toLowerCase());
+    const subscriber = await addSubscriberServer(email.trim().toLowerCase());
 
     return NextResponse.json(
       {

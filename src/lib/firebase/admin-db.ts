@@ -1,28 +1,70 @@
 import { adminDb, isFirebaseAdminConfigured } from "./admin";
 import {
+  addSubscriber,
+  approveSubmission,
+  createArticle,
+  createMerchantApplication,
+  createSubmission,
   createTeamMember,
+  deleteArticle,
   deleteTeamMember,
   findStaffByIdentifier,
-  getAllUsernames,
+  getArticleBySlug,
+  getArticles,
+  getMerchantApplications,
   getOrCreateUserProfile,
+  getPlatformMetrics,
+  getSubmissions,
+  getSubscribers,
   getTeamMembers,
+  mapFirestoreToArticle,
+  rejectSubmission,
+  requestRevisionSubmission,
+  toggleArticleFlag,
+  updateArticle,
+  updateMerchantApplicationStatus,
   updateStaffPassword,
+  updateSubmission,
   updateTeamMemberRole,
   updateTeamMemberStatus,
 } from "./db";
+import { ARTICLES } from "@/data/mock-articles";
+import LIVE_WORDPRESS_ARTICLES from "@/data/live-wordpress-articles.json";
 import { getSiteSocials, updateSiteSocials } from "@/lib/site-socials";
 import { SITE_CONFIG, SiteSocials } from "@/config/site";
-import { NewsroomMember, NewsroomRole, UserProfile, UserRole } from "@/types";
+import {
+  Article,
+  MerchantApplication,
+  NewsroomMember,
+  NewsroomRole,
+  Submission,
+  Subscriber,
+  UserProfile,
+  UserRole,
+} from "@/types";
 
 function stripUndefined<T extends Record<string, unknown>>(obj: T): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(obj)) {
     if (v !== undefined) {
-      out[k] = v;
+      if (v !== null && typeof v === "object" && !Array.isArray(v)) {
+        out[k] = stripUndefined(v as Record<string, unknown>);
+      } else {
+        out[k] = v;
+      }
     }
   }
   return out;
 }
+
+const seedArticlesFallback: Article[] = [
+  ...(LIVE_WORDPRESS_ARTICLES as Article[]),
+  ...ARTICLES,
+];
+
+// ==============================================================================
+// TEAM MEMBERS & AUTHENTICATION (SERVER ADMIN SDK)
+// ==============================================================================
 
 export async function getTeamMembersServer(): Promise<NewsroomMember[]> {
   if (isFirebaseAdminConfigured && adminDb) {
@@ -220,6 +262,10 @@ export async function getOrCreateUserProfileServer(
   return getOrCreateUserProfile(fbUser, defaultRole);
 }
 
+// ==============================================================================
+// SITE SOCIAL MEDIA LINKS (SERVER ADMIN SDK)
+// ==============================================================================
+
 export async function getSiteSocialsServer(): Promise<SiteSocials> {
   if (isFirebaseAdminConfigured && adminDb) {
     const snap = await adminDb.collection("site_settings").doc("socials").get();
@@ -230,7 +276,6 @@ export async function getSiteSocialsServer(): Promise<SiteSocials> {
         linkedin: { ...SITE_CONFIG.socials.linkedin, ...(data.linkedin || {}) },
         instagram: { ...SITE_CONFIG.socials.instagram, ...(data.instagram || {}) },
         facebook: { ...SITE_CONFIG.socials.facebook, ...(data.facebook || {}) },
-        youtube: { ...SITE_CONFIG.socials.youtube, ...(data.youtube || {}) },
       };
     }
     return SITE_CONFIG.socials;
@@ -246,3 +291,353 @@ export async function updateSiteSocialsServer(socials: SiteSocials): Promise<Sit
   return updateSiteSocials(socials);
 }
 
+// ==============================================================================
+// ARTICLES (SERVER ADMIN SDK)
+// ==============================================================================
+
+export async function getArticlesServer(): Promise<Article[]> {
+  if (isFirebaseAdminConfigured && adminDb) {
+    try {
+      const snap = await adminDb
+        .collection("articles")
+        .orderBy("publishedAt", "desc")
+        .get();
+      if (!snap.empty) {
+        const fsArticles = snap.docs.map((d) =>
+          mapFirestoreToArticle(d.id, d.data() as Record<string, unknown>)
+        );
+        const liveArticles = fsArticles.filter((a) => a.id.startsWith("wp-"));
+        const otherArticles = fsArticles.filter((a) => !a.id.startsWith("wp-"));
+        const sortedFs = [...liveArticles, ...otherArticles];
+        const fsSlugs = new Set(sortedFs.map((a) => a.slug.toLowerCase()));
+        const missing = seedArticlesFallback.filter((a) => !fsSlugs.has(a.slug.toLowerCase()));
+        return [...sortedFs, ...missing];
+      }
+    } catch (err) {
+      console.warn("Admin getArticlesServer error, falling back:", err);
+    }
+  }
+  return getArticles();
+}
+
+export async function getArticleBySlugServer(slug: string): Promise<Article | null> {
+  const slugLower = slug.toLowerCase();
+  if (isFirebaseAdminConfigured && adminDb) {
+    try {
+      const snap = await adminDb
+        .collection("articles")
+        .where("slug", "==", slugLower)
+        .limit(1)
+        .get();
+      if (!snap.empty) {
+        const d = snap.docs[0];
+        return mapFirestoreToArticle(d.id, d.data() as Record<string, unknown>);
+      }
+      const fallback = seedArticlesFallback.find((a) => a.slug.toLowerCase() === slugLower);
+      if (fallback) return fallback;
+    } catch (err) {
+      console.warn("Admin getArticleBySlugServer error:", err);
+    }
+  }
+  return getArticleBySlug(slug);
+}
+
+export async function createArticleServer(articleData: Omit<Article, "id">): Promise<Article> {
+  if (isFirebaseAdminConfigured && adminDb) {
+    const newId = "art-" + Date.now();
+    const newArticle: Article = { ...articleData, id: newId };
+    await adminDb
+      .collection("articles")
+      .doc(newId)
+      .set(stripUndefined(newArticle as unknown as Record<string, unknown>));
+    return newArticle;
+  }
+  return createArticle(articleData);
+}
+
+export async function updateArticleServer(
+  id: string,
+  updates: Partial<Article>
+): Promise<Article | null> {
+  if (isFirebaseAdminConfigured && adminDb) {
+    const docRef = adminDb.collection("articles").doc(id);
+    const snap = await docRef.get();
+    const cleanUpdates = stripUndefined(updates as Record<string, unknown>);
+    if (snap.exists) {
+      await docRef.update(cleanUpdates);
+      const updated = await docRef.get();
+      return mapFirestoreToArticle(updated.id, (updated.data() || {}) as Record<string, unknown>);
+    }
+    const q = await adminDb.collection("articles").where("id", "==", id).limit(1).get();
+    if (!q.empty) {
+      await q.docs[0].ref.update(cleanUpdates);
+      const updated = await q.docs[0].ref.get();
+      return mapFirestoreToArticle(updated.id, (updated.data() || {}) as Record<string, unknown>);
+    }
+    const seedMatch = seedArticlesFallback.find((a) => a.id === id);
+    if (seedMatch) {
+      const merged = { ...seedMatch, ...updates };
+      await docRef.set(stripUndefined(merged as unknown as Record<string, unknown>));
+      return merged;
+    }
+    return null;
+  }
+  return updateArticle(id, updates);
+}
+
+export async function toggleArticleFlagServer(
+  id: string,
+  flag: "isFeatured" | "isLatest" | "isTrending" | "isPopular" | "isEditorsPick" | "isBreaking"
+): Promise<Article | null> {
+  if (isFirebaseAdminConfigured && adminDb) {
+    const articles = await getArticlesServer();
+    const article = articles.find((a) => a.id === id);
+    if (!article) return null;
+    const currentValue = !!article[flag];
+    return updateArticleServer(id, { [flag]: !currentValue });
+  }
+  if (flag === "isFeatured" || flag === "isLatest" || flag === "isTrending" || flag === "isEditorsPick") {
+    return toggleArticleFlag(id, flag);
+  }
+  return updateArticle(id, {});
+}
+
+export async function deleteArticleServer(id: string): Promise<boolean> {
+  if (isFirebaseAdminConfigured && adminDb) {
+    const docRef = adminDb.collection("articles").doc(id);
+    const snap = await docRef.get();
+    if (snap.exists) {
+      await docRef.delete();
+      return true;
+    }
+    const q = await adminDb.collection("articles").where("id", "==", id).get();
+    if (!q.empty) {
+      await Promise.all(q.docs.map((d) => d.ref.delete()));
+      return true;
+    }
+    return false;
+  }
+  return deleteArticle(id);
+}
+
+// ==============================================================================
+// SUBMISSIONS (SERVER ADMIN SDK)
+// ==============================================================================
+
+export async function getSubmissionsServer(): Promise<Submission[]> {
+  if (isFirebaseAdminConfigured && adminDb) {
+    const snap = await adminDb
+      .collection("submissions")
+      .orderBy("submittedAt", "desc")
+      .get();
+    return snap.docs.map((d) => ({ ...d.data(), id: d.id } as Submission));
+  }
+  return getSubmissions();
+}
+
+export async function createSubmissionServer(
+  subData: Omit<Submission, "id" | "submittedAt" | "status">
+): Promise<Submission> {
+  if (isFirebaseAdminConfigured && adminDb) {
+    const newId = "sub-" + Date.now();
+    const newSub: Submission = {
+      ...subData,
+      id: newId,
+      status: "pending",
+      submittedAt: new Date().toISOString(),
+    };
+    await adminDb
+      .collection("submissions")
+      .doc(newId)
+      .set(stripUndefined(newSub as unknown as Record<string, unknown>));
+    return newSub;
+  }
+  return createSubmission(subData);
+}
+
+export async function updateSubmissionServer(
+  id: string,
+  updates: Partial<Submission>
+): Promise<Submission | null> {
+  if (isFirebaseAdminConfigured && adminDb) {
+    const docRef = adminDb.collection("submissions").doc(id);
+    const snap = await docRef.get();
+    const cleanUpdates = stripUndefined(updates as Record<string, unknown>);
+    if (snap.exists) {
+      await docRef.update(cleanUpdates);
+      const updated = await docRef.get();
+      return { ...updated.data(), id: updated.id } as Submission;
+    }
+    return null;
+  }
+  return updateSubmission(id, updates);
+}
+
+export async function approveSubmissionServer(id: string): Promise<Article | null> {
+  if (isFirebaseAdminConfigured && adminDb) {
+    const docRef = adminDb.collection("submissions").doc(id);
+    const snap = await docRef.get();
+    if (!snap.exists) return null;
+
+    const sub = { ...snap.data(), id: snap.id } as Submission;
+    await docRef.update({ status: "approved" });
+
+    const slug =
+      sub.title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .slice(0, 60) +
+      "-" +
+      Date.now().toString().slice(-4);
+
+    return createArticleServer({
+      title: sub.title,
+      slug,
+      excerpt: sub.excerpt,
+      content: sub.content,
+      coverImage: sub.coverImage || "/assets/hero-featured.jpg",
+      category: sub.category,
+      tags: sub.tags || [sub.category, "Northern Nigeria"],
+      publishedAt: new Date().toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }),
+      readTime: sub.readTime || "4 min read",
+      isLatest: true,
+      isBreaking: !!sub.isBreaking,
+      author: {
+        id: "author-" + Date.now(),
+        name: sub.authorName,
+        slug: sub.authorName.toLowerCase().replace(/\s+/g, "-"),
+        role: "Correspondent",
+        avatar: "/assets/social-image-1.png",
+      },
+    });
+  }
+  return approveSubmission(id);
+}
+
+export async function requestRevisionSubmissionServer(
+  id: string,
+  feedbackNotes: string
+): Promise<boolean> {
+  if (isFirebaseAdminConfigured && adminDb) {
+    const docRef = adminDb.collection("submissions").doc(id);
+    const snap = await docRef.get();
+    if (!snap.exists) return false;
+    await docRef.update({
+      status: "needs_revision",
+      feedbackNotes,
+      reviewedAt: new Date().toISOString(),
+    });
+    return true;
+  }
+  return requestRevisionSubmission(id, feedbackNotes);
+}
+
+export async function rejectSubmissionServer(id: string): Promise<boolean> {
+  if (isFirebaseAdminConfigured && adminDb) {
+    const docRef = adminDb.collection("submissions").doc(id);
+    const snap = await docRef.get();
+    if (!snap.exists) return false;
+    await docRef.update({ status: "rejected" });
+    return true;
+  }
+  return rejectSubmission(id);
+}
+
+// ==============================================================================
+// SUBSCRIBERS & MERCHANTS & METRICS (SERVER ADMIN SDK)
+// ==============================================================================
+
+export async function getSubscribersServer(): Promise<Subscriber[]> {
+  if (isFirebaseAdminConfigured && adminDb) {
+    const snap = await adminDb
+      .collection("subscribers")
+      .orderBy("subscribedAt", "desc")
+      .get();
+    return snap.docs.map((d) => d.data() as Subscriber);
+  }
+  return getSubscribers();
+}
+
+export async function addSubscriberServer(email: string): Promise<Subscriber> {
+  if (isFirebaseAdminConfigured && adminDb) {
+    const cleanEmail = email.trim().toLowerCase();
+    const newSub: Subscriber = {
+      email: cleanEmail,
+      subscribedAt: new Date().toISOString().split("T")[0],
+    };
+    await adminDb.collection("subscribers").add(newSub);
+    return newSub;
+  }
+  return addSubscriber(email);
+}
+
+export async function getMerchantApplicationsServer(): Promise<MerchantApplication[]> {
+  if (isFirebaseAdminConfigured && adminDb) {
+    const snap = await adminDb
+      .collection("merchants")
+      .orderBy("submittedAt", "desc")
+      .get();
+    return snap.docs.map((d) => ({ ...d.data(), id: d.id } as MerchantApplication));
+  }
+  return getMerchantApplications();
+}
+
+export async function createMerchantApplicationServer(
+  data: Omit<MerchantApplication, "id" | "submittedAt" | "status">
+): Promise<MerchantApplication> {
+  if (isFirebaseAdminConfigured && adminDb) {
+    const newId = "merch-" + Date.now();
+    const newMerchant: MerchantApplication = {
+      ...data,
+      id: newId,
+      status: "pending",
+      submittedAt: new Date().toISOString(),
+    };
+    await adminDb
+      .collection("merchants")
+      .doc(newId)
+      .set(stripUndefined(newMerchant as unknown as Record<string, unknown>));
+    return newMerchant;
+  }
+  return createMerchantApplication(data);
+}
+
+export async function updateMerchantApplicationStatusServer(
+  id: string,
+  status: MerchantApplication["status"],
+  notes?: string,
+  reviewedBy?: string
+): Promise<MerchantApplication | null> {
+  if (isFirebaseAdminConfigured && adminDb) {
+    const docRef = adminDb.collection("merchants").doc(id);
+    const snap = await docRef.get();
+    if (!snap.exists) return null;
+    const updates = stripUndefined({ status, notes, reviewedBy });
+    await docRef.update(updates);
+    const updated = await docRef.get();
+    return { ...updated.data(), id: updated.id } as MerchantApplication;
+  }
+  return updateMerchantApplicationStatus(id, status, notes, reviewedBy);
+}
+
+export async function getPlatformMetricsServer() {
+  if (isFirebaseAdminConfigured && adminDb) {
+    const [articles, subscribers, submissions] = await Promise.all([
+      getArticlesServer(),
+      getSubscribersServer(),
+      getSubmissionsServer(),
+    ]);
+    return {
+      totalArticles: articles.length,
+      totalViews: "482.4K",
+      totalSubscribers: subscribers.length + 1420,
+      draftCount: submissions.filter((s) => s.status === "pending").length,
+    };
+  }
+  return getPlatformMetrics();
+}

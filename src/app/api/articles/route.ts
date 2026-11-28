@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getArticles, createArticle } from "@/lib/firebase/db";
+import { getArticlesServer, createArticleServer } from "@/lib/firebase/admin-db";
+import { requireAuth } from "@/lib/auth-session";
 
 export async function GET(request: Request) {
   try {
@@ -10,7 +11,7 @@ export async function GET(request: Request) {
     const feed = searchParams.get("feed") || searchParams.get("section") || searchParams.get("filter");
     const limitParam = searchParams.get("limit");
 
-    let articles = await getArticles();
+    let articles = await getArticlesServer();
 
     if (feed) {
       const f = feed.toLowerCase();
@@ -65,6 +66,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const authResult = await requireAuth(request, ["admin", "editor"]);
+  if (authResult.error) return authResult.error;
   try {
     const body = await request.json();
     const { title, content, category, coverImage, excerpt, authorName } = body;
@@ -78,7 +81,7 @@ export async function POST(request: Request) {
 
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
-    const newArticle = await createArticle({
+    const newArticle = await createArticleServer({
       title,
       slug,
       category: category || "Business",

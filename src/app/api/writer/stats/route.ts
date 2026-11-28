@@ -1,15 +1,18 @@
 import { NextResponse } from "next/server";
-import { getArticles, getSubmissions } from "@/lib/firebase/db";
+import { requireAuth } from "@/lib/auth-session";
+import { getArticlesServer, getSubmissionsServer } from "@/lib/firebase/admin-db";
 
 export async function GET(request: Request) {
+  const authResult = await requireAuth(request, ["admin", "editor", "writer", "author"]);
+  if (authResult.error) return authResult.error;
   try {
     const { searchParams } = new URL(request.url);
     const authorEmail = searchParams.get("authorEmail");
     const authorName = searchParams.get("authorName");
 
     const [articles, submissions] = await Promise.all([
-      getArticles(),
-      getSubmissions(),
+      getArticlesServer(),
+      getSubmissionsServer(),
     ]);
 
     // Filter submissions for this author

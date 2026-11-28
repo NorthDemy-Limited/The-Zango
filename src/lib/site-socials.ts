@@ -7,7 +7,6 @@ let localSiteSocialsStore: SiteSocials = {
   linkedin: { ...SITE_CONFIG.socials.linkedin },
   instagram: { ...SITE_CONFIG.socials.instagram },
   facebook: { ...SITE_CONFIG.socials.facebook },
-  youtube: { ...SITE_CONFIG.socials.youtube },
 };
 
 export async function getSiteSocials(): Promise<SiteSocials> {
@@ -25,7 +24,6 @@ export async function getSiteSocials(): Promise<SiteSocials> {
           linkedin: { ...SITE_CONFIG.socials.linkedin, ...(data.linkedin || {}) },
           instagram: { ...SITE_CONFIG.socials.instagram, ...(data.instagram || {}) },
           facebook: { ...SITE_CONFIG.socials.facebook, ...(data.facebook || {}) },
-          youtube: { ...SITE_CONFIG.socials.youtube, ...(data.youtube || {}) },
         };
         localSiteSocialsStore = merged;
         return merged;

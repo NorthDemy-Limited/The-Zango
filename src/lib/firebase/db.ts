@@ -158,7 +158,7 @@ function mapArticleToSupabase(article: Partial<Article>): Record<string, unknown
   return row;
 }
 
-function mapFirestoreToArticle(id: string, data: Record<string, unknown>): Article {
+export function mapFirestoreToArticle(id: string, data: Record<string, unknown>): Article {
   const localMatch = ARTICLES.find(
     (m) => m.slug.toLowerCase() === String(data.slug || "").toLowerCase()
   );

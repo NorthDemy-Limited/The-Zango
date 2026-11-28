@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/auth-session";
 import { CATEGORIES } from "@/data/mock-articles";
 import { db, isFirebaseConfigured } from "@/lib/firebase/config";
 import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
@@ -8,6 +9,8 @@ interface RouteParams {
 }
 
 export async function GET(request: Request, { params }: RouteParams) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
     const { id } = await params;
 
@@ -44,6 +47,8 @@ export async function GET(request: Request, { params }: RouteParams) {
 }
 
 export async function PATCH(request: Request, { params }: RouteParams) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
     const { id } = await params;
     const body = await request.json();
@@ -87,6 +92,8 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 }
 
 export async function DELETE(request: Request, { params }: RouteParams) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
     const { id } = await params;
     const index = CATEGORIES.findIndex((c) => c.id === id || c.slug === id);

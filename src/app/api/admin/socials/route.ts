@@ -67,11 +67,6 @@ export async function PUT(request: Request) {
         handle: (incoming.facebook?.handle ?? current.facebook.handle).trim() || defaults.facebook.handle,
         url: sanitizeUrl(incoming.facebook?.url, current.facebook.url),
       },
-      youtube: {
-        name: defaults.youtube.name,
-        handle: (incoming.youtube?.handle ?? current.youtube.handle).trim() || defaults.youtube.handle,
-        url: sanitizeUrl(incoming.youtube?.url, current.youtube.url),
-      },
     };
 
     const saved = await updateSiteSocialsServer(nextSocials);

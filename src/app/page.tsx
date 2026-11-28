@@ -1,4 +1,4 @@
-import { getArticles } from "@/lib/firebase/db";
+import { getArticlesServer } from "@/lib/firebase/admin-db";
 import HeroSection from "@/components/hero-section";
 import EditorsPicks from "@/components/editors-picks";
 import TrendingPopular from "@/components/trending-popular";
@@ -10,7 +10,7 @@ import BreakingNewsTicker from "@/components/breaking-news-ticker";
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const articles = await getArticles();
+  const articles = await getArticlesServer();
   const breakingArticles = articles.filter((a) => a.isBreaking);
   const featuredArticle = articles.find((a) => a.isFeatured) || articles[0];
   const latestNews = articles.filter((a) => a.isLatest);
