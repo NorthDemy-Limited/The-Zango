@@ -1,20 +1,23 @@
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/auth-session";
 import { 
-  getSubmissions, 
-  approveSubmission, 
-  requestRevisionSubmission, 
-  rejectSubmission, 
-  updateSubmission 
-} from "@/lib/firebase/db";
+  getSubmissionsServer, 
+  approveSubmissionServer, 
+  requestRevisionSubmissionServer, 
+  rejectSubmissionServer, 
+  updateSubmissionServer 
+} from "@/lib/firebase/admin-db";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
 export async function GET(request: Request, { params }: RouteParams) {
+  const authResult = await requireAuth(request, ["admin", "editor"]);
+  if (authResult.error) return authResult.error;
   try {
     const { id } = await params;
-    const submissions = await getSubmissions();
+    const submissions = await getSubmissionsServer();
     const sub = submissions.find((s) => s.id === id);
 
     if (!sub) {
@@ -36,6 +39,8 @@ export async function GET(request: Request, { params }: RouteParams) {
 }
 
 export async function PATCH(request: Request, { params }: RouteParams) {
+  const authResult = await requireAuth(request, ["admin", "editor"]);
+  if (authResult.error) return authResult.error;
   try {
     const { id } = await params;
     const body = await request.json();
@@ -43,7 +48,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     // Action 1: Approve and publish live as a story dispatch
     if (action === "approve" || body.status === "approved") {
-      const article = await approveSubmission(id);
+      const article = await approveSubmissionServer(id);
       if (!article) {
         return NextResponse.json(
           { success: false, message: "Submission not found or clearance failed" },
@@ -66,7 +71,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
           { status: 400 }
         );
       }
-      const success = await requestRevisionSubmission(id, feedbackNotes.trim());
+      const success = await requestRevisionSubmissionServer(id, feedbackNotes.trim());
       if (!success) {
         return NextResponse.json(
           { success: false, message: "Submission not found or failed to deliver feedback" },
@@ -81,7 +86,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     // Action 3: Reject submission
     if (action === "reject") {
-      const success = await rejectSubmission(id);
+      const success = await rejectSubmissionServer(id);
       if (!success) {
         return NextResponse.json(
           { success: false, message: "Submission not found or rejection failed" },
@@ -95,7 +100,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     }
 
     // Action 4: Standard submission edits (e.g. proofreading or correcting tags before approval)
-    const updated = await updateSubmission(id, updates);
+    const updated = await updateSubmissionServer(id, updates);
     if (!updated) {
       return NextResponse.json(
         { success: false, message: "Submission not found or update failed" },
@@ -119,9 +124,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 }
 
 export async function DELETE(request: Request, { params }: RouteParams) {
+  const authResult = await requireAuth(request, ["admin", "editor"]);
+  if (authResult.error) return authResult.error;
   try {
     const { id } = await params;
-    const success = await rejectSubmission(id);
+    const success = await rejectSubmissionServer(id);
 
     if (!success) {
       return NextResponse.json(

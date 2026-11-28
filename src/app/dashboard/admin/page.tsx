@@ -3642,7 +3642,6 @@ function AdminDashboardContent() {
                     { key: "linkedin", label: "LinkedIn", placeholder: "https://www.linkedin.com/company/thezangong/" },
                     { key: "instagram", label: "Instagram", placeholder: "https://www.instagram.com/thezangong" },
                     { key: "facebook", label: "Facebook", placeholder: "https://facebook.com/thezango" },
-                    { key: "youtube", label: "YouTube", placeholder: "https://youtube.com/@thezangong" },
                   ] as const
                 ).map(({ key, label, placeholder }) => (
                   <div key={key} className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/50 space-y-2.5">

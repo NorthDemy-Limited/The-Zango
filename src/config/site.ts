@@ -9,7 +9,6 @@ export interface SiteSocials {
   linkedin: SocialLinkItem;
   instagram: SocialLinkItem;
   facebook: SocialLinkItem;
-  youtube: SocialLinkItem;
 }
 
 export const SITE_CONFIG = {
@@ -36,11 +35,6 @@ export const SITE_CONFIG = {
       name: "Facebook",
       handle: "thezango",
       url: "https://facebook.com",
-    },
-    youtube: {
-      name: "YouTube",
-      handle: "@thezangong",
-      url: "https://youtube.com",
     },
   } satisfies SiteSocials,
 };

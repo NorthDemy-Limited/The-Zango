@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getArticles } from "@/lib/firebase/db";
+import { requireAuth } from "@/lib/auth-session";
+import { getArticlesServer } from "@/lib/firebase/admin-db";
 
 const EDITORIAL_STOCK_PRESETS = [
   { name: "Headline Hero", url: "/assets/hero-featured.jpg", category: "Featured" },
@@ -15,9 +16,11 @@ const EDITORIAL_STOCK_PRESETS = [
   { name: "Islamic Finance Forum", url: "/assets/news-islamic-finance.png", category: "Economy" },
 ];
 
-export async function GET() {
+export async function GET(request: Request) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
-    const articles = await getArticles();
+    const articles = await getArticlesServer();
 
     // Extract unique cover images from published articles
     const articleImages = articles

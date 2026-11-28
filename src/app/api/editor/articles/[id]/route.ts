@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
-import { getArticles, updateArticle, toggleArticleFlag, deleteArticle } from "@/lib/firebase/db";
+import { requireAuth } from "@/lib/auth-session";
+import { getArticlesServer, updateArticleServer, toggleArticleFlagServer, deleteArticleServer } from "@/lib/firebase/admin-db";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
 export async function GET(request: Request, { params }: RouteParams) {
+  const authResult = await requireAuth(request, ["admin", "editor"]);
+  if (authResult.error) return authResult.error;
   try {
     const { id } = await params;
-    const articles = await getArticles();
+    const articles = await getArticlesServer();
     const article = articles.find((a) => a.id === id);
 
     if (!article) {
@@ -30,6 +33,8 @@ export async function GET(request: Request, { params }: RouteParams) {
 }
 
 export async function PATCH(request: Request, { params }: RouteParams) {
+  const authResult = await requireAuth(request, ["admin", "editor"]);
+  if (authResult.error) return authResult.error;
   try {
     const { id } = await params;
     const body = await request.json();
@@ -44,7 +49,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         );
       }
 
-      const updated = await toggleArticleFlag(id, body.flag);
+      const updated = await toggleArticleFlagServer(id, body.flag);
       if (!updated) {
         return NextResponse.json(
           { success: false, message: "Dispatch not found or flag update failed" },
@@ -60,7 +65,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     }
 
     // 2. Standard article updates
-    const updated = await updateArticle(id, body);
+    const updated = await updateArticleServer(id, body);
     if (!updated) {
       return NextResponse.json(
         { success: false, message: "Dispatch not found or update failed" },
@@ -84,9 +89,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 }
 
 export async function DELETE(request: Request, { params }: RouteParams) {
+  const authResult = await requireAuth(request, ["admin", "editor"]);
+  if (authResult.error) return authResult.error;
   try {
     const { id } = await params;
-    const success = await deleteArticle(id);
+    const success = await deleteArticleServer(id);
 
     if (!success) {
       return NextResponse.json(

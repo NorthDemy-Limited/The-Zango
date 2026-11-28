@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
-import { getArticles, createArticle } from "@/lib/firebase/db";
+import { requireAuth } from "@/lib/auth-session";
+import { getArticlesServer, createArticleServer } from "@/lib/firebase/admin-db";
 import { Article } from "@/types";
 
 export async function GET(request: Request) {
+  const authResult = await requireAuth(request, ["admin", "editor"]);
+  if (authResult.error) return authResult.error;
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
     const search = searchParams.get("search");
 
-    let articles = await getArticles();
+    let articles = await getArticlesServer();
 
     if (category && category.toLowerCase() !== "all") {
       articles = articles.filter(
@@ -42,6 +45,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const authResult = await requireAuth(request, ["admin", "editor"]);
+  if (authResult.error) return authResult.error;
   try {
     const body = await request.json();
     const {
@@ -100,7 +105,7 @@ export async function POST(request: Request) {
       },
     };
 
-    const created = await createArticle(newArticle);
+    const created = await createArticleServer(newArticle);
 
     return NextResponse.json(
       {

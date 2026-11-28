@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import { getArticles, getArticleBySlug, updateArticle, deleteArticle } from "@/lib/firebase/db";
+import {
+  getArticlesServer,
+  getArticleBySlugServer,
+  updateArticleServer,
+  deleteArticleServer,
+} from "@/lib/firebase/admin-db";
+import { requireAuth } from "@/lib/auth-session";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -8,11 +14,11 @@ interface RouteParams {
 export async function GET(request: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const articles = await getArticles();
+    const articles = await getArticlesServer();
     let article = articles.find((a) => a.id === id);
 
     if (!article) {
-      article = (await getArticleBySlug(id)) || undefined;
+      article = (await getArticleBySlugServer(id)) || undefined;
     }
 
     if (!article) {
@@ -33,11 +39,13 @@ export async function GET(request: Request, { params }: RouteParams) {
 }
 
 export async function PATCH(request: Request, { params }: RouteParams) {
+  const authResult = await requireAuth(request, ["admin", "editor"]);
+  if (authResult.error) return authResult.error;
   try {
     const { id } = await params;
     const body = await request.json();
 
-    const updated = await updateArticle(id, body);
+    const updated = await updateArticleServer(id, body);
     if (!updated) {
       return NextResponse.json(
         { success: false, message: "Article not found or failed to update" },
@@ -60,9 +68,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 }
 
 export async function DELETE(request: Request, { params }: RouteParams) {
+  const authResult = await requireAuth(request, ["admin", "editor"]);
+  if (authResult.error) return authResult.error;
   try {
     const { id } = await params;
-    const success = await deleteArticle(id);
+    const success = await deleteArticleServer(id);
 
     if (!success) {
       return NextResponse.json(

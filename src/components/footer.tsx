@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Send, CheckCircle2 } from "lucide-react";
-import { FacebookIcon, TwitterIcon, InstagramIcon, YoutubeIcon, LinkedinIcon } from "@/components/social-icons";
+import { FacebookIcon, TwitterIcon, InstagramIcon, LinkedinIcon } from "@/components/social-icons";
 import { useSiteSocials } from "@/hooks/use-site-socials";
 
 export default function Footer() {
@@ -58,8 +58,6 @@ export default function Footer() {
     { name: "Contact Us", href: "/contact" },
     { name: "Privacy Policy", href: "/privacy" },
     { name: "Terms of Use", href: "/terms" },
-    { name: "Editor CMS", href: "/dashboard/admin" },
-    { name: "Writer Studio", href: "/dashboard/author" },
   ];
 
   return (
@@ -124,15 +122,6 @@ export default function Footer() {
                 aria-label="Facebook"
               >
                 <FacebookIcon className="w-4 h-4" />
-              </a>
-              <a
-                href={siteSocials.youtube.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-8 h-8 rounded-full bg-[#F5F5F5] hover:bg-[#84CC16] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
-                aria-label="YouTube"
-              >
-                <YoutubeIcon className="w-4 h-4" />
               </a>
             </div>
           </div>
@@ -231,8 +220,39 @@ export default function Footer() {
         </div>
 
         {/* Bottom Copyright & Legal Links */}
-        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-[#707070] gap-4">
-          <p>© 2026 The Zango All Rights Reserved</p>
+        <div className="pt-6 flex flex-col md:flex-row items-center justify-between text-xs text-[#707070] gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-5">
+            <p>© 2026 The Zango All Rights Reserved</p>
+            <span className="hidden sm:inline text-slate-300">•</span>
+            <div
+              className="inline-flex items-center space-x-2 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200/80 text-[11px] text-slate-500 select-none"
+              title="Engineered by Northdemy Limited"
+            >
+              <svg
+                className="w-3.5 h-3.5 text-slate-800 shrink-0"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M12 2L20 6.5V15.5L12 22L4 15.5V6.5L12 2Z"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M8.5 15V9L15.5 15V9"
+                  stroke="#84CC16"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span>
+                Built by <strong className="font-bold text-slate-800">Northdemy Limited</strong>
+              </span>
+            </div>
+          </div>
 
           <div className="flex items-center space-x-6 text-[#535252]">
             <Link href="/advertise" className="hover:text-[#84CC16] transition-colors">

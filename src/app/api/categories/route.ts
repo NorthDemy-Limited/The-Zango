@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getArticles } from "@/lib/firebase/db";
+import { getArticlesServer } from "@/lib/firebase/admin-db";
 import { CATEGORIES } from "@/data/mock-articles";
 import { Category } from "@/types";
 
@@ -20,7 +20,7 @@ export async function GET() {
       });
     }
 
-    const articles = await getArticles();
+    const articles = await getArticlesServer();
 
     const computedCategories: Category[] = CATEGORIES.map((cat) => {
       const catArticles = articles.filter(

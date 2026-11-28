@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db, isFirebaseConfigured } from "@/lib/firebase/config";
 import { collection, getDocs, doc, setDoc } from "firebase/firestore";
-import { getArticles, getTeamMembers } from "@/lib/firebase/db";
+import { getArticlesServer, getTeamMembersServer } from "@/lib/firebase/admin-db";
 import { requireAuth } from "@/lib/auth-session";
 
 export async function GET(request: Request) {
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     let seededArticlesCount = 0;
 
     if (existingArticles.empty) {
-      const articlesToSeed = await getArticles();
+      const articlesToSeed = await getArticlesServer();
       for (const article of articlesToSeed) {
         await setDoc(doc(db, "articles", article.id), {
           ...article,
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     let seededTeamCount = 0;
 
     if (existingTeam.empty) {
-      const initialTeam = await getTeamMembers();
+      const initialTeam = await getTeamMembersServer();
       for (const member of initialTeam) {
         await setDoc(doc(db, "team_members", member.id), member);
         seededTeamCount++;

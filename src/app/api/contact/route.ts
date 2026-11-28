@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createMerchantApplication } from "@/lib/firebase/db";
+import { createMerchantApplicationServer } from "@/lib/firebase/admin-db";
 import { db, isFirebaseConfigured } from "@/lib/firebase/config";
 import { collection, addDoc } from "firebase/firestore";
 
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     let createdMerchant = null;
 
     if (isMerchantSubject) {
-      createdMerchant = await createMerchantApplication({
+      createdMerchant = await createMerchantApplicationServer({
         businessName: name,
         contactName: name,
         email,

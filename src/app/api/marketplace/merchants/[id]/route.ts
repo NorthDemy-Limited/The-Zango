@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { updateMerchantApplicationStatus, getMerchantApplications } from "@/lib/firebase/db";
+import { updateMerchantApplicationStatusServer, getMerchantApplicationsServer } from "@/lib/firebase/admin-db";
 import { MerchantApplication } from "@/types";
 import { requireAuth } from "@/lib/auth-session";
 
@@ -12,7 +12,7 @@ export async function GET(request: Request, { params }: RouteParams) {
   if (authResult.error) return authResult.error;
   try {
     const { id } = await params;
-    const merchants = await getMerchantApplications();
+    const merchants = await getMerchantApplicationsServer();
     const merchant = merchants.find((m) => m.id === id);
 
     if (!merchant) {
@@ -51,7 +51,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       );
     }
 
-    const updated = await updateMerchantApplicationStatus(id, status, notes, reviewedBy);
+    const updated = await updateMerchantApplicationStatusServer(id, status, notes, reviewedBy);
 
     if (!updated) {
       return NextResponse.json(

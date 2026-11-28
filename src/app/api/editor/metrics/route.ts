@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
-import { getArticles, getSubmissions, getPlatformMetrics } from "@/lib/firebase/db";
+import { requireAuth } from "@/lib/auth-session";
+import { getArticlesServer, getSubmissionsServer, getPlatformMetricsServer } from "@/lib/firebase/admin-db";
 import { CATEGORIES } from "@/data/mock-articles";
 
 export async function GET(request: Request) {
+  const authResult = await requireAuth(request, ["admin", "editor"]);
+  if (authResult.error) return authResult.error;
   try {
     const { searchParams } = new URL(request.url);
     const desk = searchParams.get("desk");
 
     const [articles, submissions, platformMetrics] = await Promise.all([
-      getArticles(),
-      getSubmissions(),
-      getPlatformMetrics(),
+      getArticlesServer(),
+      getSubmissionsServer(),
+      getPlatformMetricsServer(),
     ]);
 
     const deskArticles = desk && desk !== "all"

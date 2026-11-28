@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
-import { getSubmissions, createSubmission } from "@/lib/firebase/db";
+import { requireAuth } from "@/lib/auth-session";
+import { getSubmissionsServer, createSubmissionServer } from "@/lib/firebase/admin-db";
 
 export async function GET(request: Request) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const category = searchParams.get("category");
     const author = searchParams.get("author");
 
-    let submissions = await getSubmissions();
+    let submissions = await getSubmissionsServer();
 
     if (status && status !== "all") {
       submissions = submissions.filter((s) => s.status.toLowerCase() === status.toLowerCase());
@@ -42,6 +45,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
     const body = await request.json();
     const {
@@ -68,7 +73,7 @@ export async function POST(request: Request) {
     const words = cleanText.split(/\s+/).filter(Boolean).length;
     const computedReadTime = body.readTime || `${Math.max(1, Math.ceil(words / 200))} min read`;
 
-    const newSubmission = await createSubmission({
+    const newSubmission = await createSubmissionServer({
       title: title.trim(),
       excerpt: excerpt?.trim() || cleanText.slice(0, 150) + "...",
       content,

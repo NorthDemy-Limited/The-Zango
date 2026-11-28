@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getArticles } from "@/lib/firebase/db";
+import { requireAuth } from "@/lib/auth-session";
+import { getArticlesServer } from "@/lib/firebase/admin-db";
 import { CATEGORIES } from "@/data/mock-articles";
 import { Category } from "@/types";
 import { db, isFirebaseConfigured } from "@/lib/firebase/config";
@@ -7,9 +8,11 @@ import { collection, getDocs, doc, setDoc } from "firebase/firestore";
 
 const customDesks: Category[] = [];
 
-export async function GET() {
+export async function GET(request: Request) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
-    const articles = await getArticles();
+    const articles = await getArticlesServer();
 
     let allDesks = [...CATEGORIES, ...customDesks];
 
@@ -62,6 +65,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
     const body = await request.json();
     const { name, description, slug } = body;

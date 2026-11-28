@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { CheckCircle2, Mail, Send, AlertCircle } from "lucide-react";
-import { TwitterIcon, InstagramIcon, YoutubeIcon, LinkedinIcon } from "@/components/social-icons";
+import { TwitterIcon, InstagramIcon, LinkedinIcon } from "@/components/social-icons";
 import { useSiteSocials } from "@/hooks/use-site-socials";
 
 export default function StayInformedBanner() {
@@ -63,13 +63,6 @@ export default function StayInformedBanner() {
       href: siteSocials.instagram.url,
       icon: InstagramIcon,
       bgColor: "bg-pink-50 text-pink-600 hover:bg-pink-600 hover:text-white",
-    },
-    {
-      name: "YouTube",
-      label: "Subscribe on YouTube",
-      href: siteSocials.youtube.url,
-      icon: YoutubeIcon,
-      bgColor: "bg-red-50 text-red-600 hover:bg-red-600 hover:text-white",
     },
   ];
 
@@ -142,7 +135,7 @@ export default function StayInformedBanner() {
                 Subscribe to Labarin Zango
               </h2>
               <p className="text-sm sm:text-base text-gray-300 max-w-xl mb-8 leading-relaxed">
-                Get the biggest innovation insights and curated dispatches happening up North, delivered once a day straight to your inbox.
+                Discover the people and innovations shaping Northern Nigeria&rsquo;s tech ecosystem through our weekly newsletter, delivered straight to your inbox.
               </p>
 
               {submitted ? (

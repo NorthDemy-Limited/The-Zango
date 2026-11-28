@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
-import { getArticles, createArticle } from "@/lib/firebase/db";
+import { requireAuth } from "@/lib/auth-session";
+import { getArticlesServer, createArticleServer } from "@/lib/firebase/admin-db";
 
 export async function GET(request: Request) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
@@ -10,7 +13,7 @@ export async function GET(request: Request) {
     const author = searchParams.get("author");
     const limitParam = searchParams.get("limit");
 
-    let articles = await getArticles();
+    let articles = await getArticlesServer();
 
     if (category && category !== "all") {
       articles = articles.filter(
@@ -65,6 +68,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
     const body = await request.json();
     const {
@@ -96,7 +101,7 @@ export async function POST(request: Request) {
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)/g, "");
 
-    const newArticle = await createArticle({
+    const newArticle = await createArticleServer({
       title: title.trim(),
       slug: computedSlug,
       category: category || "Business",

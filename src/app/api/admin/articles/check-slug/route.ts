@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
-import { getArticles } from "@/lib/firebase/db";
+import { requireAuth } from "@/lib/auth-session";
+import { getArticlesServer } from "@/lib/firebase/admin-db";
 
 export async function GET(request: Request) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
     const { searchParams } = new URL(request.url);
     const slug = searchParams.get("slug");
@@ -20,7 +23,7 @@ export async function GET(request: Request) {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
 
-    const articles = await getArticles();
+    const articles = await getArticlesServer();
     const existing = articles.find(
       (a) => a.slug === cleanSlug && (!excludeId || a.id !== excludeId)
     );

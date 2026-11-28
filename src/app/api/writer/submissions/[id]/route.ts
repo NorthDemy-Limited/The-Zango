@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
-import { getSubmissions, updateSubmission, rejectSubmission } from "@/lib/firebase/db";
+import { requireAuth } from "@/lib/auth-session";
+import { getSubmissionsServer, updateSubmissionServer, rejectSubmissionServer } from "@/lib/firebase/admin-db";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
 export async function GET(request: Request, { params }: RouteParams) {
+  const authResult = await requireAuth(request, ["admin", "editor", "writer", "author"]);
+  if (authResult.error) return authResult.error;
   try {
     const { id } = await params;
-    const submissions = await getSubmissions();
+    const submissions = await getSubmissionsServer();
     const sub = submissions.find((s) => s.id === id);
 
     if (!sub) {
@@ -30,6 +33,8 @@ export async function GET(request: Request, { params }: RouteParams) {
 }
 
 export async function PATCH(request: Request, { params }: RouteParams) {
+  const authResult = await requireAuth(request, ["admin", "editor", "writer", "author"]);
+  if (authResult.error) return authResult.error;
   try {
     const { id } = await params;
     const body = await request.json();
@@ -37,7 +42,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     if (action === "resubmit") {
       // Re-submit updated manuscript back to the editors
-      const updated = await updateSubmission(id, {
+      const updated = await updateSubmissionServer(id, {
         ...updates,
         status: "pending",
       });
@@ -57,7 +62,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     }
 
     // Standard draft update
-    const updated = await updateSubmission(id, updates);
+    const updated = await updateSubmissionServer(id, updates);
     if (!updated) {
       return NextResponse.json(
         { success: false, message: "Manuscript pitch not found or update failed" },
@@ -81,9 +86,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 }
 
 export async function DELETE(request: Request, { params }: RouteParams) {
+  const authResult = await requireAuth(request, ["admin", "editor", "writer", "author"]);
+  if (authResult.error) return authResult.error;
   try {
     const { id } = await params;
-    const success = await rejectSubmission(id);
+    const success = await rejectSubmissionServer(id);
 
     if (!success) {
       return NextResponse.json(

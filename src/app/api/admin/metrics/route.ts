@@ -1,21 +1,24 @@
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/auth-session";
 import { 
-  getArticles, 
-  getSubscribers, 
-  getSubmissions, 
-  getTeamMembers, 
-  getPlatformMetrics 
-} from "@/lib/firebase/db";
+  getArticlesServer, 
+  getSubscribersServer, 
+  getSubmissionsServer, 
+  getTeamMembersServer, 
+  getPlatformMetricsServer 
+} from "@/lib/firebase/admin-db";
 import { CATEGORIES } from "@/data/mock-articles";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const authResult = await requireAuth(request, ["admin"]);
+  if (authResult.error) return authResult.error;
   try {
     const [metrics, articles, subscribers, submissions, teamMembers] = await Promise.all([
-      getPlatformMetrics(),
-      getArticles(),
-      getSubscribers(),
-      getSubmissions(),
-      getTeamMembers(),
+      getPlatformMetricsServer(),
+      getArticlesServer(),
+      getSubscribersServer(),
+      getSubmissionsServer(),
+      getTeamMembersServer(),
     ]);
 
     const pendingSubmissions = submissions.filter((s) => s.status === "pending");

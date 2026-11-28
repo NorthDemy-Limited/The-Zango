@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
-import { getArticles } from "@/lib/firebase/db";
+import { requireAuth } from "@/lib/auth-session";
+import { getArticlesServer } from "@/lib/firebase/admin-db";
 
 export async function GET(request: Request) {
+  const authResult = await requireAuth(request, ["admin", "editor", "writer", "author"]);
+  if (authResult.error) return authResult.error;
   try {
     const { searchParams } = new URL(request.url);
     const authorName = searchParams.get("authorName");
     const search = searchParams.get("search");
 
-    let articles = await getArticles();
+    let articles = await getArticlesServer();
 
     if (authorName) {
       const nameLower = authorName.toLowerCase();
