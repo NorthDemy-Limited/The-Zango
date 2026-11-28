@@ -4,6 +4,8 @@ const nextConfig: NextConfig = {
   /* config options here */
   serverExternalPackages: [
     "firebase",
+    "firebase-admin",
+    "@google-cloud/firestore",
     "@firebase/app",
     "@firebase/firestore",
     "@firebase/auth",
