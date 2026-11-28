@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSiteSocials, updateSiteSocials } from "@/lib/firebase/db";
+import { getSiteSocials, updateSiteSocials } from "@/lib/site-socials";
 import { requireAuth } from "@/lib/auth-session";
 import { SITE_CONFIG, SiteSocials } from "@/config/site";
 

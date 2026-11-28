@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSiteSocials } from "@/lib/firebase/db";
+import { getSiteSocials } from "@/lib/site-socials";
 
 export async function GET() {
   try {
