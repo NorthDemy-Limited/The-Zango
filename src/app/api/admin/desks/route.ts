@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth-session";
 import { getArticlesServer } from "@/lib/firebase/admin-db";
+import { fsListDocs, fsSetDoc, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { CATEGORIES } from "@/data/mock-articles";
 import { Category } from "@/types";
-import { db, isFirebaseConfigured } from "@/lib/firebase/config";
-import { collection, getDocs, doc, setDoc } from "firebase/firestore";
 
 const customDesks: Category[] = [];
 
@@ -17,15 +16,11 @@ export async function GET(request: Request) {
     let allDesks = [...CATEGORIES, ...customDesks];
 
     // Check Firebase Firestore for stored desks/categories
-    if (isFirebaseConfigured && db) {
+    if (isFirebaseAdminConfigured) {
       try {
-        const catSnap = await getDocs(collection(db, "categories"));
-        if (!catSnap.empty) {
-          const firestoreDesks = catSnap.docs.map((d) => ({
-            id: d.id,
-            ...d.data(),
-          })) as Category[];
-          allDesks = firestoreDesks;
+        const docs = await fsListDocs("categories");
+        if (docs.length > 0) {
+          allDesks = docs as unknown as Category[];
         }
       } catch (err: unknown) {
         if ((err as { digest?: string })?.digest?.startsWith?.("NEXT_")) throw err;
@@ -96,9 +91,9 @@ export async function POST(request: Request) {
     };
 
     // Persist to Firebase Firestore
-    if (isFirebaseConfigured && db) {
+    if (isFirebaseAdminConfigured) {
       try {
-        await setDoc(doc(db, "categories", newDesk.id), newDesk);
+        await fsSetDoc("categories", newDesk.id, newDesk as unknown as Record<string, unknown>);
       } catch (err: unknown) {
         if ((err as { digest?: string })?.digest?.startsWith?.("NEXT_")) throw err;
         console.warn("Could not save desk to Firestore:", err);

@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth-session";
 import { CATEGORIES } from "@/data/mock-articles";
-import { db, isFirebaseConfigured } from "@/lib/firebase/config";
-import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import {
+  fsDeleteDoc,
+  fsGetDoc,
+  fsUpdateDoc,
+  isFirebaseAdminConfigured,
+} from "@/lib/firebase/admin";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -15,11 +19,11 @@ export async function GET(request: Request, { params }: RouteParams) {
     const { id } = await params;
 
     // Check Firebase Firestore
-    if (isFirebaseConfigured && db) {
+    if (isFirebaseAdminConfigured) {
       try {
-        const docSnap = await getDoc(doc(db, "categories", id));
-        if (docSnap.exists()) {
-          return NextResponse.json({ success: true, desk: { id: docSnap.id, ...docSnap.data() } });
+        const deskDoc = await fsGetDoc("categories", id);
+        if (deskDoc) {
+          return NextResponse.json({ success: true, desk: deskDoc });
         }
       } catch (err: unknown) {
         if ((err as { digest?: string })?.digest?.startsWith?.("NEXT_")) throw err;
@@ -60,9 +64,9 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     if (slug) updates.slug = slug.trim();
 
     // Persist to Firestore
-    if (isFirebaseConfigured && db) {
+    if (isFirebaseAdminConfigured) {
       try {
-        await updateDoc(doc(db, "categories", id), updates);
+        await fsUpdateDoc("categories", id, updates);
       } catch (err: unknown) {
         if ((err as { digest?: string })?.digest?.startsWith?.("NEXT_")) throw err;
         console.warn("Could not update desk in Firestore:", err);
@@ -105,9 +109,9 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       );
     }
 
-    if (isFirebaseConfigured && db) {
+    if (isFirebaseAdminConfigured) {
       try {
-        await deleteDoc(doc(db, "categories", id));
+        await fsDeleteDoc("categories", id);
       } catch (err: unknown) {
         if ((err as { digest?: string })?.digest?.startsWith?.("NEXT_")) throw err;
         console.warn("Could not delete desk from Firestore:", err);

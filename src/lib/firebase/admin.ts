@@ -21,6 +21,27 @@ export const isFirebaseAdminConfigured = Boolean(projectId && clientEmail && pri
 
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
+async function fetchWithRetry(
+  url: string,
+  init?: RequestInit & { next?: { revalidate?: number } },
+  retries = 1
+): Promise<Response> {
+  try {
+    const res = await fetch(url, init);
+    if (res.status >= 500 && retries > 0) {
+      await new Promise((r) => setTimeout(r, 250));
+      return fetchWithRetry(url, init, retries - 1);
+    }
+    return res;
+  } catch (err) {
+    if (retries > 0) {
+      await new Promise((r) => setTimeout(r, 250));
+      return fetchWithRetry(url, init, retries - 1);
+    }
+    throw err;
+  }
+}
+
 function base64UrlEncode(input: string | Buffer): string {
   return Buffer.from(input)
     .toString("base64")
@@ -57,7 +78,7 @@ export async function getAdminAccessToken(): Promise<string> {
   const signature = base64UrlEncode(signer.sign(privateKey));
   const assertion = `${signingInput}.${signature}`;
 
-  const res = await fetch("https://oauth2.googleapis.com/token", {
+  const res = await fetchWithRetry("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -149,7 +170,7 @@ export async function fsGetDoc(
 ): Promise<Record<string, unknown> | null> {
   const token = await getAdminAccessToken();
   const url = `${docsBaseUrl()}/${encodeURIComponent(collectionName)}/${encodeURIComponent(docId)}`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
   });
@@ -174,7 +195,7 @@ export async function fsListDocs(
     url.searchParams.set("pageSize", "300");
     if (pageToken) url.searchParams.set("pageToken", pageToken);
 
-    const res = await fetch(url.toString(), {
+    const res = await fetchWithRetry(url.toString(), {
       headers: { Authorization: `Bearer ${token}` },
       ...(revalidateSeconds !== undefined
         ? { next: { revalidate: revalidateSeconds } }
@@ -204,7 +225,7 @@ export async function fsSetDoc(
 ): Promise<void> {
   const token = await getAdminAccessToken();
   const url = `${docsBaseUrl()}/${encodeURIComponent(collectionName)}/${encodeURIComponent(docId)}`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -235,7 +256,7 @@ export async function fsUpdateDoc(
     url.searchParams.append("updateMask.fieldPaths", fp);
   }
 
-  const res = await fetch(url.toString(), {
+  const res = await fetchWithRetry(url.toString(), {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -255,7 +276,7 @@ export async function fsAddDoc(
 ): Promise<string> {
   const token = await getAdminAccessToken();
   const url = `${docsBaseUrl()}/${encodeURIComponent(collectionName)}`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -274,7 +295,7 @@ export async function fsAddDoc(
 export async function fsDeleteDoc(collectionName: string, docId: string): Promise<void> {
   const token = await getAdminAccessToken();
   const url = `${docsBaseUrl()}/${encodeURIComponent(collectionName)}/${encodeURIComponent(docId)}`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });

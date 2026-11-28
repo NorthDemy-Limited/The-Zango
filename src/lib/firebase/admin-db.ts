@@ -380,12 +380,16 @@ export async function deleteArticleServer(id: string): Promise<boolean> {
 
 export async function getSubmissionsServer(): Promise<Submission[]> {
   if (isFirebaseAdminConfigured) {
-    const docs = await fsListDocs("submissions");
-    return docs
-      .map((d) => d as unknown as Submission)
-      .sort((a, b) =>
-        String(b.submittedAt || "").localeCompare(String(a.submittedAt || ""))
-      );
+    try {
+      const docs = await fsListDocs("submissions");
+      return docs
+        .map((d) => d as unknown as Submission)
+        .sort((a, b) =>
+          String(b.submittedAt || "").localeCompare(String(a.submittedAt || ""))
+        );
+    } catch (err) {
+      console.warn("Firestore Admin getSubmissionsServer failed, using fallback:", err);
+    }
   }
   return getSubmissions();
 }
@@ -503,13 +507,17 @@ export async function rejectSubmissionServer(id: string): Promise<boolean> {
 
 export async function getSubscribersServer(): Promise<Subscriber[]> {
   if (isFirebaseAdminConfigured) {
-    const docs = await fsListDocs("subscribers");
-    return docs
-      .map((d) => ({
-        email: String(d.email || ""),
-        subscribedAt: String(d.subscribedAt || ""),
-      }))
-      .sort((a, b) => b.subscribedAt.localeCompare(a.subscribedAt));
+    try {
+      const docs = await fsListDocs("subscribers");
+      return docs
+        .map((d) => ({
+          email: String(d.email || ""),
+          subscribedAt: String(d.subscribedAt || ""),
+        }))
+        .sort((a, b) => b.subscribedAt.localeCompare(a.subscribedAt));
+    } catch (err) {
+      console.warn("Firestore Admin getSubscribersServer failed, using fallback:", err);
+    }
   }
   return getSubscribers();
 }
@@ -529,12 +537,16 @@ export async function addSubscriberServer(email: string): Promise<Subscriber> {
 
 export async function getMerchantApplicationsServer(): Promise<MerchantApplication[]> {
   if (isFirebaseAdminConfigured) {
-    const docs = await fsListDocs("merchants");
-    return docs
-      .map((d) => d as unknown as MerchantApplication)
-      .sort((a, b) =>
-        String(b.submittedAt || "").localeCompare(String(a.submittedAt || ""))
-      );
+    try {
+      const docs = await fsListDocs("merchants");
+      return docs
+        .map((d) => d as unknown as MerchantApplication)
+        .sort((a, b) =>
+          String(b.submittedAt || "").localeCompare(String(a.submittedAt || ""))
+        );
+    } catch (err) {
+      console.warn("Firestore Admin getMerchantApplicationsServer failed, using fallback:", err);
+    }
   }
   return getMerchantApplications();
 }
