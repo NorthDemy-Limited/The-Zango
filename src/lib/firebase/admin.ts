@@ -1,6 +1,4 @@
-import { initializeApp, getApps, getApp, cert, App } from "firebase-admin/app";
-import { getFirestore, initializeFirestore, Firestore } from "firebase-admin/firestore";
-import { getAuth, Auth } from "firebase-admin/auth";
+import crypto from "crypto";
 
 function normalizePrivateKey(raw: string | undefined): string | undefined {
   if (!raw) return undefined;
@@ -29,23 +27,18 @@ async function fetchWithRetry(
   retries = 1
 ): Promise<Response> {
   try {
-    adminApp = getApps().length
-      ? getApp()
-      : initializeApp({
-          credential: cert({
-            projectId,
-            clientEmail,
-            privateKey,
-          }),
-        });
-    try {
-      adminDb = initializeFirestore(adminApp, { preferRest: true });
-    } catch {
-      adminDb = getFirestore(adminApp);
+    const res = await fetch(url, init);
+    if (res.status >= 500 && retries > 0) {
+      await new Promise((r) => setTimeout(r, 250));
+      return fetchWithRetry(url, init, retries - 1);
     }
-    adminAuth = getAuth(adminApp);
-  } catch (error) {
-    console.error("Failed to initialize Firebase Admin SDK:", error);
+    return res;
+  } catch (err) {
+    if (retries > 0) {
+      await new Promise((r) => setTimeout(r, 250));
+      return fetchWithRetry(url, init, retries - 1);
+    }
+    throw err;
   }
 }
 
