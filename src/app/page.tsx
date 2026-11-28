@@ -1,5 +1,3 @@
-import { Suspense } from "react";
-import { connection } from "next/server";
 import { getArticles } from "@/lib/firebase/db";
 import HeroSection from "@/components/hero-section";
 import EditorsPicks from "@/components/editors-picks";
@@ -9,8 +7,9 @@ import CategoryGrid from "@/components/category-grid";
 import ZangoExperience from "@/components/zango-experience";
 import BreakingNewsTicker from "@/components/breaking-news-ticker";
 
-async function HomeFeed() {
-  await connection();
+export const revalidate = 60;
+
+export default async function HomePage() {
   const articles = await getArticles();
   const breakingArticles = articles.filter((a) => a.isBreaking);
   const featuredArticle = articles.find((a) => a.isFeatured) || articles[0];
@@ -25,7 +24,7 @@ async function HomeFeed() {
     .sort((a, b) => (a.popularRank || 99) - (b.popularRank || 99));
 
   return (
-    <>
+    <div className="space-y-2">
       {/* 0. Live Breaking News Dispatch Ticker */}
       <BreakingNewsTicker initialArticles={breakingArticles} />
 
@@ -40,22 +39,6 @@ async function HomeFeed() {
         trendingArticle={trendingArticle}
         popularArticles={popularArticles}
       />
-    </>
-  );
-}
-
-export default function HomePage() {
-  return (
-    <div className="space-y-2">
-      <Suspense
-        fallback={
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="h-96 rounded-2xl bg-gray-100 animate-pulse" />
-          </div>
-        }
-      >
-        <HomeFeed />
-      </Suspense>
 
       {/* 4. Stay Informed Newsletter & Follow Us Hub */}
       <StayInformedBanner />
