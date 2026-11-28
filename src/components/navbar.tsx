@@ -6,10 +6,11 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { Search, Menu, X, Bookmark } from "lucide-react";
 import { TwitterIcon, InstagramIcon, LinkedinIcon } from "@/components/social-icons";
-import { SITE_CONFIG } from "@/config/site";
+import { useSiteSocials } from "@/hooks/use-site-socials";
 import SavedArticlesDrawer from "@/components/saved-articles-drawer";
 
 export default function Navbar() {
+  const siteSocials = useSiteSocials();
   const pathname = usePathname();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
@@ -149,7 +150,7 @@ export default function Navbar() {
               </span>
               <div className="flex items-center space-x-2">
                 <a
-                  href={SITE_CONFIG.socials.twitter.url}
+                  href={siteSocials.twitter.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-7 h-7 rounded-full bg-[#F5F5F5] hover:bg-[#84CC16] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
@@ -158,7 +159,7 @@ export default function Navbar() {
                   <TwitterIcon className="w-3.5 h-3.5" />
                 </a>
                 <a
-                  href={SITE_CONFIG.socials.linkedin.url}
+                  href={siteSocials.linkedin.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-7 h-7 rounded-full bg-[#F5F5F5] hover:bg-[#84CC16] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
@@ -167,7 +168,7 @@ export default function Navbar() {
                   <LinkedinIcon className="w-3.5 h-3.5" />
                 </a>
                 <a
-                  href={SITE_CONFIG.socials.instagram.url}
+                  href={siteSocials.instagram.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-7 h-7 rounded-full bg-[#F5F5F5] hover:bg-[#84CC16] text-[#535252] hover:text-white flex items-center justify-center transition-colors"
@@ -257,7 +258,7 @@ export default function Navbar() {
             </span>
             <div className="flex items-center space-x-2">
               <a
-                href={SITE_CONFIG.socials.twitter.url}
+                href={siteSocials.twitter.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-[#535252] hover:text-[#84CC16] transition-colors"
@@ -266,7 +267,7 @@ export default function Navbar() {
                 <TwitterIcon className="w-4 h-4" />
               </a>
               <a
-                href={SITE_CONFIG.socials.linkedin.url}
+                href={siteSocials.linkedin.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-[#535252] hover:text-[#84CC16] transition-colors"
@@ -275,7 +276,7 @@ export default function Navbar() {
                 <LinkedinIcon className="w-4 h-4" />
               </a>
               <a
-                href={SITE_CONFIG.socials.instagram.url}
+                href={siteSocials.instagram.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-[#535252] hover:text-[#84CC16] transition-colors"

@@ -3,9 +3,10 @@
 import React, { useState } from "react";
 import { Mail, MapPin, Phone, Send, CheckCircle2, Share2 } from "lucide-react";
 import { TwitterIcon, LinkedinIcon, InstagramIcon } from "@/components/social-icons";
-import { SITE_CONFIG } from "@/config/site";
+import { useSiteSocials } from "@/hooks/use-site-socials";
 
 export default function ContactPage() {
+  const siteSocials = useSiteSocials();
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -129,7 +130,7 @@ export default function ContactPage() {
                   <p className="text-xs text-[#707070] mb-3">Follow and engage with our newsroom desks:</p>
                   <div className="flex items-center space-x-2">
                     <a
-                      href={SITE_CONFIG.socials.twitter.url}
+                      href={siteSocials.twitter.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="w-8 h-8 rounded-full bg-white border border-[#E5E6E8] hover:border-[#84CC16] text-[#535252] hover:text-[#84CC16] flex items-center justify-center transition-colors"
@@ -139,7 +140,7 @@ export default function ContactPage() {
                       <TwitterIcon className="w-3.5 h-3.5" />
                     </a>
                     <a
-                      href={SITE_CONFIG.socials.linkedin.url}
+                      href={siteSocials.linkedin.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="w-8 h-8 rounded-full bg-white border border-[#E5E6E8] hover:border-[#84CC16] text-[#535252] hover:text-[#84CC16] flex items-center justify-center transition-colors"
@@ -149,7 +150,7 @@ export default function ContactPage() {
                       <LinkedinIcon className="w-3.5 h-3.5" />
                     </a>
                     <a
-                      href={SITE_CONFIG.socials.instagram.url}
+                      href={siteSocials.instagram.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="w-8 h-8 rounded-full bg-white border border-[#E5E6E8] hover:border-[#84CC16] text-[#535252] hover:text-[#84CC16] flex items-center justify-center transition-colors"

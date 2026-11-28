@@ -1,3 +1,17 @@
+export interface SocialLinkItem {
+  name: string;
+  handle: string;
+  url: string;
+}
+
+export interface SiteSocials {
+  twitter: SocialLinkItem;
+  linkedin: SocialLinkItem;
+  instagram: SocialLinkItem;
+  facebook: SocialLinkItem;
+  youtube: SocialLinkItem;
+}
+
 export const SITE_CONFIG = {
   name: "The Zango",
   description: "Your trusted voice for Northern Nigeria & African innovation, reporting, and commerce.",
@@ -28,6 +42,6 @@ export const SITE_CONFIG = {
       handle: "@thezangong",
       url: "https://youtube.com",
     },
-  },
-} as const;
+  } satisfies SiteSocials,
+};
 
